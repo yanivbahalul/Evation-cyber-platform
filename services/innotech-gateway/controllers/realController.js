@@ -65,14 +65,14 @@ exports.createUser = async (req, res) => {
         const cleanPassword = password || '';
 
         if (!/^[a-zA-Z0-9._-]{3,64}$/.test(cleanUsername)) {
-            return res.status(400).send('Username must be 3-64 chars (letters, numbers, ., _, -)');
+            return res.status(400).render('register', { user: null, error: 'Username must be 3-64 chars (letters, numbers, ., _, -)', username: cleanUsername });
         }
         if (cleanPassword.length < 8 || cleanPassword.length > 200) {
-            return res.status(400).send('Password must be 8-200 chars');
+            return res.status(400).render('register', { user: null, error: 'Password must be 8-200 chars', username: cleanUsername });
         }
 
         const existing = await User.findOne({ username: cleanUsername }).lean();
-        if (existing) return res.status(409).send('Username already exists');
+        if (existing) return res.status(409).render('register', { user: null, error: 'Username already exists', username: cleanUsername });
 
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(cleanPassword, salt); // [cite: 22]
@@ -98,24 +98,40 @@ exports.createUser = async (req, res) => {
         setPreAuthCookie(res, `reg:${newUser._id}`, 1000 * 60 * 10);
         res.render('setup-2fa', { user: null, username: cleanUsername, qrDataUrl, otpauth });
     } catch (err) {
-        res.status(500).send('Error: ' + err.message);
+        res.status(500).render('register', { user: null, error: 'Registration error. Please try again.', username: '' });
     }
 };
 
 exports.verifyRegistrationOtp = async (req, res) => {
     try {
         const pre = req.cookies?.preauth || '';
-        if (!pre.startsWith('reg:')) return res.status(401).send('Missing registration session');
+        if (!pre.startsWith('reg:')) {
+            return res.status(401).render('register', { user: null, error: 'Registration session expired. Please register again.', username: '' });
+        }
         const userId = pre.slice(4);
 
         const otp = String(req.body?.otp || '').replace(/\s/g, '');
-        if (!/^\d{6}$/.test(otp)) return res.status(400).send('OTP must be 6 digits');
+        if (!/^\d{6}$/.test(otp)) {
+            const user = await User.findById(userId).select('+totpSecret');
+            if (!user || !user.totpSecret) return res.status(401).render('register', { user: null, error: 'Invalid registration session. Please register again.', username: '' });
+            const issuer = process.env.TOTP_ISSUER_NAME || 'InnoTech Safe Zone';
+            const otpauth = generateURI({ strategy: 'totp', label: user.username, issuer, secret: user.totpSecret });
+            const qrDataUrl = await QRCode.toDataURL(otpauth, { margin: 1, scale: 6 });
+            return res.status(400).render('setup-2fa', { user: null, username: user.username, qrDataUrl, otpauth, error: 'OTP must be 6 digits' });
+        }
 
         const user = await User.findById(userId).select('+totpSecret');
-        if (!user || !user.totpSecret) return res.status(401).send('Invalid registration session');
+        if (!user || !user.totpSecret) {
+            return res.status(401).render('register', { user: null, error: 'Invalid registration session. Please register again.', username: '' });
+        }
 
         const ok = await safeVerifyTotp(otp, user.totpSecret);
-        if (!ok) return res.status(401).send('Invalid OTP');
+        if (!ok) {
+            const issuer = process.env.TOTP_ISSUER_NAME || 'InnoTech Safe Zone';
+            const otpauth = generateURI({ strategy: 'totp', label: user.username, issuer, secret: user.totpSecret });
+            const qrDataUrl = await QRCode.toDataURL(otpauth, { margin: 1, scale: 6 });
+            return res.status(401).render('setup-2fa', { user: null, username: user.username, qrDataUrl, otpauth, error: 'Invalid OTP. Check your authenticator time sync and retry.' });
+        }
 
         user.totpEnabled = true;
         await user.save();
@@ -132,7 +148,7 @@ exports.verifyRegistrationOtp = async (req, res) => {
         setPreAuthCookie(res, '', 0);
         res.redirect(req.withBase('/me'));
     } catch (err) {
-        res.status(500).send('OTP verify error: ' + err.message);
+        res.status(500).render('register', { user: null, error: 'OTP verification error. Please try again.', username: '' });
     }
 };
 
@@ -197,21 +213,21 @@ exports.loginUser = async (req, res) => {
         setPreAuthCookie(res, `reg:${user._id}`, 1000 * 60 * 10);
         return res.render('setup-2fa', { user: null, username: user.username, qrDataUrl, otpauth });
     } catch (err) {
-        res.status(500).send('Login error: ' + err.message);
+        res.status(500).render('login', { user: null, error: 'Login error. Please try again.', username: '' });
     }
 };
 
 exports.verifyLoginOtp = async (req, res) => {
     try {
         const pre = String(req.cookies?.preauth || '');
-        if (!pre) return res.status(401).send('Missing login session');
+        if (!pre) return res.status(401).render('login', { user: null, error: 'Missing login session. Please sign in again.', username: '' });
         const parts = pre.split(':');
         const mode = parts[0];
         const userId = parts[1];
         const next = safeNext(parts.slice(2).join(':') ? decodeURIComponent(parts.slice(2).join(':')) : '/me');
 
         const otp = String(req.body?.otp || '').replace(/\s/g, '');
-        if (!/^\d{6}$/.test(otp)) return res.status(400).send('OTP must be 6 digits');
+        if (!/^\d{6}$/.test(otp)) return res.status(400).render('login-otp', { user: null, username: '', next, error: 'OTP must be 6 digits' });
 
         // Admin OTP path → exchange into Blue Team dashboard
         if (mode === 'admin') {
@@ -229,7 +245,7 @@ exports.verifyLoginOtp = async (req, res) => {
             if (!ok) return res.status(401).render('login-otp', { user: null, username: admin.username, next, error: 'Invalid OTP. Check your authenticator time sync and retry.' });
 
             const jwtSecret = process.env.JWT_SECRET;
-            if (!jwtSecret) return res.status(500).send('Server misconfiguration: missing JWT_SECRET');
+            if (!jwtSecret) return res.status(500).render('login-otp', { user: null, username: admin.username, next, error: 'Server misconfiguration. Please contact IT.' });
 
             const exchange = jwt.sign(
                 { sub: admin.username, purpose: 'exchange' },
@@ -270,10 +286,10 @@ exports.verifyLoginOtp = async (req, res) => {
         }
 
         // Regular Safe Zone OTP path
-        if (mode !== 'login') return res.status(401).send('Missing login session');
+        if (mode !== 'login') return res.status(401).render('login', { user: null, error: 'Missing login session. Please sign in again.', username: '' });
         const user = await User.findById(userId).select('+totpSecret');
-        if (!user || !user.isActive) return res.status(401).send('Invalid login session');
-        if (!user.totpEnabled || !user.totpSecret) return res.status(401).send('2FA not enabled');
+        if (!user || !user.isActive) return res.status(401).render('login', { user: null, error: 'Invalid login session. Please sign in again.', username: '' });
+        if (!user.totpEnabled || !user.totpSecret) return res.status(401).render('login', { user: null, error: '2FA not enabled for this account.', username: user?.username || '' });
 
         const ok = await safeVerifyTotp(otp, user.totpSecret);
         if (!ok) return res.status(401).render('login-otp', { user: null, username: user.username, next, error: 'Invalid OTP. Check your authenticator time sync and retry.' });
@@ -289,7 +305,7 @@ exports.verifyLoginOtp = async (req, res) => {
         setPreAuthCookie(res, '', 0);
         res.redirect(req.withBase(next));
     } catch (err) {
-        res.status(500).send('OTP verify error: ' + err.message);
+        res.status(500).render('login', { user: null, error: 'OTP verification error. Please try again.', username: '' });
     }
 };
 

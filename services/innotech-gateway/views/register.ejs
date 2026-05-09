@@ -1,5 +1,7 @@
 <% const title = 'InnoTech — Register' %>
 <%- include('partials/head', { title }) %>
+<% const error = typeof locals !== 'undefined' ? (locals.error || '') : (typeof error !== 'undefined' ? error : ''); %>
+<% const username = typeof locals !== 'undefined' ? (locals.username || '') : (typeof username !== 'undefined' ? username : ''); %>
 
 <div class="container">
   <%- include('partials/topbar', { user: null }) %>
@@ -14,8 +16,15 @@
         <div class="muted">After registration you will scan a unique 2FA QR code.</div>
       </div>
       <div class="card-inner">
+        <% if (error) { %>
+          <div style="border:1px solid rgba(249,115,22,0.35); background: rgba(249,115,22,0.10); padding: 10px 12px; border-radius: 12px; margin-bottom: 12px;">
+            <div style="font-weight:650;">Registration failed</div>
+            <div class="muted2" style="margin-top: 4px;"><%= error %></div>
+          </div>
+        <% } %>
+
         <form class="form" action="<%= withBase('/register') %>" method="POST">
-          <input class="input" type="text" name="username" placeholder="Username" autocomplete="username" required />
+          <input class="input" type="text" name="username" placeholder="Username" autocomplete="username" required value="<%= username %>" />
           <input class="input" type="password" name="password" placeholder="Password" autocomplete="new-password" required />
           <button class="btn primary" type="submit" style="width: 100%;">Create account</button>
         </form>
