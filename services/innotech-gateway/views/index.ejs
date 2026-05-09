@@ -1,0 +1,67 @@
+<% const user = typeof locals !== 'undefined' ? (locals.user || null) : (typeof user !== 'undefined' ? user : null); %>
+<% const adminPanelUrl = typeof locals !== 'undefined' ? (locals.adminPanelUrl || '') : (typeof adminPanelUrl !== 'undefined' ? adminPanelUrl : ''); %>
+<% const title = 'InnoTech — Safe Zone' %>
+<%- include('partials/head', { title }) %>
+
+<div class="container">
+  <%- include('partials/topbar', { user }) %>
+
+  <div class="layout">
+    <%- include('partials/sidebar', { user, active: 'home', adminPanelUrl }) %>
+
+    <main class="card">
+      <div class="hero">
+        <div class="kicker">Public Landing</div>
+        <h2 style="margin: 0 0 8px;">Welcome to InnoTech internal services</h2>
+        <div class="muted" style="max-width: 60ch;">
+          Access HR tools, company documents, and IT support in one place. This portal is designed to look and feel like a
+          real corporate system while keeping the experience fast for legitimate employees.
+        </div>
+      </div>
+
+      <div class="card-inner">
+        <div class="grid-3">
+          <div class="stat">
+            <div class="label">Security posture</div>
+            <div class="value">Operational</div>
+            <div class="muted2" style="margin-top: 6px;">All services green</div>
+          </div>
+          <div class="stat">
+            <div class="label">SSO status</div>
+            <div class="value">Enabled</div>
+            <div class="muted2" style="margin-top: 6px;">MFA required offsite</div>
+          </div>
+          <div class="stat">
+            <div class="label">Support</div>
+            <div class="value">24/7</div>
+            <div class="muted2" style="margin-top: 6px;">IT helpdesk online</div>
+          </div>
+        </div>
+
+        <div style="height: 14px;"></div>
+
+        <% if (user) { %>
+          <div class="btn-row">
+            <a class="btn primary" href="<%= withBase('/dashboard') %>">Enter dashboard</a>
+            <a class="btn" href="<%= withBase('/documents') %>">Browse documents</a>
+            <a class="btn" href="<%= withBase('/profile') %>">My profile</a>
+            <% if (user.role === 'admin') { %>
+              <a class="btn" href="<%= adminPanelUrl %>" target="_blank" rel="noreferrer">Open Admin Panel</a>
+            <% } %>
+          </div>
+        <% } else { %>
+          <div class="btn-row">
+            <a class="btn primary" href="<%= withBase('/login') %>">Employee Login</a>
+            <a class="btn" href="<%= withBase('/register') %>">Create account</a>
+            <a class="btn" href="<%= withBase('/contact') %>">Contact IT Support</a>
+          </div>
+          <div class="muted2" style="margin-top: 10px; font-size: 13px;">
+            Note: This is an internal portal demo. Some links are informational only.
+          </div>
+        <% } %>
+      </div>
+    </main>
+  </div>
+</div>
+
+<%- include('partials/foot') %>

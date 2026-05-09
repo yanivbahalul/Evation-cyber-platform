@@ -1,0 +1,40 @@
+<% const title = 'InnoTech — Set up 2FA' %>
+<%- include('partials/head', { title }) %>
+
+<div class="container">
+  <%- include('partials/topbar', { user: null }) %>
+
+  <div class="layout">
+    <%- include('partials/sidebar', { user: null, active: 'register' }) %>
+
+    <main class="card">
+      <div class="hero">
+        <div class="kicker">Two‑Factor Authentication</div>
+        <h2 style="margin: 0 0 8px;">Set up 2FA</h2>
+        <div class="muted">User: <strong><%= username %></strong> · Scan QR, then enter the 6‑digit code.</div>
+      </div>
+
+      <div class="card-inner">
+        <div style="display:flex; justify-content:center; margin: 10px 0 14px;">
+          <img src="<%= qrDataUrl %>" alt="2FA QR" style="width:220px; height:220px; border-radius:14px; border:1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.02); padding: 10px;">
+        </div>
+
+        <details>
+          <summary class="muted2">Can’t scan? Use manual entry</summary>
+          <div style="margin-top: 10px; padding: 12px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.10); background: rgba(0,0,0,0.22);">
+            <div class="muted2" style="font-size: 12px; margin-bottom: 8px;">OTPAuth URI</div>
+            <div style="font-size: 12px; word-break: break-all; color: rgba(255,255,255,0.80);"><%= otpauth %></div>
+          </div>
+        </details>
+
+        <form class="form" action="<%= withBase('/register/verify-otp') %>" method="POST" style="margin-top: 14px;">
+          <input class="input" name="otp" placeholder="123456" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required />
+          <button class="btn primary" type="submit" style="width:100%;">Verify & Continue</button>
+        </form>
+      </div>
+    </main>
+  </div>
+</div>
+
+<%- include('partials/foot') %>
+

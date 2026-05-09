@@ -1,0 +1,44 @@
+<% const title = 'InnoTech — My Profile' %>
+<%- include('partials/head', { title }) %>
+
+<div class="container">
+  <%- include('partials/topbar', { user }) %>
+
+  <div class="layout">
+    <%- include('partials/sidebar', { user, active: 'profile', adminPanelUrl }) %>
+
+    <main class="card">
+      <div class="hero">
+        <div class="kicker">Employee</div>
+        <h2 style="margin: 0 0 8px;">My Profile</h2>
+        <div class="muted">Read-only view. Changes require HR approval.</div>
+      </div>
+
+      <div class="card-inner">
+        <table class="table">
+          <thead>
+            <tr><th>Field</th><th>Value</th></tr>
+          </thead>
+          <tbody>
+            <% profileRows.forEach(r => { %>
+              <tr>
+                <td><%= r.label %></td>
+                <td><%= r.value %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+
+        <div style="height: 12px;"></div>
+
+        <div class="btn-row">
+          <button class="btn" type="button" onclick="alert('Changes require HR approval. Please open an IT ticket.')">Edit details</button>
+          <a class="btn primary" href="<%= withBase('/dashboard') %>">Back to dashboard</a>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<%- include('partials/foot') %>
+

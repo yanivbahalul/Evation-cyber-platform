@@ -1,0 +1,41 @@
+<% const title = 'InnoTech — Documents' %>
+<%- include('partials/head', { title }) %>
+
+<div class="container">
+  <%- include('partials/topbar', { user }) %>
+
+  <div class="layout">
+    <%- include('partials/sidebar', { user, active: 'documents', adminPanelUrl }) %>
+
+    <main class="card">
+      <div class="hero">
+        <div class="kicker">Library</div>
+        <h2 style="margin: 0 0 8px;">Documents</h2>
+        <div class="muted">Internal documents and forms (demo list).</div>
+      </div>
+
+      <div class="card-inner">
+        <table class="table">
+          <thead>
+            <tr><th>Name</th><th>Type</th><th>Updated</th><th>Access</th></tr>
+          </thead>
+          <tbody>
+            <% documents.forEach(d => { %>
+              <tr>
+                <td><%= d.name %></td>
+                <td><span class="badge"><%= d.type %></span></td>
+                <td class="muted2"><%= d.updated %></td>
+                <td>
+                  <a class="btn" href="<%= withBase('/documents') %>" onclick="alert('Demo only: files are not downloadable in this build.'); return false;">View</a>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+</div>
+
+<%- include('partials/foot') %>
+

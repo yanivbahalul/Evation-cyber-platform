@@ -1,0 +1,102 @@
+<% const title = 'InnoTech — Employee Dashboard' %>
+<%- include('partials/head', { title }) %>
+
+<div class="container">
+  <%- include('partials/topbar', { user }) %>
+
+  <div class="layout">
+    <%- include('partials/sidebar', { user, active: 'dashboard', adminPanelUrl }) %>
+
+    <main class="card">
+      <div class="hero">
+        <div class="kicker">Safe Zone</div>
+        <h2 style="margin: 0 0 8px;">Dashboard</h2>
+        <div class="muted">Quick access to internal tools, tasks, and announcements.</div>
+      </div>
+
+      <div class="card-inner">
+        <div class="grid-3">
+          <div class="stat">
+            <div class="label">Open tasks</div>
+            <div class="value"><%= tasks.length %></div>
+            <div class="muted2" style="margin-top: 6px;">This week</div>
+          </div>
+          <div class="stat">
+            <div class="label">Announcements</div>
+            <div class="value"><%= announcements.length %></div>
+            <div class="muted2" style="margin-top: 6px;">Latest updates</div>
+          </div>
+          <div class="stat">
+            <div class="label">Documents</div>
+            <div class="value"><%= documents.length %></div>
+            <div class="muted2" style="margin-top: 6px;">Available files</div>
+          </div>
+        </div>
+
+        <div style="height: 14px;"></div>
+
+        <div class="grid-3">
+          <section class="card" style="box-shadow:none;">
+            <div class="card-inner">
+              <h3 style="margin: 0 0 10px;">My Tasks</h3>
+              <table class="table">
+                <thead>
+                  <tr><th>Task</th><th>Status</th></tr>
+                </thead>
+                <tbody>
+                  <% tasks.forEach(t => { %>
+                    <tr>
+                      <td><%= t.title %></td>
+                      <td>
+                        <span class="badge <%= t.status === 'Done' ? 'ok' : (t.status === 'Pending' ? 'warn' : '') %>">
+                          <%= t.status %>
+                        </span>
+                      </td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="card" style="box-shadow:none;">
+            <div class="card-inner">
+              <h3 style="margin: 0 0 10px;">Announcements</h3>
+              <div class="muted2" style="font-size: 13px; margin-bottom: 8px;">Company-wide notices</div>
+              <div style="display:grid; gap:10px;">
+                <% announcements.forEach(a => { %>
+                  <div style="border: 1px solid rgba(255,255,255,0.07); border-radius: 14px; padding: 12px; background: rgba(0,0,0,0.22);">
+                    <div style="font-weight: 650;"><%= a.title %></div>
+                    <div class="muted2" style="margin-top: 4px; font-size: 13px;"><%= a.body %></div>
+                  </div>
+                <% }) %>
+              </div>
+            </div>
+          </section>
+
+          <section class="card" style="box-shadow:none;">
+            <div class="card-inner">
+              <h3 style="margin: 0 0 10px;">Quick Links</h3>
+              <div class="btn-row">
+                <a class="btn primary" href="<%= withBase('/documents') %>">Payslips (PDF)</a>
+                <a class="btn" href="<%= withBase('/documents') %>">Employee letter</a>
+                <a class="btn" href="<%= withBase('/contact') %>">Open IT ticket</a>
+                <a class="btn" href="<%= withBase('/documents') %>">VPN client</a>
+              </div>
+              <% if (user && user.role === 'admin') { %>
+                <div style="height: 10px;"></div>
+                <div class="muted2" style="font-size: 13px;">Admin access</div>
+                <div class="btn-row" style="margin-top: 8px;">
+                  <a class="btn" href="<%= adminPanelUrl %>" target="_blank" rel="noreferrer">Open Admin Panel</a>
+                </div>
+              <% } %>
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<%- include('partials/foot') %>
+

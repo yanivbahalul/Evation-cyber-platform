@@ -1,0 +1,41 @@
+<% const title = 'InnoTech — Employee Login' %>
+<%- include('partials/head', { title }) %>
+<% const error = typeof locals !== 'undefined' ? (locals.error || '') : (typeof error !== 'undefined' ? error : ''); %>
+<% const username = typeof locals !== 'undefined' ? (locals.username || '') : (typeof username !== 'undefined' ? username : ''); %>
+
+<div class="container">
+  <%- include('partials/topbar', { user: null }) %>
+
+  <div class="layout">
+    <%- include('partials/sidebar', { user: null, active: 'login' }) %>
+
+    <main class="card">
+      <div class="hero">
+        <div class="kicker">Employee Access</div>
+        <h2 style="margin: 0 0 8px;">Sign in</h2>
+        <div class="muted">Password first, then OTP if enabled.</div>
+      </div>
+      <div class="card-inner">
+        <% if (error) { %>
+          <div style="border:1px solid rgba(249,115,22,0.35); background: rgba(249,115,22,0.10); padding: 10px 12px; border-radius: 12px; margin-bottom: 12px;">
+            <div style="font-weight:650;">Access denied</div>
+            <div class="muted2" style="margin-top: 4px;"><%= error %></div>
+          </div>
+        <% } %>
+
+        <form class="form" action="<%= withBase('/login') %>" method="POST">
+          <input class="input" type="text" name="username" placeholder="Username" autocomplete="username" required value="<%= username %>" />
+          <input class="input" type="password" name="password" placeholder="Password" autocomplete="current-password" required />
+          <button class="btn primary" type="submit" style="width: 100%;">Continue</button>
+        </form>
+
+        <div class="muted2" style="margin-top: 12px; font-size: 13px;">
+          No account? <a href="<%= withBase('/register') %>" style="color: var(--primary);">Register</a>
+          · <a href="<%= withBase('/') %>" style="color: var(--primary);">Home</a>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<%- include('partials/foot') %>

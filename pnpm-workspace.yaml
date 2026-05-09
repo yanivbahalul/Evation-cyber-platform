@@ -1,0 +1,9 @@
+packages:
+  - "apps/*"
+  - "services/*"
+
+# Keep native deps buildable across the workspace
+allowBuilds:
+  sharp: true
+  unrs-resolver: true
+

@@ -1,0 +1,22 @@
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-badge" aria-hidden="true"></div>
+    <div>
+      <div>InnoTech Internal Services</div>
+      <span class="brand-sub">Safe Zone Portal</span>
+    </div>
+  </div>
+
+  <div class="pill">
+    <% if (user) { %>
+      Signed in as <strong><%= user.username %></strong>
+      <span class="muted2">·</span>
+      <span class="badge"><%= user.role %></span>
+    <% } else { %>
+      <strong>Guest</strong>
+      <span class="muted2">·</span>
+      <span class="muted">public access</span>
+    <% } %>
+  </div>
+</div>
+

@@ -1,0 +1,134 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'leaflet/dist/leaflet.css';
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* Dark-only theme — always treated as dark */
+  --background:        #070d10;
+  --surface:           #0d1820;
+  --surface-elevated:  #122030;
+  --border:            #1e3044;
+  --border-bright:     #2a4560;
+
+  --foreground:        #e2f0f7;
+  --muted-foreground:  #7a9bb5;
+
+  --primary:           #0d9488;   /* teal-600 */
+  --primary-hover:     #0f766e;
+  --primary-foreground:#ffffff;
+
+  --accent:            #f97316;   /* orange-500 */
+  --accent-hover:      #ea6c0a;
+  --accent-foreground: #ffffff;
+
+  --danger:            #ef4444;
+  --danger-foreground: #ffffff;
+  --success:           #22c55e;
+
+  /* shadcn compat tokens */
+  --card:              var(--surface);
+  --card-foreground:   var(--foreground);
+  --popover:           var(--surface-elevated);
+  --popover-foreground:var(--foreground);
+  --secondary:         var(--surface-elevated);
+  --secondary-foreground: var(--foreground);
+  --muted:             var(--surface-elevated);
+  --input:             var(--border);
+  --ring:              var(--primary);
+  --radius:            0.5rem;
+
+  --chart-1: #0d9488;
+  --chart-2: #f97316;
+  --chart-3: #22c55e;
+  --chart-4: #f59e0b;
+  --chart-5: #ef4444;
+}
+
+@theme inline {
+  --font-sans: 'Inter', 'Inter Fallback', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Geist Mono', monospace;
+
+  --color-background:         var(--background);
+  --color-surface:            var(--surface);
+  --color-surface-elevated:   var(--surface-elevated);
+  --color-foreground:         var(--foreground);
+  --color-muted-foreground:   var(--muted-foreground);
+  --color-border:             var(--border);
+  --color-border-bright:      var(--border-bright);
+  --color-primary:            var(--primary);
+  --color-primary-hover:      var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent:             var(--accent);
+  --color-accent-hover:       var(--accent-hover);
+  --color-accent-foreground:  var(--accent-foreground);
+  --color-danger:             var(--danger);
+  --color-success:            var(--success);
+  --color-card:               var(--card);
+  --color-card-foreground:    var(--card-foreground);
+  --color-popover:            var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-secondary:          var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted:              var(--muted);
+  --color-input:              var(--input);
+  --color-ring:               var(--ring);
+  --radius-sm:  calc(var(--radius) - 4px);
+  --radius-md:  calc(var(--radius) - 2px);
+  --radius-lg:  var(--radius);
+  --radius-xl:  calc(var(--radius) + 4px);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+}
+
+/* ── Leaflet dark-map overrides ─────────────────────────────── */
+.leaflet-container {
+  background: #070d10;
+  font-family: var(--font-mono);
+}
+.leaflet-tile-pane {
+  filter: brightness(0.55) saturate(0.4) hue-rotate(180deg);
+}
+.leaflet-control-zoom a {
+  background: var(--surface-elevated) !important;
+  color: var(--foreground) !important;
+  border-color: var(--border) !important;
+}
+.leaflet-control-attribution {
+  background: rgba(7,13,16,0.7) !important;
+  color: var(--muted-foreground) !important;
+  font-size: 10px;
+}
+
+/* ── Pulse animations ───────────────────────────────────────── */
+@keyframes pulse-teal {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(13,148,136,0.7); }
+  50%       { box-shadow: 0 0 0 8px rgba(13,148,136,0); }
+}
+@keyframes pulse-orange {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(249,115,22,0.7); }
+  50%       { box-shadow: 0 0 0 8px rgba(249,115,22,0); }
+}
+.pulse-teal   { animation: pulse-teal   1.5s ease-in-out infinite; }
+.pulse-orange { animation: pulse-orange 1.5s ease-in-out infinite; }
+
+/* ── Scrollbar ──────────────────────────────────────────────── */
+::-webkit-scrollbar       { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--background); }
+::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 3px; }

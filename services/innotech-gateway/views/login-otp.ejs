@@ -1,0 +1,40 @@
+<% const title = 'InnoTech — OTP Verification' %>
+<%- include('partials/head', { title }) %>
+<% const error = typeof locals !== 'undefined' ? (locals.error || '') : (typeof error !== 'undefined' ? error : ''); %>
+
+<div class="container">
+  <%- include('partials/topbar', { user: null }) %>
+
+  <div class="layout">
+    <%- include('partials/sidebar', { user: null, active: 'login' }) %>
+
+    <main class="card">
+      <div class="hero">
+        <div class="kicker">Two‑Factor</div>
+        <h2 style="margin: 0 0 8px;">Enter OTP</h2>
+        <div class="muted">User: <strong><%= username %></strong> · Enter the 6‑digit code from your authenticator app.</div>
+      </div>
+
+      <div class="card-inner">
+        <% if (error) { %>
+          <div style="border:1px solid rgba(249,115,22,0.35); background: rgba(249,115,22,0.10); padding: 10px 12px; border-radius: 12px; margin-bottom: 12px;">
+            <div style="font-weight:650;">OTP verification failed</div>
+            <div class="muted2" style="margin-top: 4px;"><%= error %></div>
+          </div>
+        <% } %>
+
+        <form class="form" action="<%= withBase('/login/verify-otp') %>?next=<%= encodeURIComponent(next || '/me') %>" method="POST">
+          <input class="input" name="otp" placeholder="123456" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required />
+          <button class="btn primary" type="submit" style="width:100%;">Verify & Login</button>
+        </form>
+
+        <div class="muted2" style="margin-top: 12px; font-size: 13px;">
+          <a href="<%= withBase('/login') %>" style="color: var(--primary);">Back to login</a>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<%- include('partials/foot') %>
+

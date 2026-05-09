@@ -1,0 +1,46 @@
+<aside class="sidebar">
+  <div class="section">
+    <h4>Navigation</h4>
+    <nav class="nav">
+      <a class="<%= active === 'home' ? 'active' : '' %>" href="<%= withBase('/') %>">
+        <span>Home</span><span class="muted2">↗</span>
+      </a>
+      <% if (user) { %>
+        <a class="<%= active === 'dashboard' ? 'active' : '' %>" href="<%= withBase('/dashboard') %>">
+          <span>Dashboard</span><span class="muted2">⌁</span>
+        </a>
+        <a class="<%= active === 'profile' ? 'active' : '' %>" href="<%= withBase('/profile') %>">
+          <span>My Profile</span><span class="muted2">⌁</span>
+        </a>
+        <a class="<%= active === 'documents' ? 'active' : '' %>" href="<%= withBase('/documents') %>">
+          <span>Documents</span><span class="muted2">⌁</span>
+        </a>
+      <% } else { %>
+        <a class="<%= active === 'login' ? 'active' : '' %>" href="<%= withBase('/login') %>">
+          <span>Employee Login</span><span class="muted2">→</span>
+        </a>
+        <a class="<%= active === 'register' ? 'active' : '' %>" href="<%= withBase('/register') %>">
+          <span>Create Account</span><span class="muted2">→</span>
+        </a>
+      <% } %>
+    </nav>
+  </div>
+
+  <div class="section">
+    <h4>Status</h4>
+    <div class="muted" style="font-size: 13px; line-height: 1.5;">
+      Environment: <span class="badge ok">Secure</span><br />
+      Response profile: <span class="badge ok">Fast</span>
+    </div>
+  </div>
+
+  <% if (user) { %>
+    <div class="section">
+      <h4>Account</h4>
+      <form action="<%= withBase('/logout') %>" method="POST" style="margin:0;">
+        <button class="btn danger" type="submit" style="width: 100%;">Logout</button>
+      </form>
+    </div>
+  <% } %>
+</aside>
+

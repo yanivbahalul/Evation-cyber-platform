@@ -1,0 +1,31 @@
+<% const title = 'InnoTech — Portal' %>
+<%- include('partials/head', { title }) %>
+
+<div class="container">
+  <%- include('partials/topbar', { user }) %>
+
+  <div class="layout">
+    <%- include('partials/sidebar', { user, active: 'dashboard', adminPanelUrl }) %>
+
+    <main class="card">
+      <div class="hero">
+        <div class="kicker">Safe Zone</div>
+        <h2 style="margin: 0 0 8px;">Welcome</h2>
+        <div class="muted">You are logged in. Use the sidebar to navigate.</div>
+      </div>
+      <div class="card-inner">
+        <div class="btn-row">
+          <a class="btn primary" href="<%= withBase('/dashboard') %>">Open dashboard</a>
+          <a class="btn" href="<%= withBase('/documents') %>">Documents</a>
+          <a class="btn" href="<%= withBase('/profile') %>">My profile</a>
+          <% if (user?.role === 'admin') { %>
+            <a class="btn" href="<%= adminPanelUrl %>" target="_blank" rel="noreferrer">Open Admin Panel</a>
+          <% } %>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<%- include('partials/foot') %>
+

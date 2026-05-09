@@ -1,0 +1,38 @@
+{
+  "name": "hit_evation_cyber",
+  "version": "1.0.0",
+  "description": "Section 3 (Telemetry, Logging & Data Extraction) of the InnoTech honeypot — fingerprinting, real-time WebSocket alerts, and the air-gapped Malicious DB.",
+  "main": "testServer.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "dev": "node testServer.js",
+    "start": "node testServer.js",
+    "mock-attack": "node tests/mockAttack.js",
+    "test": "echo \"No automated tests yet — run 'npm run mock-attack' as a manual smoke test.\" && exit 0"
+  },
+  "keywords": [
+    "honeypot",
+    "telemetry",
+    "cybersecurity",
+    "websocket",
+    "winston",
+    "mongoose"
+  ],
+  "author": "Max",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "express-useragent": "^2.1.0",
+    "geoip-lite": "^2.0.1",
+    "mongoose": "^9.4.1",
+    "socket.io": "^4.8.3",
+    "winston": "^3.19.0"
+  },
+  "devDependencies": {
+    "socket.io-client": "^4.8.3"
+  }
+}

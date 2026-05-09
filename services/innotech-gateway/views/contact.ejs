@@ -1,0 +1,33 @@
+<% const title = 'InnoTech — IT Support' %>
+<%- include('partials/head', { title }) %>
+
+<div class="container">
+  <%- include('partials/topbar', { user }) %>
+
+  <div class="layout">
+    <%- include('partials/sidebar', { user, active: 'home', adminPanelUrl }) %>
+
+    <main class="card">
+      <div class="hero">
+        <div class="kicker">Support</div>
+        <h2 style="margin: 0 0 8px;">Contact IT Support</h2>
+        <div class="muted">Demo form. Submissions are not processed.</div>
+      </div>
+
+      <div class="card-inner">
+        <form class="form" onsubmit="alert('Ticket submitted (demo).'); return false;">
+          <input class="input" placeholder="Subject (e.g. VPN access request)" required />
+          <textarea class="input" rows="5" placeholder="Describe the issue..." required></textarea>
+          <button class="btn primary" type="submit" style="width: 100%;">Submit ticket</button>
+        </form>
+
+        <div class="muted2" style="margin-top: 12px; font-size: 13px;">
+          Emergency: call internal extension <strong>1337</strong>.
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<%- include('partials/foot') %>
+
