@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title><%= company %> — Admin Dashboard</title>
+  <style>
+    * { box-sizing: border-box; }
+    body  { margin: 0; font-family: "Segoe UI", Arial, sans-serif;
+            background: #f4f6f8; color: #222; }
+    header { background: #0a2540; color: #fff; padding: 18px 32px;
+             display: flex; justify-content: space-between; align-items: center; }
+    header h1 { margin: 0; font-size: 20px; letter-spacing: 0.5px; }
+    header .user { font-size: 13px; opacity: 0.85; }
+    .wrap { padding: 28px 32px; max-width: 1300px; margin: 0 auto; }
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+             margin-bottom: 28px; }
+    .card  { background: #fff; border-radius: 8px; padding: 20px;
+             box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .card .label { font-size: 12px; color: #6a7683; text-transform: uppercase;
+                   letter-spacing: 0.8px; }
+    .card .value { font-size: 24px; font-weight: 600; margin-top: 6px;
+                   color: #0a2540; }
+    table  { width: 100%; background: #fff; border-collapse: collapse;
+             border-radius: 8px; overflow: hidden;
+             box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    th, td { padding: 12px 16px; text-align: left; font-size: 14px; }
+    thead  { background: #eef1f5; }
+    th     { color: #4a5563; font-weight: 600; text-transform: uppercase;
+             letter-spacing: 0.5px; font-size: 12px; }
+    tbody tr { border-top: 1px solid #eef1f5; }
+    tbody tr:hover { background: #f9fafc; }
+    footer { text-align: center; padding: 20px; color: #8892a0;
+             font-size: 12px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1><%= company %> · Administrator Console</h1>
+    <div class="user">admin@innotech.io · v4.12.0</div>
+  </header>
+
+  <div class="wrap">
+    <div class="stats">
+      <div class="card"><div class="label">Total Employees</div>
+           <div class="value"><%= stats.totalEmployees %></div></div>
+      <div class="card"><div class="label">Quarterly Revenue</div>
+           <div class="value"><%= stats.revenue %></div></div>
+      <div class="card"><div class="label">Open Tickets</div>
+           <div class="value"><%= stats.openTickets %></div></div>
+      <div class="card"><div class="label">Uptime</div>
+           <div class="value"><%= stats.uptime %></div></div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th><th>Email</th><th>Department</th>
+          <th>Role</th><th>Joined</th><th>Salary</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% employees.forEach(e => { %>
+          <tr>
+            <td><%= e.name %></td>
+            <td><%= e.email %></td>
+            <td><%= e.department %></td>
+            <td><%= e.role %></td>
+            <td><%= e.joined %></td>
+            <td>$<%= e.salary.toLocaleString() %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+
+  <footer>
+    © <%= company %> · generated <%= generated %>
+  </footer>
+</body>
+</html>

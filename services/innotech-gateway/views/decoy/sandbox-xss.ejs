@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Guestbook — Post saved</title>
+  <style>
+    body { font-family: "Segoe UI", Arial, sans-serif; background: #fafbfc;
+           color: #222; margin: 0; padding: 40px; }
+    .card { max-width: 720px; margin: 0 auto; background: #fff;
+            border: 1px solid #e1e4e8; border-radius: 8px; padding: 28px; }
+    h1   { margin-top: 0; color: #0a2540; }
+    .ok  { color: #1a7f37; font-weight: 600; }
+    .msg { background: #f6f8fa; border: 1px solid #d0d7de;
+           border-radius: 6px; padding: 14px; font-family: Consolas, monospace;
+           font-size: 13px; white-space: pre-wrap; word-break: break-all; }
+    .meta{ margin-top: 16px; font-size: 12px; color: #6a737d; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Guestbook</h1>
+    <p class="ok">✓ Your post has been saved and will appear after moderation.</p>
+
+    <h3>Preview of your submission</h3>
+    <!-- EJS <%= %> auto-escapes HTML; nothing executes -->
+    <div class="msg"><%= payload %></div>
+
+    <p class="meta">
+      Saved at <%= savedAt %> · <%= byteLen %> bytes
+    </p>
+  </div>
+</body>
+</html>
