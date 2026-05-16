@@ -9,6 +9,8 @@ const { authOptional, requireAuth } = require('./middleware/auth');
 const { generate, verify, NobleCryptoPlugin, ScureBase32Plugin } = require('otplib');
 const AdminUser = require('./models/AdminUser');
 const { decryptTotpSecret } = require('./utils/adminTotpCrypto');
+const decoyController = require('./controllers/decoyController');
+const honeyTokenDetector = require('./middleware/honeyTokenDetector');
 
 const app = express();
 app.set('trust proxy', true);
@@ -36,6 +38,7 @@ app.use(express.static(path.join(__dirname, 'public'))); // For CSS3 files
 app.use(express.json()); // Parses incoming JSON payloads
 app.use(express.urlencoded({ extended: true })); // Parses form data
 app.use(cookieParser());
+app.use(honeyTokenDetector);
 app.use((req, res, next) => {
     res.locals.basePath = BASE_PATH;
     res.locals.withBase = (path) => `${BASE_PATH}${path}`;
@@ -106,11 +109,13 @@ app.get('/profile', requireAuth, realController.renderProfilePage);
 app.get('/documents', requireAuth, realController.renderDocumentsPage);
 app.get('/contact', realController.renderContactPage);
 
-// This acts as the "Decoy Controller" placeholder [cite: 26]
-app.all('/decoy-portal', (req, res) => {
-    // We render a fake page so the attacker thinks they "broke in"
-    res.render('decoy'); 
-});
+// Decoy Controller — dispatches to the right trap based on req.threatInfo.type
+app.all('/decoy-portal', decoyController.dispatch);
+
+// Direct trap routes (triggered by URL, not by signature detection)
+app.post('/decoy-portal/login',       decoyController.fakeLogin);
+app.get ('/decoy-portal/data-bomb',   decoyController.serveDataBomb);
+app.get ('/decoy-portal/honey-token', decoyController.serveHoneyToken);
 
 // 4. Start Server
 app.listen(PORT, () => {
