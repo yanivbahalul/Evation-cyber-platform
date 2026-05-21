@@ -1,4 +1,4 @@
-import { SignJWT } from 'jose'
+import { SignJWT, jwtVerify } from 'jose'
 
 function getGatewayIssuer() {
   return 'innotech-gateway'
@@ -19,5 +19,16 @@ export async function signGatewayAuthToken(payload: Record<string, unknown>) {
     .setIssuer(getGatewayIssuer())
     .setExpirationTime('8h')
     .sign(key)
+}
+
+export async function verifyGatewayAuthToken<T extends Record<string, unknown> = Record<string, unknown>>(
+  token: string
+) {
+  const key = await getGatewayKey()
+  const { payload } = await jwtVerify(token, key, {
+    algorithms: ['HS256'],
+    issuer: getGatewayIssuer(),
+  })
+  return payload as T & { sub?: string; username?: string; role?: string }
 }
 

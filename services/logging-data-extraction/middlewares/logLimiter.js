@@ -25,7 +25,7 @@ const logLimiter = (req, res, next) => {
     
     // Threshold: If an attacker triggers more than 30 traps in 5 seconds, they are log-flooding.
     if (recentHits.length > 30) {
-        console.warn(`🛑 [Log Limiter] Attack flood detected from ${ip}. Silencing DB logs.`);
+        require('../utils/attackLog').warn('TELEMETRY', 'log_flood_detected_db_writes_paused', { ip, window_ms: 5000, max_per_window: 30 });
         req.isLogFlooding = true; // Flags it so TelemetryService knows to ignore it
         
         // At this point we could also trigger an IP Ban (Yaniv's dashboard feature)

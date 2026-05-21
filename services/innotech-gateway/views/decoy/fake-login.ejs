@@ -1,0 +1,80 @@
+<% const title = 'InnoTech — Legacy Administrator Sign-In' %>
+<% const wb = typeof withBase === 'function' ? withBase : (p) => p %>
+<% const db = (typeof dp !== 'undefined' && dp.database) ? dp.database : '/internal/services/database' %>
+<%- include('../partials/head', { title, withBase: wb }) %>
+
+<div class="container">
+  <%- include('../partials/topbar', {
+    user: typeof legacyUser !== 'undefined' ? legacyUser : null,
+    brandTitle: 'InnoTech Administrator Services',
+    brandSub: 'Legacy control plane',
+    accessLabel: typeof legacyUser !== 'undefined' && legacyUser ? legacyUser.username : 'Restricted',
+    accessDetail: typeof legacyUser !== 'undefined' && legacyUser ? 'elevated session' : 'internal sign-in required',
+    withBase: wb
+  }) %>
+
+  <div class="layout">
+    <%- include('../partials/decoy-sidebar', {
+      active: 'legacy-login',
+      withBase: wb,
+      legacyUser: typeof legacyUser !== 'undefined' ? legacyUser : null,
+      sessionLabel: (typeof sqliBypass !== 'undefined' && sqliBypass) ? 'Active' : 'Pending sign-in',
+      sessionBadge: (typeof sqliBypass !== 'undefined' && sqliBypass) ? 'ok' : 'warn'
+    }) %>
+
+    <main class="card">
+      <div class="hero">
+        <div class="kicker">Restricted access</div>
+        <h2 style="margin: 0 0 8px;">Legacy sign-in</h2>
+        <div class="muted">Administrator portal · InnoTech Corp internal</div>
+      </div>
+
+      <div class="card-inner">
+        <% if (typeof sqliBypass !== 'undefined' && sqliBypass) { %>
+          <div style="border:1px solid rgba(34,197,94,0.35); background: rgba(34,197,94,0.10); padding: 12px 14px; border-radius: 12px; margin-bottom: 14px;">
+            <div style="font-weight:650;">Authentication bypass accepted</div>
+            <div class="muted2" style="margin-top: 4px;">
+              SQL predicate evaluated as true for user <strong><%= username || 'admin' %></strong>.
+              Legacy session is active — you may query the replica database below.
+            </div>
+          </div>
+
+          <% if (typeof showDbHint !== 'undefined' && showDbHint) { %>
+            <div class="muted2" style="margin-bottom: 10px;">Next: run <strong>Export users &amp; passwords</strong> from Database services to pull credential rows.</div>
+          <% } %>
+          <div class="btn-row">
+            <a class="btn primary" href="<%= wb(db + '?export=credentials') %>">Export users &amp; passwords</a>
+            <a class="btn" href="<%= wb(db) %>">Database console</a>
+          </div>
+        <% } else { %>
+          <% if (typeof legacy !== 'undefined' && legacy) { %>
+            <div style="border:1px solid rgba(245,158,11,0.35); background: rgba(245,158,11,0.10); padding: 10px 12px; border-radius: 12px; margin-bottom: 12px;">
+              <div style="font-weight:650;">Employee SSO temporarily unavailable</div>
+              <div class="muted2" style="margin-top: 4px;">Use your administrator credentials below. This portal is maintained for legacy integrations and break-glass access.</div>
+            </div>
+          <% } %>
+
+          <% if (error) { %>
+            <div style="border:1px solid rgba(249,115,22,0.35); background: rgba(249,115,22,0.10); padding: 10px 12px; border-radius: 12px; margin-bottom: 12px;">
+              <div style="font-weight:650;"><%= typeof locked !== 'undefined' && locked ? 'Account locked' : 'Sign-in failed' %></div>
+              <div class="muted2" style="margin-top: 4px;"><%= error %><% if (typeof attemptsRemaining === 'number' && attemptsRemaining > 0) { %> · <%= attemptsRemaining %> attempts remaining<% } %></div>
+            </div>
+          <% } %>
+
+          <form class="form" method="POST" action="<%= wb((typeof dp !== 'undefined' && dp.legacySignIn) || '/internal/auth/legacy') %>">
+            <input class="input" type="text" name="username" placeholder="Username" autocomplete="username" required value="<%= username || '' %>" />
+            <input class="input" type="password" name="password" placeholder="Password" autocomplete="current-password" required />
+            <button class="btn primary" type="submit" style="width: 100%;">Sign in</button>
+          </form>
+
+          <div class="muted2" style="margin-top: 12px; font-size: 13px;">
+            <a href="<%= wb((typeof dp !== 'undefined' && dp.console) || '/internal/console') %>" style="color: var(--primary);">Administrator console</a>
+            · <a href="<%= wb((typeof dp !== 'undefined' && dp.apiKeys) || '/internal/integrations/keys') %>" style="color: var(--primary);">API integration keys</a>
+          </div>
+        <% } %>
+      </div>
+    </main>
+  </div>
+</div>
+
+<%- include('../partials/foot') %>

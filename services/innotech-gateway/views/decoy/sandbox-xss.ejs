@@ -1,33 +1,50 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Guestbook — Post saved</title>
-  <style>
-    body { font-family: "Segoe UI", Arial, sans-serif; background: #fafbfc;
-           color: #222; margin: 0; padding: 40px; }
-    .card { max-width: 720px; margin: 0 auto; background: #fff;
-            border: 1px solid #e1e4e8; border-radius: 8px; padding: 28px; }
-    h1   { margin-top: 0; color: #0a2540; }
-    .ok  { color: #1a7f37; font-weight: 600; }
-    .msg { background: #f6f8fa; border: 1px solid #d0d7de;
-           border-radius: 6px; padding: 14px; font-family: Consolas, monospace;
-           font-size: 13px; white-space: pre-wrap; word-break: break-all; }
-    .meta{ margin-top: 16px; font-size: 12px; color: #6a737d; }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <h1>Guestbook</h1>
-    <p class="ok">✓ Your post has been saved and will appear after moderation.</p>
+<% const title = 'InnoTech — Support Ticket Saved' %>
+<% const wb = typeof withBase === 'function' ? withBase : (p) => p %>
+<% const xssTier = typeof tier !== 'undefined' ? tier : 'blocked' %>
+<%- include('../partials/head', { title, withBase: wb }) %>
 
-    <h3>Preview of your submission</h3>
-    <!-- EJS <%= %> auto-escapes HTML; nothing executes -->
-    <div class="msg"><%= payload %></div>
+<div class="container">
+  <%- include('../partials/topbar', { user: null }) %>
 
-    <p class="meta">
-      Saved at <%= savedAt %> · <%= byteLen %> bytes
-    </p>
+  <div class="layout">
+    <%- include('../partials/sidebar', { user: null, active: 'home', adminPanelUrl: 'http://localhost:3000', withBase: wb }) %>
+
+    <main class="card">
+      <div class="hero">
+        <div class="kicker">IT Support</div>
+        <h2 style="margin: 0 0 8px;">Ticket received</h2>
+        <div class="muted">Your submission was stored for moderation review.</div>
+      </div>
+
+      <div class="card-inner">
+        <div class="badge ok" style="margin-bottom: 12px;">Ticket #<%= typeof ticketId !== 'undefined' ? ticketId : ('IT-' + Date.now().toString(36).toUpperCase()) %> — queued for review</div>
+
+        <% if (xssTier === 'probe' && reflectPayload) { %>
+          <div class="badge warn" style="margin-bottom: 12px;">Live preview (unmoderated queue)</div>
+          <h3 style="margin: 0 0 8px; font-size: 15px;">Rendered preview</h3>
+          <div id="xss-reflection" class="input" style="min-height: 48px; margin: 0 0 12px; padding: 12px;"><%- reflectPayload %></div>
+          <h3 style="margin: 0 0 8px; font-size: 15px;">Stored copy (escaped)</h3>
+          <pre class="input" style="white-space: pre-wrap; word-break: break-all; margin: 0 0 12px; font-size: 13px;"><%= payload %></pre>
+        <% } else { %>
+          <div class="badge" style="margin-bottom: 12px; background: #e0e7ff; color: #3730a3;">Content sanitized — submission quarantined</div>
+          <% if (blockedReason) { %>
+            <div class="muted2" style="font-size: 13px; margin-bottom: 8px;">Moderation rule: <%= blockedReason %></div>
+          <% } %>
+          <h3 style="margin: 0 0 8px; font-size: 15px;">Preview (escaped)</h3>
+          <pre class="input" style="white-space: pre-wrap; word-break: break-all; margin: 0 0 12px; font-size: 13px;"><%= payload %></pre>
+        <% } %>
+
+        <div class="muted2" style="font-size: 13px;">
+          Submitted <%= savedAt %> · <%= byteLen %> bytes · stored in moderation queue.
+        </div>
+
+        <div class="btn-row" style="margin-top: 14px;">
+          <a class="btn primary" href="<%= wb('/contact') %>">Submit another ticket</a>
+          <a class="btn" href="<%= wb('/') %>">Home</a>
+        </div>
+      </div>
+    </main>
   </div>
-</body>
-</html>
+</div>
+
+<%- include('../partials/foot') %>

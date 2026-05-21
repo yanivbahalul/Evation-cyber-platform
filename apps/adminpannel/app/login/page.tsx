@@ -1,6 +1,6 @@
-import RedirectToGatewayLogin from '@/components/RedirectToGatewayLogin'
+import { redirect } from 'next/navigation'
 
-export default function Page() {
-  return <RedirectToGatewayLogin />
+/** Legacy URL — unified entry is /gateway/login */
+export default function LoginRoute() {
+  redirect('/gateway/login')
 }
-

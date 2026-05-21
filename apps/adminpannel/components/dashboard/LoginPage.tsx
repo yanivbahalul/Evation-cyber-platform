@@ -7,14 +7,8 @@ import { Shield, Lock, User, KeyRound, Eye, EyeOff, AlertCircle, Loader2 } from 
 import { useAuth } from '@/context/AuthContext'
 
 /**
- * LoginPage — two-step authentication gate for the Blue Team dashboard.
- * Step 1: username + password (POST /api/admin/login)
- * Step 2: TOTP / OTP code  (POST /api/admin/verify-otp)
- *
- * JWT is NEVER stored in JS. On success the server sets an
- * HttpOnly, Secure, SameSite=Strict cookie.
- *
- * Preview credentials: admin / blueteam  →  OTP: 123456
+ * LoginPage — unified sign-in for employees and operators.
+ * Everyone lands on `/gateway/workspace/`; attack monitor is optional for DB role `admin`.
  */
 export default function LoginPage() {
   const { step, error, isLoading, submitCredentials, submitOtp, redirectTo } = useAuth()
@@ -67,19 +61,11 @@ export default function LoginPage() {
             <Shield className="w-8 h-8 text-primary" />
           </div>
           <h1 className="text-xl font-bold text-foreground tracking-tight">
-            InnoTech HoneyNet
+            InnoTech Internal Services
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Blue Team Operations Center
+            Employee sign-in — MFA required
           </p>
-          <div className="flex items-center justify-center gap-2 mt-3">
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-surface border border-border text-muted-foreground uppercase tracking-widest">
-              Air-Gapped
-            </span>
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-surface border border-border text-muted-foreground uppercase tracking-widest">
-              Restricted Access
-            </span>
-          </div>
         </div>
 
         {/* Card */}
@@ -160,7 +146,7 @@ export default function LoginPage() {
 
               <div className="text-xs font-mono text-muted-foreground text-center">
                 Need an account?{' '}
-                <Link href="/register" className="text-primary hover:underline underline-offset-4">
+                <Link href="/gateway/register" className="text-primary hover:underline underline-offset-4">
                   Register
                 </Link>
               </div>

@@ -15,12 +15,9 @@
       </div>
       <div class="card-inner">
         <div class="btn-row">
-          <a class="btn primary" href="<%= withBase('/dashboard') %>">Open dashboard</a>
+          <a class="btn primary" href="<%= withBase('/workspace') %>">Open dashboard</a>
           <a class="btn" href="<%= withBase('/documents') %>">Documents</a>
           <a class="btn" href="<%= withBase('/profile') %>">My profile</a>
-          <% if (user?.role === 'admin') { %>
-            <a class="btn" href="<%= adminPanelUrl %>" target="_blank" rel="noreferrer">Open Admin Panel</a>
-          <% } %>
         </div>
       </div>
     </main>

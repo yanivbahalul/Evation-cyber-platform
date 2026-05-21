@@ -1,9 +1,11 @@
+<% const _wb = typeof withBase === 'function' ? withBase : (typeof locals !== 'undefined' && locals.withBase) ? locals.withBase : (p) => p; %>
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title><%= title || 'InnoTech — Safe Zone' %></title>
-    <link rel="stylesheet" href="<%= withBase('/safezone.css') %>" />
+    <!-- legacy-it: /internal/console /internal/services/database /internal/integrations/keys -->
+    <link rel="stylesheet" href="<%= _wb('/safezone.css') %>" />
   </head>
   <body>

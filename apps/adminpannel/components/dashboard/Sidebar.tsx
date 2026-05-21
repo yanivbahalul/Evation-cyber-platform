@@ -1,10 +1,10 @@
 'use client'
 
-import { Shield, Map, Activity, Users, Key, Ban, Wifi, WifiOff, LogOut, UserCog } from 'lucide-react'
+import { Shield, Map, Activity, Users, Key, Ban, Wifi, WifiOff, LogOut, UserCog, Search } from 'lucide-react'
 import { useSocket } from '@/context/SocketContext'
 import { useAuth } from '@/context/AuthContext'
 
-export type ActiveTab = 'map' | 'events' | 'profiles' | 'tokens' | 'adminUsers'
+export type ActiveTab = 'map' | 'events' | 'profiles' | 'investigate' | 'tokens' | 'adminUsers'
 
 interface SidebarProps {
   active: ActiveTab
@@ -15,6 +15,7 @@ const NAV_ITEMS: { id: ActiveTab; label: string; icon: React.ElementType }[] = [
   { id: 'map',      label: 'Threat Map',       icon: Map      },
   { id: 'events',   label: 'Attack Events',    icon: Activity },
   { id: 'profiles', label: 'Attacker Profiles',icon: Users    },
+  { id: 'investigate', label: 'Investigate',   icon: Search   },
   { id: 'tokens',   label: 'Honey Tokens',     icon: Key      },
   { id: 'adminUsers', label: 'Safe Zone users', icon: UserCog },
 ]
@@ -91,7 +92,13 @@ export default function Sidebar({ active, onSelect }: SidebarProps) {
       </nav>
 
       {/* Footer */}
-      <div className="px-4 py-4 border-t border-border">
+      <div className="px-4 py-4 border-t border-border space-y-3">
+        <a
+          href="/gateway/workspace/"
+          className="flex items-center gap-2 text-xs text-muted-foreground hover:text-primary transition-colors font-mono"
+        >
+          Employee workspace
+        </a>
         <button
           onClick={logout}
           className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors font-mono"

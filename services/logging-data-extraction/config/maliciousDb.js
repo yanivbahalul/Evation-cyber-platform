@@ -1,7 +1,6 @@
 const mongoose = require('mongoose');
+const attackLog = require('../utils/attackLog');
 
-// Phase 1: logical air-gapping
-// This setup specifically isolates the Malicious DB from the standard connection.
 let maliciousConn = null;
 let maliciousConnDisabled = false;
 
@@ -14,8 +13,7 @@ const connectMaliciousDB = () => {
         maliciousConnDisabled = true;
         throw new Error('Missing MALICIOUS_DB_URI env var for malicious telemetry DB');
     }
-    
-    // We use createConnection to establish an isolated pipe.
+
     maliciousConn = mongoose.createConnection(URI, {
         serverSelectionTimeoutMS: 2000,
         connectTimeoutMS: 2000,
@@ -23,14 +21,15 @@ const connectMaliciousDB = () => {
     });
 
     maliciousConn.on('connected', () => {
-        console.log('🔗 [Phase 1] Isolated Telemetry DB connected successfully.');
+        attackLog.info('TELEMETRY', 'malicious_database_connected', {
+            database: maliciousConn.name || 'telemetry',
+        });
     });
 
     maliciousConn.on('error', (err) => {
-        console.error('❌ [Phase 1] Telemetry DB connection error:', err);
+        attackLog.error('TELEMETRY', 'malicious_database_error', { error: err.message });
     });
 
-    // Bind Schemas strictly to this isolated connection
     maliciousConn.model('AttackerProfile', require('../models/AttackerProfile'));
     maliciousConn.model('AttackEvent', require('../models/AttackEvent'));
     maliciousConn.model('HoneyToken', require('../models/HoneyToken'));

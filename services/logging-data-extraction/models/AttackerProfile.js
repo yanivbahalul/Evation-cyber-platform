@@ -27,7 +27,11 @@ const AttackerProfileSchema = new mongoose.Schema({
     lastSeen: {
         type: Date,
         default: Date.now
-    }
+    },
+    traceIds: {
+        type: [String],
+        default: [],
+    },
 });
 
 module.exports = AttackerProfileSchema;

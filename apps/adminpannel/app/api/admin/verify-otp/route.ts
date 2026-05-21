@@ -3,6 +3,7 @@ import { verifyJwt, signJwt } from '@/lib/auth/jwt'
 import { getAdminModels } from '@/lib/server/adminDb'
 import { getSafezoneModels } from '@/lib/server/safezoneDb'
 import { signGatewayAuthToken } from '@/lib/auth/gatewayJwt'
+import { portalHomePath } from '@/lib/auth/portalAccess'
 import { verify } from 'otplib'
 import { crypto } from '@otplib/plugin-crypto-noble'
 import { base32 } from '@otplib/plugin-base32-scure'
@@ -87,7 +88,22 @@ export async function POST(req: NextRequest) {
 
     const auth = await signJwt({ sub: payload.sub }, 'auth', '8h')
 
-    const res = NextResponse.json({ success: true, redirectTo: '/' })
+    const gatewayAuth = await signGatewayAuthToken({
+      sub: String((user as any)._id),
+      username: payload.sub,
+      role: 'admin',
+    })
+
+    const res = NextResponse.json({ success: true, redirectTo: portalHomePath() })
+    res.cookies.set({
+      name: 'auth',
+      value: gatewayAuth,
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+      maxAge: 60 * 60 * 8,
+    })
     res.cookies.set({
       name: 'admin_auth',
       value: auth,
@@ -159,7 +175,7 @@ export async function POST(req: NextRequest) {
     role: gatewayRole,
   })
 
-  const res = NextResponse.json({ success: true, redirectTo: '/gateway/dashboard' })
+  const res = NextResponse.json({ success: true, redirectTo: portalHomePath() })
   // Gateway expects this cookie name and issuer, and will accept HS256.
   res.cookies.set({
     name: 'auth',
@@ -170,6 +186,17 @@ export async function POST(req: NextRequest) {
     path: '/',
     maxAge: 60 * 60 * 8,
   })
+  if (gatewayRole !== 'admin') {
+    res.cookies.set({
+      name: 'admin_auth',
+      value: '',
+      httpOnly: true,
+      sameSite: 'strict',
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+      maxAge: 0,
+    })
+  }
   res.cookies.set({
     name: 'pre_2fa',
     value: '',

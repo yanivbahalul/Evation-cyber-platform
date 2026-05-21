@@ -20,6 +20,12 @@ importers:
       '@hookform/resolvers':
         specifier: ^3.9.1
         version: 3.10.0(react-hook-form@7.75.0(react@19.2.6))
+      '@otplib/plugin-base32-scure':
+        specifier: ^13.4.0
+        version: 13.4.0
+      '@otplib/plugin-crypto-noble':
+        specifier: ^13.4.0
+        version: 13.4.0
       '@radix-ui/react-accordion':
         specifier: 1.2.12
         version: 1.2.12(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
@@ -243,6 +249,9 @@ importers:
 
   services/innotech-gateway:
     dependencies:
+      '@faker-js/faker':
+        specifier: ^10.4.0
+        version: 10.4.0
       bcryptjs:
         specifier: ^3.0.3
         version: 3.0.3
@@ -258,6 +267,9 @@ importers:
       express:
         specifier: ^5.2.1
         version: 5.2.1
+      express-useragent:
+        specifier: ^2.1.0
+        version: 2.1.0
       jsonwebtoken:
         specifier: ^9.0.2
         version: 9.0.3
@@ -412,6 +424,10 @@ packages:
   '@eslint/js@8.57.1':
     resolution: {integrity: sha512-d9zaMRSTIKDLhctzH12MtXvJKSSUhaHcjV+2Z+GK+EEY7XKpP5yR4x+N3TAcHTcu963nIr+TMcCb4DBCYX1z6Q==}
     engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
+
+  '@faker-js/faker@10.4.0':
+    resolution: {integrity: sha512-sDBWI3yLy8EcDzgobvJTWq1MJYzAkQdpjXuPukga9wXonhpMRvd1Izuo2Qgwey2OiEoRIBr35RMU9HJRoOHzpw==}
+    engines: {node: ^20.19.0 || ^22.13.0 || ^23.5.0 || >=24.0.0, npm: '>=10'}
 
   '@floating-ui/core@1.7.5':
     resolution: {integrity: sha512-1Ih4WTWyw0+lKyFMcBHGbb5U5FtuHJuujoyyr5zTaWS5EYMeT6Jb2AuDeftsCsEuchO+mM2ij5+q9crhydzLhQ==}
@@ -4075,6 +4091,8 @@ snapshots:
       - supports-color
 
   '@eslint/js@8.57.1': {}
+
+  '@faker-js/faker@10.4.0': {}
 
   '@floating-ui/core@1.7.5':
     dependencies:

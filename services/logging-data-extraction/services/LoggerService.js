@@ -1,48 +1,19 @@
 const winston = require('winston');
 const connectMaliciousDB = require('../config/maliciousDb');
+const attackLog = require('../utils/attackLog');
+const { buildAttackEvent } = require('../utils/buildAttackEvent');
 
-// Phase 2: Automated Logging
-// Winston handles human-readable console/stderr output.
-// Persistence of structured AttackEvent rows is done via Mongoose against
-// the isolated Malicious DB connection, so the schema in models/AttackEvent.js
-// is the single source of truth for the attack_events collection.
 const LoggerService = winston.createLogger({
     level: 'info',
-    format: winston.format.combine(
-        winston.format.timestamp(),
-        winston.format.json()
-    ),
-    transports: [
-        new winston.transports.Console()
-    ]
+    transports: [],
 });
 
-/**
- * Calculate the time wasted by the attacker (delta in milliseconds).
- */
-LoggerService.calculateWastedTime = (startTime) => {
-    return Date.now() - startTime;
-};
+LoggerService.calculateWastedTime = (startTime) => Date.now() - startTime;
 
-/**
- * Main logging entry point used by telemetryTracker (and by Bar's traps directly).
- *
- * Expects:
- *   {
- *     attackerIp:     string,
- *     trapType:       string,
- *     payload:        string,
- *     wasted_time_ms: number,   // already-calculated delta
- *     bytes_sent:     number
- *   }
- *
- * Either pass `wasted_time_ms` directly, or pass `startTime` and we'll compute it.
- */
 LoggerService.logAttack = async (attackData) => {
     const {
         attackerIp,
         trapType,
-        payload,
         startTime,
         bytes_sent = 0
     } = attackData;
@@ -51,24 +22,32 @@ LoggerService.logAttack = async (attackData) => {
         ? attackData.wasted_time_ms
         : (startTime ? LoggerService.calculateWastedTime(startTime) : 0);
 
-    // Console-side structured log
-    LoggerService.info(`Attack Detected: ${trapType}`, {
-        attackerIp, trapType, payload, wasted_time_ms, bytes_sent
-    });
+    const docFields = buildAttackEvent({ ...attackData, wasted_time_ms, bytes_sent });
 
-    // Persist into the isolated Malicious DB through Mongoose (Option B).
     try {
         const conn = connectMaliciousDB();
         const AttackEvent = conn.model('AttackEvent');
-        await AttackEvent.create({
-            attackerIp,
-            trapType,
-            payload,
-            wasted_time_ms,
-            bytes_sent
+        const doc = await AttackEvent.create(docFields);
+
+        attackLog.info('ATTACK', 'event_saved_to_malicious_db', {
+            trap: trapType,
+            trap_label: attackLog.trapLabel(trapType),
+            ip: attackerIp,
+            trace_id: docFields.traceId,
+            event_id: doc.eventID,
+            wasted_ms: wasted_time_ms,
+            bytes: bytes_sent,
+            payload: attackLog.truncate(docFields.payload, 80),
+            collection: 'attack_events',
         });
+        return doc;
     } catch (err) {
-        console.error('❌ [LoggerService] Failed to persist AttackEvent:', err.message);
+        attackLog.error('ATTACK', 'event_save_failed', {
+            trap: trapType,
+            ip: attackerIp,
+            error: err.message,
+        });
+        throw err;
     }
 };
 

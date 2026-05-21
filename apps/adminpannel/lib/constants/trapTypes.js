@@ -1,15 +1,14 @@
-// Trap types matching the honeypot architecture from the PDF spec
+// Aligned with services/logging-data-extraction/constants/trapTypes.js (gateway writes these values)
 const TRAP_TYPES = {
-    SQL_INJECTION: 'SQL_INJECTION',
+    DATA_BOMB: 'DATA_BOMB',
+    SQLI: 'SQLI',
+    BRUTE_FORCE: 'BRUTE_FORCE',
     XSS: 'XSS',
-    PATH_TRAVERSAL: 'PATH_TRAVERSAL',
-    COMMAND_INJECTION: 'COMMAND_INJECTION',
     HONEY_TOKEN: 'HONEY_TOKEN',
-    FAKE_ADMIN: 'FAKE_ADMIN',
-    TARPIT: 'TARPIT',
-    DECOY_FILE: 'DECOY_FILE',
-    SSH_HONEYPOT: 'SSH_HONEYPOT',
-    SMTP_HONEYPOT: 'SMTP_HONEYPOT'
+    RECON: 'RECON',
+    PATH_TRAVERSAL: 'PATH_TRAVERSAL',
+    SSRF: 'SSRF',
+    SCANNER: 'SCANNER',
 };
 
 module.exports = TRAP_TYPES;

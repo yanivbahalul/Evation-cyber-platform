@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { requireAuth } from '@/lib/auth/requireAuth'
+import { requireAdmin } from '@/lib/auth/requireAdmin'
 import { getTelemetryModels } from '@/lib/server/telemetryDb'
 
 export const runtime = 'nodejs'
@@ -10,7 +10,7 @@ function jsonError(message: string, status = 400) {
 
 export async function GET(req: NextRequest) {
   try {
-    await requireAuth(req)
+    await requireAdmin(req)
   } catch {
     return jsonError('Unauthorized', 401)
   }

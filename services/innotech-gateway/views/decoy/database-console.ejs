@@ -1,0 +1,44 @@
+<% const title = 'InnoTech — Database Services' %>
+<% const wb = typeof withBase === 'function' ? withBase : (p) => p %>
+<% const db = (typeof dp !== 'undefined' && dp.database) ? dp.database : '/internal/services/database' %>
+<%- include('../partials/head', { title, withBase: wb }) %>
+
+<div class="container">
+  <%- include('../partials/topbar', {
+    user: typeof legacyUser !== 'undefined' ? legacyUser : null,
+    brandTitle: 'InnoTech Administrator Services',
+    brandSub: 'Database query interface',
+    withBase: wb
+  }) %>
+
+  <div class="layout">
+    <%- include('../partials/decoy-sidebar', { active: 'database', withBase: wb, legacyUser: typeof legacyUser !== 'undefined' ? legacyUser : null }) %>
+
+    <main class="card">
+      <div class="hero">
+        <div class="kicker">Internal services</div>
+        <h2 style="margin: 0 0 8px;">Database console</h2>
+        <div class="muted">hr_finance replica · legacy MySQL bridge</div>
+      </div>
+
+      <div class="card-inner">
+        <%- include('../partials/decoy-kill-chain', { withBase: wb, dp: typeof dp !== 'undefined' ? dp : {} }) %>
+        <% if (typeof lastError !== 'undefined' && lastError) { %>
+          <div style="border:1px solid rgba(249,115,22,0.35); background: rgba(249,115,22,0.10); padding: 10px 12px; border-radius: 12px; margin-bottom: 12px;">
+            <div style="font-weight:650;">Query failed</div>
+            <pre class="muted2" style="margin: 8px 0 0; font-size: 13px; white-space: pre-wrap;"><%= lastError %></pre>
+          </div>
+        <% } %>
+
+        <form class="form" method="POST" action="<%= wb(db) %>">
+          <label class="muted2" style="font-size: 12px;">SQL (read-only)</label>
+          <textarea class="input" name="query" rows="4" placeholder="SELECT * FROM users LIMIT 100"><%= typeof query !== 'undefined' ? query : 'SELECT * FROM users' %></textarea>
+          <button class="btn primary" type="submit" style="width: 100%;">Execute query</button>
+        </form>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<%- include('../partials/foot') %>

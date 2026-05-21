@@ -6,17 +6,87 @@ const { TOTP, generateURI, verify, NobleCryptoPlugin, ScureBase32Plugin } = requ
 const QRCode = require('qrcode');
 const jwt = require('jsonwebtoken');
 const { decryptTotpSecret } = require('../utils/adminTotpCrypto');
+const loginBruteTrap = require('../utils/loginBruteTrap');
+const attackLog = require('../utils/attackLog');
+const { PATHS: DP } = require('../config/deceptionPaths');
+const legacyBreachSession = require('../utils/legacyBreachSession');
+const TRAP_TYPES = require('../../logging-data-extraction/constants/trapTypes');
+const { report: reportTrap } = require('./decoyController');
+
+async function failLogin(req, res, username, message) {
+    attackLog.info('GATEWAY', 'login_failed', { username, ...attackLog.requestFields(req) });
+    if (loginBruteTrap.shouldHandoffToDecoyLogin(req)) {
+        const breachedAs = legacyBreachSession.establishBreachSession(res, { username: username || 'administrator' });
+        attackLog.warn('GATEWAY', 'brute_force_breach_illusion', {
+            trap: 'BRUTE_FORCE',
+            username: breachedAs,
+            ...attackLog.requestFields(req),
+        });
+        await reportTrap(TRAP_TYPES.BRUTE_FORCE, req, {
+            payload: JSON.stringify({ handoff: 'breach_illusion', username: breachedAs }),
+            handoffFrom: 'employee_login',
+            wasted_time_ms: 0,
+        });
+        return res.redirect(302, req.withBase(`${DP.console}?breach=legacy`));
+    }
+    return res.status(401).render('login', { user: null, error: message, username: username || '' });
+}
+
+function markLoginSuccess(req) {
+    loginBruteTrap.recordSuccess(req);
+}
 
 const cryptoPlugin = new NobleCryptoPlugin();
 const base32Plugin = new ScureBase32Plugin();
 const totp = new TOTP({ window: 1, crypto: cryptoPlugin, base32: base32Plugin });
 
+function employeeHomePath() {
+    return '/workspace';
+}
+
 function safeNext(next) {
-    if (!next) return '/me';
-    if (typeof next !== 'string') return '/me';
-    if (!next.startsWith('/')) return '/me';
-    if (next.startsWith('//')) return '/me';
+    if (!next) return employeeHomePath();
+    if (typeof next !== 'string') return employeeHomePath();
+    if (!next.startsWith('/')) return employeeHomePath();
+    if (next.startsWith('//')) return employeeHomePath();
+    const normalized = next.replace(/\/$/, '') || next;
+    if (
+        normalized === '/dashboard' ||
+        normalized.endsWith('/dashboard') ||
+        normalized.includes('/gateway/dashboard')
+    ) {
+        return employeeHomePath();
+    }
     return next;
+}
+
+/** Issue gateway + Blue Team cookies and redirect to Next /api/admin/exchange → /ops */
+function finishBlueTeamOperatorLogin(res, { username, gatewaySub, gatewayRole = 'admin' }) {
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) return { error: 'Server misconfiguration. Please contact IT.' };
+
+    const exchange = jwt.sign(
+        { sub: username, purpose: 'exchange' },
+        jwtSecret,
+        { algorithm: 'HS256', expiresIn: '60s', issuer: 'innotech-gateway-exchange' }
+    );
+    const gatewayAuth = signAuthToken({
+        sub: String(gatewaySub),
+        username,
+        role: gatewayRole,
+    });
+    res.cookie('auth', gatewayAuth, {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+        path: '/',
+        maxAge: 1000 * 60 * 60 * 8,
+    });
+    const adminOrigin = process.env.ADMIN_PANEL_URL || 'http://localhost:3000';
+    const homePath = '/gateway/workspace/';
+    return {
+        redirect: `${adminOrigin}/api/admin/exchange?token=${encodeURIComponent(exchange)}&next=${encodeURIComponent(homePath)}`,
+    };
 }
 
 function setPreAuthCookie(res, value, maxAgeMs) {
@@ -26,6 +96,17 @@ function setPreAuthCookie(res, value, maxAgeMs) {
         secure: process.env.NODE_ENV === 'production',
         path: '/',
         maxAge: maxAgeMs,
+    });
+}
+
+/** Drop Blue Team panel cookie so it cannot override a Safe Zone employee session. */
+function clearAdminAuthCookie(res) {
+    res.cookie('admin_auth', '', {
+        httpOnly: true,
+        sameSite: 'strict',
+        secure: process.env.NODE_ENV === 'production',
+        path: '/',
+        maxAge: 0,
     });
 }
 
@@ -152,13 +233,14 @@ exports.verifyRegistrationOtp = async (req, res) => {
     }
 };
 
-// Render the login page
+// Employee / operator sign-in (Safe Zone UI — served via Next rewrite at /gateway/login).
 exports.renderLoginPage = (req, res) => {
     res.render('login', { user: req.user || null, error: '', username: '' });
 };
 
 // Verify the user
 exports.loginUser = async (req, res) => {
+    if (req.trapHandled || res.headersSent) return;
     try {
         const { username, password } = req.body;
         const cleanUsername = (username || '').trim();
@@ -173,7 +255,8 @@ exports.loginUser = async (req, res) => {
             const ok = typeof admin.passwordHash === 'string' && admin.passwordHash.length > 0
                 ? await bcrypt.compare(cleanPassword, admin.passwordHash)
                 : false;
-            if (!ok) return res.status(401).render('login', { user: null, error: 'Invalid credentials', username: cleanUsername });
+            if (!ok) return await failLogin(req, res, cleanUsername, 'Invalid credentials');
+            markLoginSuccess(req);
             if (!admin.totpEnabled) return res.status(401).render('login', { user: null, error: '2FA not enabled for this account', username: cleanUsername });
             setPreAuthCookie(res, `admin:${admin._id}:${encodeURIComponent(next)}`, 1000 * 60 * 10);
             return res.render('login-otp', { user: null, username: admin.username, next });
@@ -185,7 +268,8 @@ exports.loginUser = async (req, res) => {
             const ok = typeof admin.passwordHash === 'string' && admin.passwordHash.length > 0
                 ? await bcrypt.compare(cleanPassword, admin.passwordHash)
                 : false;
-            if (!ok) return res.status(401).render('login', { user: null, error: 'Invalid credentials', username: cleanUsername });
+            if (!ok) return await failLogin(req, res, cleanUsername, 'Invalid credentials');
+            markLoginSuccess(req);
             if (!admin.totpEnabled) return res.status(401).render('login', { user: null, error: '2FA not enabled for this account', username: cleanUsername });
             setPreAuthCookie(res, `slogin:${admin._id}:${encodeURIComponent(next)}`, 1000 * 60 * 10);
             return res.render('login-otp', { user: null, username: admin.username, next });
@@ -193,8 +277,9 @@ exports.loginUser = async (req, res) => {
 
         // 3) Regular Safe Zone user login (gateway users collection)
         const user = await User.findOne({ username: cleanUsername, isActive: true }).select('+totpSecret');
-        if (!user) return res.status(401).render('login', { user: null, error: 'Invalid credentials', username: cleanUsername });
-        if (!await bcrypt.compare(cleanPassword, user.passwordHash)) return res.status(401).render('login', { user: null, error: 'Invalid credentials', username: cleanUsername });
+        if (!user) return await failLogin(req, res, cleanUsername, 'Invalid credentials');
+        if (!await bcrypt.compare(cleanPassword, user.passwordHash)) return await failLogin(req, res, cleanUsername, 'Invalid credentials');
+        markLoginSuccess(req);
 
         // If user has 2FA enabled, require OTP step.
         if (user.totpEnabled) {
@@ -244,18 +329,14 @@ exports.verifyLoginOtp = async (req, res) => {
             const ok = await safeVerifyTotp(otp, secret);
             if (!ok) return res.status(401).render('login-otp', { user: null, username: admin.username, next, error: 'Invalid OTP. Check your authenticator time sync and retry.' });
 
-            const jwtSecret = process.env.JWT_SECRET;
-            if (!jwtSecret) return res.status(500).render('login-otp', { user: null, username: admin.username, next, error: 'Server misconfiguration. Please contact IT.' });
-
-            const exchange = jwt.sign(
-                { sub: admin.username, purpose: 'exchange' },
-                jwtSecret,
-                { algorithm: 'HS256', expiresIn: '60s', issuer: 'innotech-gateway-exchange' }
-            );
             setPreAuthCookie(res, '', 0);
-            // Redirect to Next exchange endpoint, which sets the Blue Team cookie and redirects to '/'
-            const adminOrigin = process.env.ADMIN_PANEL_URL || 'http://localhost:3000';
-            return res.redirect(`${adminOrigin}/api/admin/exchange?token=${encodeURIComponent(exchange)}`);
+            const out = finishBlueTeamOperatorLogin(res, {
+                username: admin.username,
+                gatewaySub: admin._id,
+                gatewayRole: 'admin',
+            });
+            if (out.error) return res.status(500).render('login-otp', { user: null, username: admin.username, next, error: out.error });
+            return res.redirect(out.redirect);
         }
 
         // Regular user (stored in admin_users) OTP path → issue gateway auth cookie and go to Safe Zone
@@ -274,6 +355,7 @@ exports.verifyLoginOtp = async (req, res) => {
             if (!ok) return res.status(401).render('login-otp', { user: null, username: u.username, next, error: 'Invalid OTP. Check your authenticator time sync and retry.' });
 
             const token = signAuthToken({ sub: String(u._id), username: u.username, role: u.role || 'user' });
+            clearAdminAuthCookie(res);
             res.cookie('auth', token, {
                 httpOnly: true,
                 sameSite: 'lax',
@@ -294,7 +376,20 @@ exports.verifyLoginOtp = async (req, res) => {
         const ok = await safeVerifyTotp(otp, user.totpSecret);
         if (!ok) return res.status(401).render('login-otp', { user: null, username: user.username, next, error: 'Invalid OTP. Check your authenticator time sync and retry.' });
 
-        const token = signAuthToken({ sub: String(user._id), username: user.username, role: user.role });
+        setPreAuthCookie(res, '', 0);
+        // Operator stored in Safe Zone `users` with role=admin → Blue Team /ops (not employee dashboard only)
+        if (user.role === 'admin') {
+            const out = finishBlueTeamOperatorLogin(res, {
+                username: user.username,
+                gatewaySub: user._id,
+                gatewayRole: 'admin',
+            });
+            if (out.error) return res.status(500).render('login-otp', { user: null, username: user.username, next, error: out.error });
+            return res.redirect(out.redirect);
+        }
+
+        const token = signAuthToken({ sub: String(user._id), username: user.username, role: user.role || 'user' });
+        clearAdminAuthCookie(res);
         res.cookie('auth', token, {
             httpOnly: true,
             sameSite: 'lax',
@@ -302,7 +397,6 @@ exports.verifyLoginOtp = async (req, res) => {
             path: '/',
             maxAge: 1000 * 60 * 60 * 8,
         });
-        setPreAuthCookie(res, '', 0);
         res.redirect(req.withBase(next));
     } catch (err) {
         res.status(500).render('login', { user: null, error: 'OTP verification error. Please try again.', username: '' });
@@ -312,6 +406,7 @@ exports.verifyLoginOtp = async (req, res) => {
 exports.logoutUser = async (req, res) => {
     res.cookie('auth', '', { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', path: '/', maxAge: 0 });
     res.cookie('preauth', '', { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', path: '/', maxAge: 0 });
+    clearAdminAuthCookie(res);
     res.redirect(req.withBase('/'));
 };
 
@@ -396,5 +491,19 @@ exports.renderContactPage = (req, res) => {
     res.render('contact', {
         user: req.user || null,
         adminPanelUrl: process.env.ADMIN_PANEL_URL || 'http://localhost:3000',
+        success: false,
+        formError: '',
+    });
+};
+
+exports.submitContact = (req, res) => {
+    if (req.trapHandled || res.headersSent) return;
+    res.render('contact', {
+        user: req.user || null,
+        adminPanelUrl: process.env.ADMIN_PANEL_URL || 'http://localhost:3000',
+        success: true,
+        formError: '',
+        subject: req.body?.subject || '',
+        message: req.body?.message || '',
     });
 };

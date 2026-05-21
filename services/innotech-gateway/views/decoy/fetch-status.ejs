@@ -1,0 +1,35 @@
+<% const title = 'Service Fetch Status — InnoTech' %>
+<% const wb = typeof withBase === 'function' ? withBase : (p) => p %>
+<%- include('../partials/head', { title, withBase: wb }) %>
+
+<div class="container">
+  <%- include('../partials/topbar', {
+    user: typeof legacyUser !== 'undefined' ? legacyUser : null,
+    withBase: wb,
+    brandTitle: 'InnoTech Administrator Services',
+    brandSub: 'Outbound status bridge',
+    accessLabel: 'Operator',
+    accessDetail: 'metadata'
+  }) %>
+
+  <div class="layout">
+    <%- include('../partials/decoy-sidebar', { active: 'console', withBase: wb, legacyUser: typeof legacyUser !== 'undefined' ? legacyUser : null }) %>
+    <main class="card">
+      <div class="hero">
+        <div class="kicker">SSRF probe</div>
+        <h2 style="margin: 0 0 8px;">Fetch status</h2>
+        <div class="muted">Target URL: <code><%= target %></code></div>
+      </div>
+      <div class="card-inner">
+        <%- include('../partials/decoy-kill-chain', { withBase: wb, dp: typeof dp !== 'undefined' ? dp : {} }) %>
+        <pre style="font-size:12px;">{
+  "instanceId": "i-0f4e8b2c9a1d3e5f7",
+  "region": "us-east-1",
+  "iam": { "role": "InnoTech-HR-Prod-Role" }
+}</pre>
+      </div>
+    </main>
+  </div>
+</div>
+
+<%- include('../partials/foot') %>

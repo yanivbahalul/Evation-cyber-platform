@@ -91,6 +91,8 @@ Historical data may still load over REST; the socket is for **push** events such
 
 Deliverables (requirements, design, diagrams) live in **`docs/`**.
 
+**Demo / attack triggers (browser + terminal):** see **[docs/ATTACK_DEMO_GUIDE.md](docs/ATTACK_DEMO_GUIDE.md)**.
+
 ---
 
 ## Tip: run commands in one package

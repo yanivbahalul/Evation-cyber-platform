@@ -3,8 +3,6 @@ const { randomUUID } = require('crypto');
 const TRAP_TYPES = require('../constants/trapTypes');
 
 const AttackEventSchema = new mongoose.Schema({
-    // PDF spec PK. Auto-generated UUID so Yaniv's React rows have a stable
-    // string key without dragging Mongo ObjectId types into the frontend.
     eventID: {
         type: String,
         default: () => randomUUID(),
@@ -16,13 +14,17 @@ const AttackEventSchema = new mongoose.Schema({
         required: true,
         index: true
     },
+    traceId: {
+        type: String,
+        index: true,
+    },
     trapType: {
         type: String,
         enum: Object.values(TRAP_TYPES),
         required: true
     },
     payload: {
-        type: String, // E.g., the SQL injection string or requested path
+        type: String,
     },
     wasted_time_ms: {
         type: Number,
@@ -32,12 +34,27 @@ const AttackEventSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    method: String,
+    path: String,
+    userAgent: String,
+    referer: String,
+    fingerprint: {
+        os: String,
+        platform: String,
+        browser: String,
+        browserVersion: String,
+        deviceType: String,
+        isBot: Boolean,
+        riskScore: Number,
+    },
+    handoffFrom: String,
+    xssTier: String,
+    secondaryTraps: [String],
     timestamp: {
         type: Date,
         default: Date.now
     }
 }, {
-    // Pin the collection name so winston / mongoose can never disagree on where logs live.
     collection: 'attack_events'
 });
 

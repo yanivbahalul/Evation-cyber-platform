@@ -1,14 +1,7 @@
 'use strict';
 
-/**
- * Honey-Token Detector
- * Runs after Sagiv's gatekeeper. If an incoming request carries a token
- * that we previously planted, append a triggeredLogs entry on the
- * HoneyToken document. We do NOT reroute the request from here — Sagiv's
- * Gatekeeper remains the sole rerouter to keep the pipeline simple.
- */
-
 const honeyToken = require('../traps/honeyToken');
+const attackLog = require('../utils/attackLog');
 
 function extractToken(req) {
   const auth = req.headers['authorization'];
@@ -36,15 +29,20 @@ module.exports = async function honeyTokenDetector(req, res, next) {
     if (!(await honeyToken.isHoney(token))) return next();
 
     const ip = getIP(req);
-    console.log(`[HoneyTokenDetector] HIT — ip=${ip} token=${token.slice(0, 12)}...`);
     await honeyToken.recordUsage(token, { attackerIp: ip, networkContext: 'HTTP' });
 
-    // Hint the gatekeeper / decoy for downstream awareness, but let normal
-    // routing continue — the bait was the trap; logging it is enough.
+    attackLog.info('GATEWAY', 'honey_token_used', {
+      trap: 'HONEY_TOKEN',
+      trap_label: attackLog.trapLabel('HONEY_TOKEN'),
+      ip,
+      token_prefix: token.slice(0, 12),
+      ...attackLog.requestFields(req),
+    });
+
     req.threatInfo = req.threatInfo || { type: 'HONEY_TOKEN', originIP: ip };
     return next();
   } catch (err) {
-    console.error('[HoneyTokenDetector] error:', err);
+    attackLog.error('GATEWAY', 'honey_token_check_failed', { error: err.message, ...attackLog.requestFields(req) });
     return next();
   }
 };

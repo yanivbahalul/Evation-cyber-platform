@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { requireAuth } from '@/lib/auth/requireAuth'
+import { requireAdmin } from '@/lib/auth/requireAdmin'
 import { getTelemetryModels } from '@/lib/server/telemetryDb'
+import { mapAttackerProfileDoc } from '@/lib/server/mapAttackEvent'
 
 export const runtime = 'nodejs'
 
@@ -10,28 +11,15 @@ function jsonError(message: string, status = 400) {
 
 export async function GET(req: NextRequest) {
   try {
-    await requireAuth(req)
+    await requireAdmin(req)
   } catch {
     return jsonError('Unauthorized', 401)
   }
 
   try {
     const { AttackerProfile } = await getTelemetryModels()
-    const profiles = await AttackerProfile.find().sort({ riskScore: -1 })
-    const data = profiles.map((p: any) => ({
-      ip: p.ip,
-      city: p.city ?? '—',
-      lat: p.lat ?? 0,
-      lng: p.lng ?? 0,
-      os: p.os ?? '—',
-      platform: p.platform ?? undefined,
-      browser: p.browser ?? '—',
-      deviceType: p.deviceType ?? undefined,
-      isBot: Boolean(p.isBot),
-      riskScore: Number(p.riskScore ?? 0),
-      firstSeen: (p.firstSeen instanceof Date ? p.firstSeen : new Date(p.firstSeen)).toISOString(),
-      lastSeen: (p.lastSeen instanceof Date ? p.lastSeen : new Date(p.lastSeen)).toISOString(),
-    }))
+    const profiles = await AttackerProfile.find().sort({ riskScore: -1 }).lean()
+    const data = profiles.map((p: Record<string, unknown>) => mapAttackerProfileDoc(p))
 
     return NextResponse.json({ success: true, data })
   } catch (err) {
@@ -40,4 +28,3 @@ export async function GET(req: NextRequest) {
     return jsonError(`Failed to fetch attacker profiles (${msg})`, 500)
   }
 }
-

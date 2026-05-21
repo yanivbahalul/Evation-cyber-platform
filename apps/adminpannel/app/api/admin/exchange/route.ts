@@ -34,7 +34,12 @@ export async function GET(req: NextRequest) {
     .setExpirationTime('8h')
     .sign(getKey())
 
-  const res = NextResponse.redirect(new URL('/', req.url))
+  const nextPath = req.nextUrl.searchParams.get('next') || '/gateway/workspace/'
+  const safeNext =
+    nextPath.startsWith('/gateway/') && !nextPath.startsWith('/gateway/dashboard')
+      ? nextPath
+      : '/gateway/workspace/'
+  const res = NextResponse.redirect(new URL(safeNext, req.url))
   res.cookies.set({
     name: 'admin_auth',
     value: auth,

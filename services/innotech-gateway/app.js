@@ -11,6 +11,12 @@ const AdminUser = require('./models/AdminUser');
 const { decryptTotpSecret } = require('./utils/adminTotpCrypto');
 const decoyController = require('./controllers/decoyController');
 const honeyTokenDetector = require('./middleware/honeyTokenDetector');
+const decoyReroute = require('./middleware/decoyReroute');
+const { PATHS: DP, ALIASES: DP_ALIAS } = require('./config/deceptionPaths');
+const legacyBreachSession = require('./utils/legacyBreachSession');
+const attackerTraceMiddleware = require('./middleware/attackerTrace');
+const useragent = require('express-useragent');
+const fingerprintMiddleware = require('../logging-data-extraction/middlewares/fingerprint');
 
 const app = express();
 app.set('trust proxy', true);
@@ -25,40 +31,50 @@ if (!dbURI) {
 }
 
 mongoose.connect(dbURI)
-    .then(() => console.log('Connected to Safe Zone Database'))
+    .then(() => require('./utils/attackLog').info('GATEWAY', 'safezone_database_connected', {}))
     .catch((err) => {
-        console.error('Database Connection Error:', err);
+        require('./utils/attackLog').error('GATEWAY', 'safezone_database_connection_failed', { error: err.message });
         process.exitCode = 1;
     });
 
 // 2. Middleware & View Engine
 app.set('view engine', 'ejs'); // Server-Side Rendering with EJS 
 app.set('views', path.join(__dirname, 'views'));
-app.use(express.static(path.join(__dirname, 'public'))); // For CSS3 files 
-app.use(express.json()); // Parses incoming JSON payloads
-app.use(express.urlencoded({ extended: true })); // Parses form data
+const mount = BASE_PATH || '/';
+const router = express.Router();
+
+app.use(mount, express.static(path.join(__dirname, 'public')));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-app.use(honeyTokenDetector);
-app.use((req, res, next) => {
+app.use(useragent.express());
+
+router.use(attackerTraceMiddleware);
+router.use(fingerprintMiddleware);
+router.use(honeyTokenDetector);
+router.use((req, res, next) => {
     res.locals.basePath = BASE_PATH;
-    res.locals.withBase = (path) => `${BASE_PATH}${path}`;
+    res.locals.withBase = (p) => `${BASE_PATH}${p}`;
+    res.locals.dp = DP;
+    res.locals.legacyUser = legacyBreachSession.readBreachUser(req);
     req.withBase = res.locals.withBase;
     next();
 });
-app.use(authOptional);
-app.use((req, res, next) => {
+router.use(authOptional);
+router.use((req, res, next) => {
     res.locals.user = req.user || null;
     res.locals.adminPanelUrl = process.env.ADMIN_PANEL_URL || 'http://localhost:3000';
     next();
 });
-app.use(gatekeeper);
+router.use(gatekeeper);
+router.use(decoyReroute);
 
 const debugCrypto = new NobleCryptoPlugin();
 const debugBase32 = new ScureBase32Plugin();
 
 // Dev-only debug: show current server-side OTP for a given username.
 // Enable by setting DEBUG_TOTP=true (do NOT use in production).
-app.get('/debug/totp', async (req, res) => {
+router.get('/debug/totp', async (req, res) => {
     try {
         if (process.env.NODE_ENV === 'production') return res.status(404).send('Not Found');
         if (process.env.DEBUG_TOTP !== 'true') return res.status(404).send('Not Found');
@@ -94,30 +110,66 @@ app.get('/debug/totp', async (req, res) => {
     }
 });
 
-// 3. Routes (The "Safe Zone" Endpoints) 
-app.get('/', realController.renderLandingPage);
-app.get('/register', realController.renderRegisterPage);
-app.post('/register', realController.createUser); // Handles bcrypt hashing [cite: 22]
-app.post('/register/verify-otp', realController.verifyRegistrationOtp);
-app.get('/login', realController.renderLoginPage);
-app.post('/login', realController.loginUser);
-app.post('/login/verify-otp', realController.verifyLoginOtp);
-app.post('/logout', realController.logoutUser);
-app.get('/me', requireAuth, realController.renderMePage);
-app.get('/dashboard', requireAuth, realController.renderDashboardPage);
-app.get('/profile', requireAuth, realController.renderProfilePage);
-app.get('/documents', requireAuth, realController.renderDocumentsPage);
-app.get('/contact', realController.renderContactPage);
+router.get('/', realController.renderLandingPage);
+router.get('/register', realController.renderRegisterPage);
+router.post('/register', realController.createUser);
+router.post('/register/verify-otp', realController.verifyRegistrationOtp);
+router.get('/login', realController.renderLoginPage);
+router.post('/login', realController.loginUser);
+router.post('/login/verify-otp', realController.verifyLoginOtp);
+router.post('/logout', realController.logoutUser);
+router.get('/me', requireAuth, realController.renderMePage);
+router.get('/workspace', requireAuth, realController.renderDashboardPage);
+router.get('/profile', requireAuth, realController.renderProfilePage);
+router.get('/documents', requireAuth, realController.renderDocumentsPage);
+router.get('/contact', realController.renderContactPage);
+router.post('/contact', realController.submitContact);
 
-// Decoy Controller — dispatches to the right trap based on req.threatInfo.type
-app.all('/decoy-portal', decoyController.dispatch);
+function onBothPaths(canon, alias, register) {
+  register(canon);
+  register(alias);
+}
+onBothPaths(DP.console, DP_ALIAS.console, (p) => router.all(p, decoyController.dispatch));
+onBothPaths(DP.legacySignIn, DP_ALIAS.legacySignIn, (p) => {
+  router.get(p, decoyController.renderFakeLoginPage);
+  router.post(p, decoyController.fakeLogin);
+});
+onBothPaths(DP.database, DP_ALIAS.database, (p) => {
+  router.get(p, decoyController.handleDatabaseExport);
+  router.post(p, decoyController.handleDatabaseExport);
+});
+onBothPaths(DP.archiveExport, DP_ALIAS.archiveExport, (p) => router.get(p, decoyController.serveDataBomb));
+onBothPaths(DP.apiKeys, DP_ALIAS.apiKeys, (p) => router.get(p, decoyController.serveHoneyToken));
+router.get(DP.fileViewer, decoyController.renderFileViewer);
+router.all(DP.fetchStatus, decoyController.renderFetchStatus);
+router.get('/robots.txt', (req, res) => {
+  const base = BASE_PATH || '';
+  res.type('text/plain').send(
+    `User-agent: *\nDisallow: ${base}/internal/\nDisallow: ${base}/decoy-portal/\n\n# Legacy IT paths (scanner hints)\n# ${base}/internal/console\n# ${base}/internal/services/database\n# ${base}/internal/integrations/keys\n# ${base}/internal/exports/archive\n`
+  );
+});
+router.get('/sitemap.xml', (req, res) => {
+  const base = BASE_PATH || '';
+  const host = `${req.protocol}://${req.get('host')}`;
+  res.type('application/xml').send(
+    `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">` +
+    `<url><loc>${host}${base}/internal/console</loc></url>` +
+    `<url><loc>${host}${base}/internal/auth/legacy</loc></url>` +
+    `</urlset>`
+  );
+});
+router.post(DP.signOut, decoyController.logoutLegacyAdmin);
 
-// Direct trap routes (triggered by URL, not by signature detection)
-app.post('/decoy-portal/login',       decoyController.fakeLogin);
-app.get ('/decoy-portal/data-bomb',   decoyController.serveDataBomb);
-app.get ('/decoy-portal/honey-token', decoyController.serveHoneyToken);
+// Serve landing without 301 when path is exactly /gateway (no trailing slash).
+if (mount && mount !== '/') {
+    app.get(mount, (req, res, next) => {
+        req.url = '/';
+        router(req, res, next);
+    });
+}
+app.use(mount, router);
 
-// 4. Start Server
 app.listen(PORT, () => {
-    console.log(`InnoTech Gateway running on http://localhost:${PORT}`);
+    const base = BASE_PATH ? `http://localhost:${PORT}${BASE_PATH}` : `http://localhost:${PORT}`;
+    require('./utils/attackLog').info('GATEWAY', 'server_listening', { url: base });
 });

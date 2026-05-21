@@ -42,7 +42,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const res = await fetch('/api/admin/session', { method: 'GET' })
         const json = (await res.json().catch(() => null)) as
-          | { authenticated: true; sub?: string }
+          | { authenticated: true; sub?: string; kind?: 'admin' | 'safezone'; redirectTo?: string }
           | { authenticated: false }
           | null
         if (cancelled) return
@@ -50,8 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setState(s => ({
             ...s,
             step: 'authenticated',
-            // Default admin landing. (Safe Zone uses a separate cookie and redirects via /gateway.)
-            redirectTo: '/',
+            redirectTo: (json as any).redirectTo || '/gateway/workspace/',
             username: (json as any).sub || s.username,
             error: null,
             isLoading: false,
@@ -133,7 +132,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setState(s => ({
         ...s,
         step: 'authenticated',
-        redirectTo: (json as any)?.redirectTo || '/',
+        redirectTo: (json as any)?.redirectTo || '/gateway/workspace/',
         isLoading: false,
         isCheckingSession: false,
       }))
@@ -144,7 +143,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(() => {
     fetch('/api/admin/logout', { method: 'POST' }).catch(() => {})
-    setState({ step: 'credentials', username: null, redirectTo: null, error: null, isLoading: false, isCheckingSession: false })
+    setState({
+      step: 'credentials',
+      username: null,
+      redirectTo: null,
+      error: null,
+      isLoading: false,
+      isCheckingSession: false,
+    })
+    window.location.assign('/gateway/')
   }, [])
 
   return (

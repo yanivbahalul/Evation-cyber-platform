@@ -1,80 +1,106 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title><%= company %> — Admin Dashboard</title>
-  <style>
-    * { box-sizing: border-box; }
-    body  { margin: 0; font-family: "Segoe UI", Arial, sans-serif;
-            background: #f4f6f8; color: #222; }
-    header { background: #0a2540; color: #fff; padding: 18px 32px;
-             display: flex; justify-content: space-between; align-items: center; }
-    header h1 { margin: 0; font-size: 20px; letter-spacing: 0.5px; }
-    header .user { font-size: 13px; opacity: 0.85; }
-    .wrap { padding: 28px 32px; max-width: 1300px; margin: 0 auto; }
-    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
-             margin-bottom: 28px; }
-    .card  { background: #fff; border-radius: 8px; padding: 20px;
-             box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
-    .card .label { font-size: 12px; color: #6a7683; text-transform: uppercase;
-                   letter-spacing: 0.8px; }
-    .card .value { font-size: 24px; font-weight: 600; margin-top: 6px;
-                   color: #0a2540; }
-    table  { width: 100%; background: #fff; border-collapse: collapse;
-             border-radius: 8px; overflow: hidden;
-             box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
-    th, td { padding: 12px 16px; text-align: left; font-size: 14px; }
-    thead  { background: #eef1f5; }
-    th     { color: #4a5563; font-weight: 600; text-transform: uppercase;
-             letter-spacing: 0.5px; font-size: 12px; }
-    tbody tr { border-top: 1px solid #eef1f5; }
-    tbody tr:hover { background: #f9fafc; }
-    footer { text-align: center; padding: 20px; color: #8892a0;
-             font-size: 12px; }
-  </style>
-</head>
-<body>
-  <header>
-    <h1><%= company %> · Administrator Console</h1>
-    <div class="user">admin@innotech.io · v4.12.0</div>
-  </header>
+<% const title = (company || 'InnoTech') + ' — Administrator Console' %>
+<% const wb = typeof withBase === 'function' ? withBase : (p) => p %>
+<%- include('../partials/head', { title, withBase: wb }) %>
 
-  <div class="wrap">
-    <div class="stats">
-      <div class="card"><div class="label">Total Employees</div>
-           <div class="value"><%= stats.totalEmployees %></div></div>
-      <div class="card"><div class="label">Quarterly Revenue</div>
-           <div class="value"><%= stats.revenue %></div></div>
-      <div class="card"><div class="label">Open Tickets</div>
-           <div class="value"><%= stats.openTickets %></div></div>
-      <div class="card"><div class="label">Uptime</div>
-           <div class="value"><%= stats.uptime %></div></div>
-    </div>
+<div class="container">
+  <%- include('../partials/topbar', {
+    user: typeof user !== 'undefined' ? user : null,
+    withBase: wb,
+    brandTitle: 'InnoTech Administrator Services',
+    brandSub: 'Legacy control plane',
+    accessLabel: 'Operator',
+    accessDetail: 'console access'
+  }) %>
 
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th><th>Email</th><th>Department</th>
-          <th>Role</th><th>Joined</th><th>Salary</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% employees.forEach(e => { %>
-          <tr>
-            <td><%= e.name %></td>
-            <td><%= e.email %></td>
-            <td><%= e.department %></td>
-            <td><%= e.role %></td>
-            <td><%= e.joined %></td>
-            <td>$<%= e.salary.toLocaleString() %></td>
-          </tr>
-        <% }) %>
-      </tbody>
-    </table>
+  <div class="layout">
+    <%- include('../partials/decoy-sidebar', { active: 'console', withBase: wb, legacyUser: typeof user !== 'undefined' ? user : null }) %>
+
+    <main class="card">
+      <div class="hero">
+        <div class="kicker">Legacy administrator zone</div>
+        <h2 style="margin: 0 0 8px;"><%= company %> · Console</h2>
+        <div class="muted">Internal HR and finance snapshot · read-only</div>
+      </div>
+
+      <div class="card-inner">
+        <% if (typeof breachFlash !== 'undefined' && breachFlash) { %>
+          <div style="border:1px solid rgba(34,197,94,0.35); background: rgba(34,197,94,0.10); padding: 12px 14px; border-radius: 12px; margin-bottom: 14px;">
+            <div style="font-weight:650;">Authentication successful</div>
+            <div class="muted2" style="margin-top: 4px;">
+              Legacy break-glass channel accepted credentials for <strong><%= breachUsername %></strong>.
+              Elevated administrator session is active — full console access granted.
+            </div>
+          </div>
+        <% } %>
+        <% if (typeof tokenAck !== 'undefined' && tokenAck) { %>
+          <div style="border:1px solid rgba(14,165,165,0.35); background: rgba(14,165,165,0.10); padding: 12px 14px; border-radius: 12px; margin-bottom: 14px;">
+            <div style="font-weight:650;">API token validated</div>
+            <div class="muted2" style="margin-top: 4px;">Integration key accepted — elevated console session granted.</div>
+          </div>
+        <% } %>
+
+        <% if (typeof breachFlash !== 'undefined' && breachFlash || typeof tokenAck !== 'undefined' && tokenAck) { %>
+          <%- include('../partials/decoy-kill-chain', { withBase: wb, dp: typeof dp !== 'undefined' ? dp : {} }) %>
+        <% } %>
+
+        <div class="grid-4">
+          <div class="stat">
+            <div class="label">Employees</div>
+            <div class="value"><%= stats.totalEmployees %></div>
+          </div>
+          <div class="stat">
+            <div class="label">Revenue</div>
+            <div class="value"><%= stats.revenue %></div>
+          </div>
+          <div class="stat">
+            <div class="label">Open tickets</div>
+            <div class="value"><%= stats.openTickets %></div>
+          </div>
+          <div class="stat">
+            <div class="label">Uptime</div>
+            <div class="value"><%= stats.uptime %></div>
+          </div>
+        </div>
+
+        <div style="height: 14px;"></div>
+
+        <div class="btn-row">
+          <a class="btn primary" href="<%= wb('/documents?download=backup.zip') %>">Download full backup (ZIP)</a>
+          <a class="btn" href="<%= wb((typeof dp !== 'undefined' && dp.apiKeys) || '/internal/integrations/keys') %>">API integration keys</a>
+          <% if (!(typeof user !== 'undefined' && user)) { %>
+          <a class="btn" href="<%= wb((typeof dp !== 'undefined' && dp.legacySignIn) || '/internal/auth/legacy') %>">Legacy sign-in</a>
+          <% } %>
+        </div>
+
+        <div style="height: 14px;"></div>
+
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Name</th><th>Email</th><th>Department</th>
+              <th>Role</th><th>Joined</th><th>Salary</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% employees.forEach(e => { %>
+              <tr>
+                <td><%= e.name %></td>
+                <td><%= e.email %></td>
+                <td><%= e.department %></td>
+                <td><%= e.role %></td>
+                <td><%= e.joined %></td>
+                <td>$<%= e.salary.toLocaleString() %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+
+        <div class="muted2" style="margin-top: 14px; font-size: 12px;">
+          Generated <%= generated %> · admin@innotech.io · v4.12.0
+        </div>
+      </div>
+    </main>
   </div>
+</div>
 
-  <footer>
-    © <%= company %> · generated <%= generated %>
-  </footer>
-</body>
-</html>
+<%- include('../partials/foot') %>

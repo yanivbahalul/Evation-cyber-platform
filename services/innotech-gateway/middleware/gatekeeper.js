@@ -3,33 +3,45 @@
  * Domain: Traffic Routing & Middleware Pipeline [cite: 3, 10]
  */
 const detectionService = require('../services/detectionService');
+const attackLog = require('../utils/attackLog');
 
 module.exports = (req, res, next) => {
     const startTime = Date.now();
     const clientIP = req.ip;
+    const userAgent = req.headers['user-agent'] || '';
 
-    // 1. IP Reputation Check 
     if (detectionService.isBlacklisted(clientIP)) {
+        attackLog.warn('GATEWAY', 'request_blocked_blacklisted_ip', { ip: clientIP, ...attackLog.requestFields(req) });
         return res.status(403).send('Forbidden: IP Blacklisted');
     }
 
-    // 2. Deep Packet Inspection (DPI) [cite: 13]
-    const payload = { ...req.body, ...req.query };
-    const threat = detectionService.getThreatType(payload);
+    const payload = {
+        ...req.body,
+        ...req.query,
+        path: req.path,
+        originalUrl: req.originalUrl,
+    };
+    const types = detectionService.isAuthFormPath(req.path)
+        ? detectionService.getThreatTypesFromCredentials(req.body, userAgent)
+        : detectionService.getThreatTypes(payload, userAgent);
 
-    if (threat) {
-        // silentReroute Algorithm: Invisible handoff 
-        console.log(`[GATEKEEPER] ${threat} detected. Rerouting...`);
-        
-        req.threatInfo = { type: threat, originIP: clientIP }; 
-        req.url = '/decoy-portal'; 
-        
-        return next(); 
+    if (types.length) {
+        const [primary, ...secondary] = types;
+        attackLog.info('GATEWAY', 'threat_detected_routing_to_trap', {
+            trap: primary,
+            trap_label: attackLog.trapLabel(primary),
+            secondary_traps: secondary.length ? secondary.join(',') : undefined,
+            ip: clientIP,
+            ...attackLog.requestFields(req),
+        });
+        req.threatInfo = { type: primary, secondary, originIP: clientIP };
+        return next();
     }
 
-    // Performance Audit: Ensure execution is < 50ms 
     const duration = Date.now() - startTime;
-    if (duration > 50) console.warn(`Latency Warning: ${duration}ms`);
+    if (duration > 50) {
+        attackLog.warn('GATEWAY', 'gatekeeper_slow', { duration_ms: duration, ...attackLog.requestFields(req) });
+    }
 
-    next(); // Safe Zone [cite: 19]
+    next();
 };

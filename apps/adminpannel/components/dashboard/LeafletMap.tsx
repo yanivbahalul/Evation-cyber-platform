@@ -31,6 +31,9 @@ const SERVER_LNG = 34.7725
 
 const TRAP_COLORS: Record<string, string> = {
   SQL_INJECTION:  '#ef4444',
+  SQLI:           '#ef4444',
+  XSS:            '#06b6d4',
+  RECON:          '#64748b',
   HONEY_TOKEN:    '#f97316',
   DATA_BOMB:      '#f59e0b',
   PATH_TRAVERSAL: '#8b5cf6',

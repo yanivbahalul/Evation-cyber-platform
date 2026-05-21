@@ -11,7 +11,7 @@
       <div class="hero">
         <div class="kicker">Library</div>
         <h2 style="margin: 0 0 8px;">Documents</h2>
-        <div class="muted">Internal documents and forms (demo list).</div>
+        <div class="muted">Internal documents and forms · HR &amp; compliance</div>
       </div>
 
       <div class="card-inner">
@@ -26,7 +26,11 @@
                 <td><span class="badge"><%= d.type %></span></td>
                 <td class="muted2"><%= d.updated %></td>
                 <td>
-                  <a class="btn" href="<%= withBase('/documents') %>" onclick="alert('Demo only: files are not downloadable in this build.'); return false;">View</a>
+                  <% if (d.downloadUrl) { %>
+                    <a class="btn primary" href="<%= d.downloadUrl %>">Download</a>
+                  <% } else { %>
+                    <a class="btn" href="<%= withBase('/documents/' + encodeURIComponent(d.name)) %>">View</a>
+                  <% } %>
                 </td>
               </tr>
             <% }) %>

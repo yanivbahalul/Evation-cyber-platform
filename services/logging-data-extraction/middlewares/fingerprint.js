@@ -11,7 +11,7 @@
 
 const fingerprintMiddleware = (req, res, next) => {
     if (!req.useragent) {
-        console.warn("⚠️ [Phase 3] useragent object missing. Ensure app.use(useragent.express()) is set up.");
+        require('../utils/attackLog').warn('TELEMETRY', 'fingerprint_skipped_no_useragent');
         return next();
     }
 
@@ -32,7 +32,17 @@ const fingerprintMiddleware = (req, res, next) => {
         riskScore
     };
 
-    console.log(`[Phase 3] Fingerprint: OS=${os}, Platform=${platform}, Browser=${browser} ${version}, Bot=${!!isBot}, Risk=${riskScore}`);
+    if (req.threatInfo || req.path?.includes('/internal/') || req.path?.includes('trap')) {
+        require('../utils/attackLog').info('TELEMETRY', 'attacker_fingerprint', {
+            ip: req.ip,
+            os,
+            platform,
+            browser: `${browser} ${version}`.trim(),
+            bot: !!isBot,
+            risk_score: riskScore,
+            path: req.originalUrl || req.path,
+        });
+    }
 
     next();
 };

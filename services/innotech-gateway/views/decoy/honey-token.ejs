@@ -1,0 +1,47 @@
+<% const title = 'InnoTech — API Integration Keys' %>
+<% const wb = typeof withBase === 'function' ? withBase : (p) => p %>
+<%- include('../partials/head', { title, withBase: wb }) %>
+
+<div class="container">
+  <%- include('../partials/topbar', {
+    user: typeof legacyUser !== 'undefined' ? legacyUser : null,
+    withBase: wb,
+    brandTitle: 'InnoTech Administrator Services',
+    brandSub: 'Legacy control plane',
+    accessLabel: 'Operator',
+    accessDetail: 'integrations'
+  }) %>
+
+  <div class="layout">
+    <%- include('../partials/decoy-sidebar', { active: 'api', withBase: wb, legacyUser: typeof legacyUser !== 'undefined' ? legacyUser : null }) %>
+
+    <main class="card">
+      <div class="hero">
+        <div class="kicker">Integrations</div>
+        <h2 style="margin: 0 0 8px;">Service API key</h2>
+        <div class="muted">Use in scripts or <code style="color:var(--primary)">Authorization: Bearer</code> headers.</div>
+      </div>
+
+      <div class="card-inner">
+        <div class="badge warn" style="margin-bottom: 12px;">Confidential — do not commit to source control</div>
+
+        <div class="stat" style="margin-bottom: 14px;">
+          <div class="label">Active key</div>
+          <div class="value" style="font-size: 14px; font-family: ui-monospace, monospace; word-break: break-all;"><%= apiKey %></div>
+        </div>
+
+        <div class="muted2" style="font-size: 13px; line-height: 1.6;">
+          Service account: <strong style="color: var(--text);"><%= user %></strong><br />
+          Any gateway request carrying this key is logged as a honey-token hit.
+        </div>
+
+        <div class="btn-row" style="margin-top: 16px;">
+          <a class="btn primary" href="<%= wb((typeof dp !== 'undefined' && dp.console) || '/internal/console') %>">← Administrator console</a>
+          <a class="btn" href="<%= wb('/') %>">Public portal</a>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<%- include('../partials/foot') %>

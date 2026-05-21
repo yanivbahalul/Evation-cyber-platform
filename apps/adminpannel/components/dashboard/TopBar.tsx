@@ -10,7 +10,9 @@ const TAB_TITLES: Record<ActiveTab, string> = {
   map:      'Geographic Threat Map',
   events:   'Attack Event Log',
   profiles: 'Attacker Profiles',
+  investigate: 'Attacker Investigation Workspace',
   tokens:   'Honey Token Status',
+  adminUsers: 'Safe Zone Users',
 }
 
 interface TopBarProps {
@@ -114,6 +116,8 @@ export default function TopBar({ active }: TopBarProps) {
                       </div>
                       <div className="mt-1 text-[11px] text-muted-foreground/80 font-mono truncate">
                         {a.city} · {new Date(a.timestamp).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
+                        {a.traceId ? ` · trace ${a.traceId.slice(0, 8)}…` : ''}
+                        {a.path ? ` · ${a.path}` : ''}
                       </div>
                       {a.payload && (
                         <div className="mt-1 text-[11px] font-mono text-muted-foreground truncate">

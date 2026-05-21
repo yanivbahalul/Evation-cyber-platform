@@ -1,3 +1,4 @@
+// Keep in sync with services/logging-data-extraction/models/AttackerProfile.js
 const mongoose = require('mongoose');
 
 const AttackerProfileSchema = new mongoose.Schema({
@@ -6,11 +7,9 @@ const AttackerProfileSchema = new mongoose.Schema({
         required: true,
         unique: true
     },
-    // The "Dual-Storage" Strategy
     city: String,
     lat: Number,
     lng: Number,
-    // Fingerprint Data
     os: String,
     platform: String,
     browser: String,
@@ -27,7 +26,11 @@ const AttackerProfileSchema = new mongoose.Schema({
     lastSeen: {
         type: Date,
         default: Date.now
-    }
+    },
+    traceIds: {
+        type: [String],
+        default: [],
+    },
 });
 
 module.exports = AttackerProfileSchema;

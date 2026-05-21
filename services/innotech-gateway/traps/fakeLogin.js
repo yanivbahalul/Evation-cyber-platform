@@ -7,6 +7,7 @@
  */
 
 const TRAP_TYPES = require('../../logging-data-extraction/constants/trapTypes');
+const attackLog = require('../utils/attackLog');
 
 const LOCKOUT_AFTER    = 10;
 const LOCKOUT_DELAY_MS = 10_000;
@@ -35,11 +36,38 @@ setInterval(() => {
   }
 }, 5 * 60_000).unref();
 
+async function respond(req, res, status, body, meta) {
+  const { startTime, report, payload } = meta;
+  const wantsHtml = (req.headers.accept || '').includes('text/html')
+    || (req.headers['content-type'] || '').includes('application/x-www-form-urlencoded');
+
+  if (report) {
+    await report(TRAP_TYPES.BRUTE_FORCE, req, {
+      startTime,
+      wasted_time_ms: Date.now() - startTime,
+      payload,
+    });
+  }
+
+  if (wantsHtml) {
+    return res.status(status).render('decoy/fake-login', {
+      error: body.error || '',
+      username: req.body?.username || req.body?.email || '',
+      attemptsRemaining: body.attemptsRemaining,
+      locked: status === 423,
+      withBase: req.withBase || ((p) => p),
+    });
+  }
+
+  return res.status(status).json(body);
+}
+
 exports.handle = async (req, res, { report } = {}) => {
   const startTime = Date.now();
   const ip        = getIP(req);
   const username  = req.body?.username || req.body?.email || '(missing)';
   const payload   = JSON.stringify({ username, ip });
+  const meta      = { startTime, report, payload };
 
   const state = attempts.get(ip) || { count: 0, lastSeen: 0, locked: false };
   state.count   += 1;
@@ -48,17 +76,12 @@ exports.handle = async (req, res, { report } = {}) => {
 
   // Already locked → instant
   if (state.locked) {
-    res.status(423).json({
-      success:    false,
-      error:      'Account temporarily locked due to suspicious activity.',
+    attackLog.warn('TRAP', 'fake_login_account_locked', { trap: TRAP_TYPES.BRUTE_FORCE, ip, username });
+    return await respond(req, res, 423, {
+      success: false,
+      error: 'Account temporarily locked due to suspicious activity.',
       retryAfter: '24 hours',
-    });
-    if (report) await report(TRAP_TYPES.BRUTE_FORCE, req, {
-      startTime,
-      wasted_time_ms: Date.now() - startTime,
-      payload,
-    });
-    return;
+    }, meta);
   }
 
   // Lockout attempt (10th) — stall, then lock
@@ -68,31 +91,34 @@ exports.handle = async (req, res, { report } = {}) => {
 
     await sleep(LOCKOUT_DELAY_MS);
 
-    res.status(423).json({
-      success:           false,
-      error:             `Too many failed login attempts for user '${username}'. Account locked for 24 hours.`,
+    attackLog.warn('TRAP', 'fake_login_lockout_after_max_attempts', {
+      trap: TRAP_TYPES.BRUTE_FORCE,
+      ip,
+      username,
+      attempts: state.count,
+      delay_ms: LOCKOUT_DELAY_MS,
+    });
+
+    return await respond(req, res, 423, {
+      success: false,
+      error: `Too many failed login attempts for user '${username}'. Account locked for 24 hours.`,
       attemptsRemaining: 0,
-    });
-    if (report) await report(TRAP_TYPES.BRUTE_FORCE, req, {
-      startTime,
-      wasted_time_ms: Date.now() - startTime,
-      payload,
-    });
-    return;
+    }, meta);
   }
 
-  // Regular "wrong password"
   const remaining = LOCKOUT_AFTER - state.count;
-  res.status(401).json({
-    success:           false,
-    error:             'Invalid username or password.',
+  attackLog.info('TRAP', 'fake_login_failed_attempt', {
+    trap: TRAP_TYPES.BRUTE_FORCE,
+    ip,
+    username,
+    attempt: state.count,
+    attempts_remaining: remaining,
+  });
+  return await respond(req, res, 401, {
+    success: false,
+    error: 'Invalid username or password.',
     attemptsRemaining: remaining,
-  });
-  if (report) await report(TRAP_TYPES.BRUTE_FORCE, req, {
-    startTime,
-    wasted_time_ms: Date.now() - startTime,
-    payload,
-  });
+  }, meta);
 };
 
 exports._internal = { attempts };

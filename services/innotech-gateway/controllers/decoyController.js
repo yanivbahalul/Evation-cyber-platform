@@ -22,7 +22,35 @@ const sandboxXSS    = require('../traps/sandboxXSS');
 
 const TRAP_TYPES    = require('../../logging-data-extraction/constants/trapTypes');
 const LoggerService = require('../../logging-data-extraction/services/LoggerService');
-const SocketService = require('../../logging-data-extraction/services/SocketService');
+const { emitLiveAlert } = require('../utils/telemetryLiveAlert');
+const attackLog     = require('../utils/attackLog');
+const legacyBreachSession = require('../utils/legacyBreachSession');
+const sqliDumpRotation = require('../utils/sqliDumpRotation');
+const { PATHS: DP } = require('../config/deceptionPaths');
+function usernameFromSqliPayload(req) {
+  const raw = String(req.body?.username || req.query?.username || '').trim();
+  const m = raw.match(/^([a-zA-Z0-9._-]+)/);
+  return (m && m[1]) || 'admin';
+}
+
+function buildFakeCredentialRows() {
+  const rows = [
+    { id: 1, username: 'admin', password: 'InnoTech!2024', hash: '$2y$10$7eL8fakeadminhashplaceholder', role: 'administrator' },
+    { id: 2, username: 'hr_svc', password: 'svc_HR_9k2m', hash: '$2y$10$9fakehrhashvalue000000000', role: 'service' },
+    { id: 3, username: 'j.doe', password: 'Welcome123!', hash: '$2y$10$3fakedoehash00000000000000', role: 'employee' },
+  ];
+  for (let i = 0; i < 7; i++) {
+    const u = faker.internet.username().toLowerCase().replace(/[^a-z0-9._-]/g, '');
+    rows.push({
+      id: rows.length + 1,
+      username: u,
+      password: faker.internet.password({ length: 12 }),
+      hash: `$2y$10$${faker.string.alphanumeric(22)}`,
+      role: faker.helpers.arrayElement(['employee', 'manager', 'readonly']),
+    });
+  }
+  return rows;
+}
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -59,16 +87,23 @@ function extractPayload(req) {
   }
 }
 
+function buildEventFields(req, opts = {}) {
+  return {
+    traceId: req.traceId,
+    method: req.method,
+    path: req.originalUrl || req.path,
+    userAgent: req.headers['user-agent'],
+    referer: req.headers['referer'] || req.headers['referrer'],
+    fingerprint: req.attackerFingerprint || {},
+    handoffFrom: opts.handoffFrom,
+    xssTier: opts.xssTier,
+    secondaryTraps: opts.secondaryTraps ?? req.threatInfo?.secondary ?? [],
+  };
+}
+
 /**
  * Centralised reporter: every trap calls this on entry (and again on exit
  * for streaming traps so wasted_time_ms / bytes_sent are accurate).
- *
- * @param {string} trapType  one of TRAP_TYPES.*
- * @param {object} req
- * @param {object} [opts]
- * @param {number} [opts.startTime]  Date.now() captured at trap entry
- * @param {number} [opts.bytes_sent]
- * @param {string} [opts.payload]    override the auto-extracted payload
  */
 async function report(trapType, req, opts = {}) {
   const payload    = opts.payload  ?? extractPayload(req);
@@ -81,16 +116,30 @@ async function report(trapType, req, opts = {}) {
     startTime:      opts.startTime,
     wasted_time_ms: opts.wasted_time_ms,
     bytes_sent:     opts.bytes_sent || 0,
+    ...buildEventFields(req, opts),
   };
 
-  // Persist to Max's malicious DB + console log
-  try { await LoggerService.logAttack(eventData); }
-  catch (err) { console.error('[Decoy] logAttack failed:', err.message); }
+  try {
+    await LoggerService.logAttack(eventData);
+  } catch (err) {
+    attackLog.error('TRAP', 'save_to_database_failed', { trap: trapType, ip: attackerIp, error: err.message });
+  }
 
-  // Live broadcast to Yaniv's React dashboard
-  try { SocketService.emitLiveAlert({ ...eventData, timestamp: Date.now() }); }
-  catch (err) { console.error('[Decoy] emitLiveAlert failed:', err.message); }
+  try {
+    await emitLiveAlert({ ...eventData, timestamp: Date.now() });
+    attackLog.info('TRAP', 'live_alert_sent_to_admin', {
+      trap: trapType,
+      trap_label: attackLog.trapLabel(trapType),
+      ip: attackerIp,
+      trace_id: req.traceId,
+      telemetry_url: process.env.NEXT_PUBLIC_TELEMETRY_SOCKET_URL || 'http://localhost:3002',
+    });
+  } catch (err) {
+    attackLog.error('TRAP', 'live_alert_failed', { trap: trapType, ip: attackerIp, error: err.message });
+  }
 }
+
+exports.report = report;
 
 // ─── Public Dispatch ─────────────────────────────────────────────────────────
 
@@ -109,8 +158,14 @@ exports.dispatch = async (req, res) => {
   const threat = req.threatInfo?.type;
 
   switch (threat) {
-    case TRAP_TYPES.SQLI: return exports.serveFakeDBError(req, res);
+    case TRAP_TYPES.SQLI: return exports.handleDatabaseExport(req, res);
     case TRAP_TYPES.XSS:  return exports.renderSandboxXSS(req, res);
+    case TRAP_TYPES.PATH_TRAVERSAL: return exports.renderFileViewer(req, res);
+    case TRAP_TYPES.SSRF: return exports.renderFetchStatus(req, res);
+    case TRAP_TYPES.SCANNER: return exports.serveScannerTarpit(req, res);
+    case TRAP_TYPES.RECON:
+    case TRAP_TYPES.HONEY_TOKEN:
+      return exports.renderAdminDashboard(req, res);
     default:              return exports.renderAdminDashboard(req, res);
   }
 };
@@ -126,15 +181,111 @@ exports.serveFakeDBError = async (req, res) => {
   return tarpit.hold(req, res, { report });
 };
 
+exports.renderDatabaseConsole = async (req, res) => {
+  const legacyUser = legacyBreachSession.readBreachUser(req);
+  res.render('decoy/database-console', {
+    legacyUser,
+    query: req.query?.q || 'SELECT * FROM users',
+    lastError: req.query?.err ? String(req.query.err) : '',
+    withBase: req.withBase || ((p) => p),
+    dp: DP,
+  });
+};
+
+exports.handleDatabaseExport = async (req, res) => {
+  const startTime = Date.now();
+  const legacyUser = legacyBreachSession.readBreachUser(req);
+  const wantsDump =
+    req.query?.export === 'credentials' ||
+    req.method === 'POST' ||
+    (req.body?.query && /select|from|users/i.test(String(req.body.query)));
+
+  if (!wantsDump) {
+    return exports.renderDatabaseConsole(req, res);
+  }
+
+  if (sqliDumpRotation.shouldShowCredentialDump(req)) {
+    const rows = buildFakeCredentialRows();
+    await report(TRAP_TYPES.SQLI, req, {
+      startTime,
+      wasted_time_ms: Date.now() - startTime,
+      bytes_sent: rows.length * 80,
+      payload: JSON.stringify({ action: 'credential_dump', rows: rows.length }),
+    });
+    return res.render('decoy/credential-dump', {
+      legacyUser,
+      rows,
+      rowCount: rows.length,
+      withBase: req.withBase || ((p) => p),
+      dp: DP,
+    });
+  }
+
+  return tarpit.hold(req, res, { report });
+};
+
+/** SQLi on employee login → fake “bypass succeeded” legacy page. */
+exports.handoffSqliBypassLogin = async (req, res) => {
+  const name = legacyBreachSession.establishBreachSession(res, { username: usernameFromSqliPayload(req) });
+  attackLog.warn('GATEWAY', 'sqli_bypass_illusion', {
+    trap: TRAP_TYPES.SQLI,
+    username: name,
+    ...attackLog.requestFields(req),
+  });
+  await report(TRAP_TYPES.SQLI, req, {
+    payload: JSON.stringify({ handoff: 'sqli_bypass_illusion', username: name }),
+    handoffFrom: 'employee_login',
+    wasted_time_ms: 0,
+  });
+  return res.redirect(302, req.withBase(`${DP.legacySignIn}?sqli=bypass&next=db`));
+};
+
 exports.fakeLogin = async (req, res) => {
   return fakeLoginTrap.handle(req, res, { report });
 };
 
+exports.logoutLegacyAdmin = (req, res) => {
+  legacyBreachSession.clearBreachSession(res);
+  attackLog.info('GATEWAY', 'legacy_admin_signout', { ...attackLog.requestFields(req) });
+  return res.redirect(302, req.withBase('/login'));
+};
+
+exports.renderFakeLoginPage = (req, res) => {
+  const fromBrute = req.query?.from === 'brute';
+  if (fromBrute) {
+    legacyBreachSession.establishBreachSession(res, { username: req.query?.username || 'administrator' });
+    return res.redirect(302, req.withBase(`${DP.console}?breach=legacy`));
+  }
+
+  const sqliBypass = req.query?.sqli === 'bypass';
+  const showDbHint = req.query?.next === 'db';
+  const legacyUser = legacyBreachSession.readBreachUser(req);
+
+  res.render('decoy/fake-login', {
+    error: req.query?.error || '',
+    username: legacyUser?.username || req.query?.username || '',
+    withBase: req.withBase || ((p) => p),
+    legacy: false,
+    sqliBypass,
+    showDbHint,
+    legacyUser: sqliBypass ? legacyUser : null,
+    dp: DP,
+  });
+};
+
 exports.serveHoneyToken = async (req, res) => {
-  // Max's enum doesn't include HONEY_TOKEN yet — so we skip the report() call
-  // here and only persist the token through honeyToken.generate() which writes
-  // directly into the HoneyToken collection.
   const token = await honeyToken.generate(req);
+  await report(TRAP_TYPES.HONEY_TOKEN, req, {
+    payload: JSON.stringify({ apiKey: token.apiKey?.slice(0, 12) + '…' }),
+  });
+  if (req.accepts('html')) {
+    return res.render('decoy/honey-token', {
+      apiKey: token.apiKey,
+      user: token.user,
+      legacyUser: legacyBreachSession.readBreachUser(req),
+      withBase: req.withBase || ((p) => p),
+    });
+  }
   res.json({ success: true, apiKey: token.apiKey, user: token.user });
 };
 
@@ -144,11 +295,69 @@ exports.renderSandboxXSS = async (req, res) => {
 
 // ─── Dynamic Admin Dashboard (Faker) ─────────────────────────────────────────
 
+exports.renderFileViewer = async (req, res) => {
+  const requested = String(req.query?.file || req.query?.path || '../../../etc/passwd');
+  await report(TRAP_TYPES.PATH_TRAVERSAL, req, {
+    payload: JSON.stringify({ file: requested }),
+    wasted_time_ms: 0,
+  });
+  const legacyUser = legacyBreachSession.readBreachUser(req);
+  res.render('decoy/file-viewer', {
+    requested,
+    legacyUser,
+    withBase: req.withBase || ((p) => p),
+    dp: DP,
+  });
+};
+
+exports.renderFetchStatus = async (req, res) => {
+  const target = String(req.query?.url || req.body?.url || 'http://169.254.169.254/latest/meta-data/');
+  await report(TRAP_TYPES.SSRF, req, {
+    payload: JSON.stringify({ url: target }),
+    wasted_time_ms: 0,
+  });
+  if (req.accepts('json') && !req.accepts('html')) {
+    return res.json({
+      success: true,
+      fetched: target,
+      instanceId: 'i-0f4e8b2c9a1d3e5f7',
+      region: 'us-east-1',
+      iam: { role: 'InnoTech-HR-Prod-Role', credentials: '***REDACTED***' },
+      note: 'Internal metadata bridge — legacy integration',
+    });
+  }
+  const legacyUser = legacyBreachSession.readBreachUser(req);
+  return res.render('decoy/fetch-status', {
+    target,
+    legacyUser,
+    withBase: req.withBase || ((p) => p),
+    dp: DP,
+  });
+};
+
+exports.serveScannerTarpit = async (req, res) => {
+  return tarpit.hold(req, res, {
+    trapType: TRAP_TYPES.SCANNER,
+    report: (t, r, opts) =>
+      report(t, r, {
+        ...opts,
+        payload: JSON.stringify({ scanner_ua: r.headers['user-agent'] }),
+      }),
+  });
+};
+
 exports.renderAdminDashboard = async (req, res) => {
-  // No specific signature → treat as generic recon. Use DATA_BOMB type for
-  // logging since Max's enum doesn't include UNKNOWN/RECON; this still
-  // captures the visit in attack_events for the dashboard.
-  await report(TRAP_TYPES.DATA_BOMB, req, { payload: req.originalUrl });
+  const skipReport =
+    req.threatInfo?.type === TRAP_TYPES.HONEY_TOKEN ||
+    req.query?.breach === 'legacy' ||
+    req.query?.token_ack === '1';
+
+  if (!skipReport) {
+    const trapType = req.threatInfo?.type === TRAP_TYPES.HONEY_TOKEN
+      ? TRAP_TYPES.HONEY_TOKEN
+      : TRAP_TYPES.RECON;
+    await report(trapType, req, { payload: req.originalUrl || req.path });
+  }
 
   // Fresh fake company on every request — defeats automated scrapers
   const employees = Array.from({ length: 12 }, () => ({
@@ -168,10 +377,20 @@ exports.renderAdminDashboard = async (req, res) => {
     uptime:         `${faker.number.float({ min: 98.5, max: 99.99, fractionDigits: 2 })}%`,
   };
 
+  const breachUser = legacyBreachSession.readBreachUser(req);
+  const breachFlash = req.query?.breach === 'legacy' || !!breachUser;
+  const tokenAck = req.query?.token_ack === '1';
+
   res.render('decoy/admin-dashboard', {
     company:   'InnoTech Corp',
     employees,
     stats,
     generated: new Date().toISOString(),
+    withBase:  req.withBase || ((p) => p),
+    user: breachUser,
+    breachFlash,
+    breachUsername: breachUser?.username || 'administrator',
+    tokenAck,
+    dp: DP,
   });
 };
