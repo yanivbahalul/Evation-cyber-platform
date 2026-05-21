@@ -186,7 +186,18 @@ export async function POST(req: NextRequest) {
     path: '/',
     maxAge: 60 * 60 * 8,
   })
-  if (gatewayRole !== 'admin') {
+  if (gatewayRole === 'admin') {
+    const panelAuth = await signJwt({ sub: payload.sub }, 'auth', '8h')
+    res.cookies.set({
+      name: 'admin_auth',
+      value: panelAuth,
+      httpOnly: true,
+      sameSite: 'strict',
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+      maxAge: 60 * 60 * 8,
+    })
+  } else {
     res.cookies.set({
       name: 'admin_auth',
       value: '',
