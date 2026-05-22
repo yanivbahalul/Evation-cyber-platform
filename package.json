@@ -8,7 +8,7 @@
     "dev:gateway": "pnpm --dir services/innotech-gateway dev",
     "dev:logging": "pnpm --dir services/logging-data-extraction dev",
     "dev:all": "dotenv -e apps/adminpannel/.env.local -- concurrently -n ui,gateway -c blue,green \"pnpm --dir apps/adminpannel dev\" \"BASE_PATH=/gateway PORT=4001 MONGODB_URI=$SAFEZONE_DB_URI pnpm --dir services/innotech-gateway dev\"",
-    "dev:full": "dotenv -e apps/adminpannel/.env.local -- concurrently -n ui,gateway,logging -c blue,green,magenta \"pnpm --dir apps/adminpannel dev\" \"BASE_PATH=/gateway PORT=4001 MONGODB_URI=$SAFEZONE_DB_URI pnpm --dir services/innotech-gateway dev\" \"pnpm --dir services/logging-data-extraction dev\"",
+    "dev:full": "dotenv -e apps/adminpannel/.env.local -- concurrently -n ui,gateway,logging -c blue,green,magenta \"pnpm --dir apps/adminpannel exec next dev -H 0.0.0.0 -p 3000\" \"BASE_PATH=/gateway PORT=4001 MONGODB_URI=$SAFEZONE_DB_URI pnpm --dir services/innotech-gateway dev\" \"pnpm --dir services/logging-data-extraction dev\"",
     "qa:smoke": "bash scripts/qa-smoke.sh",
     "qa:all": "bash scripts/qa-run-all.sh"
   },

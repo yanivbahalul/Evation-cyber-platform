@@ -1,8 +1,15 @@
 const express = require('express');
 const mongoose = require('mongoose');
-require('dotenv').config();
-const cookieParser = require('cookie-parser');
+const fs = require('fs');
 const path = require('path');
+
+require('dotenv').config();
+const adminEnvPath = path.join(__dirname, '../../apps/adminpannel/.env.local');
+if (fs.existsSync(adminEnvPath)) {
+    require('dotenv').config({ path: adminEnvPath });
+}
+require('../../apps/adminpannel/scripts/applyDevPublicHost.cjs').applyDevPublicHost();
+const cookieParser = require('cookie-parser');
 const realController = require('./controllers/realController'); // MVC: Logic is separated 
 const gatekeeper = require('./middleware/gatekeeper');
 const { authOptional, requireAuth } = require('./middleware/auth');

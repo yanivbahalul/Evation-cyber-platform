@@ -18,7 +18,7 @@ pnpm dev:full
 | Attack monitor (`role=admin` only) | http://localhost:3000/gateway/dashboard/ | Linked from sidebar / quick links — not auto-redirect |
 | Telemetry (Socket.IO) | http://localhost:3002 | Behind the scenes |
 
-**Env:** `apps/adminpannel/.env.local` must define `SAFEZONE_DB_URI`, `MALICIOUS_DB_URI`, and matching socket tokens (`ADMIN_SOCKET_TOKEN` = `NEXT_PUBLIC_ADMIN_SOCKET_TOKEN`).
+**Env:** `apps/adminpannel/.env.local` must define `SAFEZONE_DB_URI`, `MALICIOUS_DB_URI`, matching socket tokens (`ADMIN_SOCKET_TOKEN` = `NEXT_PUBLIC_ADMIN_SOCKET_TOKEN`), and **`DEV_PUBLIC_HOST`** (`localhost` or your LAN/Hamachi IP — see `.env.local.example`).
 
 **Verify socket:** Admin UI status should show **Live** (not Offline).
 
@@ -533,7 +533,7 @@ Watch the **`[gateway]`** and **`[logging]`** panes when running `pnpm dev:full`
 | 404 on `/login` | Sign in at **`http://localhost:3000/gateway/login`** (canonical) |
 | Two different login pages | Old EJS login redirects here; attack dashboard is only at **`/`** for `admin` role |
 | Only “loading”, no tarpit text | Wait up to 2 minutes; or use `curl -N` |
-| Admin Offline | Restart `pnpm dev:full`; check `NEXT_PUBLIC_TELEMETRY_SOCKET_URL=http://localhost:3002` |
+| Admin Offline | Restart `pnpm dev:full`; set `DEV_PUBLIC_HOST` to the host clients use (or `localhost`) |
 | No live alert from gateway | Ensure logging service is up; check gateway log for `Broadcasted liveAlert` |
 | Trap works but wrong DB | Check `SAFEZONE_DB_URI` / `MALICIOUS_DB_URI` in `.env.local` |
 

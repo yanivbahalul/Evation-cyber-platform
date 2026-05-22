@@ -7,6 +7,7 @@ const adminEnvPath = path.join(__dirname, '../../apps/adminpannel/.env.local');
 if (fs.existsSync(adminEnvPath)) {
   require('dotenv').config({ path: adminEnvPath });
 }
+require('../../apps/adminpannel/scripts/applyDevPublicHost.cjs').applyDevPublicHost();
 
 const express = require('express');
 const app = express();
