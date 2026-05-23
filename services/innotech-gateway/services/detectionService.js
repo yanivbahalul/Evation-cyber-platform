@@ -3,7 +3,7 @@
  * Domain: Threat Intelligence & Logic [cite: 3]
  */
 
-const TRAP_TYPES = require('../../logging-data-extraction/constants/trapTypes');
+const TRAP_TYPES = require('@evation/shared-constants');
 const { isLegacySignInPath } = require('../config/deceptionPaths');
 
 const bannedIPs = new Set(['1.2.3.4', '5.6.7.8']);

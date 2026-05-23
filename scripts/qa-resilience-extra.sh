@@ -3,7 +3,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-ENV_FILE="$ROOT/apps/adminpannel/.env.local"
+ENV_FILE="$ROOT/apps/admin-panel/.env.local"
 BASE="${QA_BASE_URL:-http://localhost:3000}"
 GW="${BASE}/gateway"
 TEL="${QA_TELEMETRY_URL:-http://localhost:3002}"

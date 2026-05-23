@@ -5,7 +5,7 @@
  * HTML responses are buffered (single res.send) so they work through the Next.js /gateway proxy.
  */
 
-const TRAP_TYPES = require('../../logging-data-extraction/constants/trapTypes');
+const TRAP_TYPES = require('@evation/shared-constants');
 const attackLog = require('../utils/attackLog');
 
 const isDev = process.env.NODE_ENV !== 'production';

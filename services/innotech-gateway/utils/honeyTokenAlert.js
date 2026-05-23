@@ -1,6 +1,6 @@
 'use strict';
 
-const TRAP_TYPES = require('../../logging-data-extraction/constants/trapTypes');
+const TRAP_TYPES = require('@evation/shared-constants');
 const LoggerService = require('../../logging-data-extraction/services/LoggerService');
 const { emitLiveAlert } = require('./telemetryLiveAlert');
 const attackLog = require('./attackLog');

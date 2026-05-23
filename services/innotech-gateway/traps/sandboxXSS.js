@@ -7,7 +7,7 @@
  * are shown as HTML-encoded plain text only.
  */
 
-const TRAP_TYPES = require('../../logging-data-extraction/constants/trapTypes');
+const TRAP_TYPES = require('@evation/shared-constants');
 const attackLog = require('../utils/attackLog');
 const { classifyXssPayload } = require('../utils/xssPayloadClassifier');
 

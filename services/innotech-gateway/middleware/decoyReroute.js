@@ -1,6 +1,6 @@
 'use strict';
 
-const TRAP_TYPES = require('../../logging-data-extraction/constants/trapTypes');
+const TRAP_TYPES = require('@evation/shared-constants');
 const decoyController = require('../controllers/decoyController');
 const { reportHoneyTokenHit } = require('../utils/honeyTokenAlert');
 const attackLog = require('../utils/attackLog');

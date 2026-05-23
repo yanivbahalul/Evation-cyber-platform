@@ -6,7 +6,7 @@
  * then 423 "locked". Attempts 11+: instant 423.
  */
 
-const TRAP_TYPES = require('../../logging-data-extraction/constants/trapTypes');
+const TRAP_TYPES = require('@evation/shared-constants');
 const attackLog = require('../utils/attackLog');
 
 const LOCKOUT_AFTER    = 10;

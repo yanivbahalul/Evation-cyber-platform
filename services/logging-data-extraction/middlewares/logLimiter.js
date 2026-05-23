@@ -5,7 +5,7 @@
 // This prevents attackers from DDOSing our MongoDB cluster with heavy logging queries.
 const floodTracker = new Map();
 
-const getAttackerIp = require('../utils/getAttackerIp');
+const { getAttackerIp } = require('@evation/shared-utils');
 
 const logLimiter = (req, res, next) => {
     // Rely on your newly upgraded getAttackerIp logic from Sagiv

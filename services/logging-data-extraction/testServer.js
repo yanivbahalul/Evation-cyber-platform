@@ -2,12 +2,13 @@ const path = require('path');
 const fs = require('fs');
 
 // Prefer `.env` next to this file, then merge admin panel secrets (monorepo local dev).
-require('dotenv').config({ path: path.join(__dirname, '.env') });
-const adminEnvPath = path.join(__dirname, '../../apps/adminpannel/.env.local');
-if (fs.existsSync(adminEnvPath)) {
-  require('dotenv').config({ path: adminEnvPath });
+const dotenvQuiet = { quiet: true };
+require('dotenv').config({ path: path.join(__dirname, '.env'), ...dotenvQuiet });
+const adminEnvPath = path.join(__dirname, '../../apps/admin-panel/.env.local');
+if (fs.existsSync(adminEnvPath) && !process.env.MALICIOUS_DB_URI) {
+  require('dotenv').config({ path: adminEnvPath, ...dotenvQuiet });
 }
-require('../../apps/adminpannel/scripts/applyDevPublicHost.cjs').applyDevPublicHost();
+require('../../apps/admin-panel/scripts/applyDevPublicHost.cjs').applyDevPublicHost();
 
 const express = require('express');
 const app = express();
@@ -42,7 +43,7 @@ app.use(logLimiter);
 // 4. Test the Telemetry Tracker (Wasted Time + Live Alerts)
 const telemetryTracker = require('./middlewares/telemetryTracker');
 
-const TRAP_TYPES = require('./constants/trapTypes');
+const TRAP_TYPES = require('@evation/shared-constants');
 
 const geoip = require('geoip-lite');
 const { upsertFromAttackSafe } = require('./services/AttackerProfileService');

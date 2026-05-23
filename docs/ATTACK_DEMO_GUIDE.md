@@ -18,7 +18,7 @@ pnpm dev:full
 | Attack monitor (`role=admin` only) | http://localhost:3000/gateway/dashboard/ | Linked from sidebar / quick links — not auto-redirect |
 | Telemetry (Socket.IO) | http://localhost:3002 | Behind the scenes |
 
-**Env:** `apps/adminpannel/.env.local` must define `SAFEZONE_DB_URI`, `MALICIOUS_DB_URI`, matching socket tokens (`ADMIN_SOCKET_TOKEN` = `NEXT_PUBLIC_ADMIN_SOCKET_TOKEN`), and **`DEV_PUBLIC_HOST`** (`localhost` or your LAN/Hamachi IP — telemetry URLs are derived automatically).
+**Env:** `apps/admin-panel/.env.local` must define `SAFEZONE_DB_URI`, `MALICIOUS_DB_URI`, matching socket tokens (`ADMIN_SOCKET_TOKEN` = `NEXT_PUBLIC_ADMIN_SOCKET_TOKEN`), and **`DEV_PUBLIC_HOST`** (`localhost` or your LAN/Hamachi IP — telemetry URLs are derived automatically).
 
 **Verify socket:** Admin UI status should show **Live** (not Offline).
 

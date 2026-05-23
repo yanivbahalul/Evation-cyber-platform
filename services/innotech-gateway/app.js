@@ -3,12 +3,13 @@ const mongoose = require('mongoose');
 const fs = require('fs');
 const path = require('path');
 
-require('dotenv').config();
-const adminEnvPath = path.join(__dirname, '../../apps/adminpannel/.env.local');
-if (fs.existsSync(adminEnvPath)) {
-    require('dotenv').config({ path: adminEnvPath });
+const dotenvQuiet = { quiet: true };
+require('dotenv').config(dotenvQuiet);
+const adminEnvPath = path.join(__dirname, '../../apps/admin-panel/.env.local');
+if (fs.existsSync(adminEnvPath) && !process.env.SAFEZONE_DB_URI) {
+    require('dotenv').config({ path: adminEnvPath, ...dotenvQuiet });
 }
-require('../../apps/adminpannel/scripts/applyDevPublicHost.cjs').applyDevPublicHost();
+require('../../apps/admin-panel/scripts/applyDevPublicHost.cjs').applyDevPublicHost();
 const cookieParser = require('cookie-parser');
 const realController = require('./controllers/realController'); // MVC: Logic is separated 
 const gatekeeper = require('./middleware/gatekeeper');

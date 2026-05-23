@@ -2,7 +2,7 @@
 const LoggerService = require('../services/LoggerService');
 const SocketService = require('../services/SocketService');
 const { upsertFromAttackSafe } = require('../services/AttackerProfileService');
-const getAttackerIp = require('../utils/getAttackerIp');
+const { getAttackerIp } = require('@evation/shared-utils');
 const attackLog = require('../utils/attackLog');
 
 const telemetryTracker = (trapType) => {

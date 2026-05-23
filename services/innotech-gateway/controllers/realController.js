@@ -10,7 +10,7 @@ const loginBruteTrap = require('../utils/loginBruteTrap');
 const attackLog = require('../utils/attackLog');
 const { PATHS: DP } = require('../config/deceptionPaths');
 const legacyBreachSession = require('../utils/legacyBreachSession');
-const TRAP_TYPES = require('../../logging-data-extraction/constants/trapTypes');
+const TRAP_TYPES = require('@evation/shared-constants');
 const { report: reportTrap } = require('./decoyController');
 
 async function failLogin(req, res, username, message) {

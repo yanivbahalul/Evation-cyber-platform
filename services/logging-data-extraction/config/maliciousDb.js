@@ -30,9 +30,10 @@ const connectMaliciousDB = () => {
         attackLog.error('TELEMETRY', 'malicious_database_error', { error: err.message });
     });
 
-    maliciousConn.model('AttackerProfile', require('../models/AttackerProfile'));
-    maliciousConn.model('AttackEvent', require('../models/AttackEvent'));
-    maliciousConn.model('HoneyToken', require('../models/HoneyToken'));
+    const schemas = require('@evation/db-schemas');
+    maliciousConn.model('AttackerProfile', schemas.AttackerProfileSchema);
+    maliciousConn.model('AttackEvent', schemas.AttackEventSchema);
+    maliciousConn.model('HoneyToken', schemas.HoneyTokenSchema);
 
     return maliciousConn;
 };

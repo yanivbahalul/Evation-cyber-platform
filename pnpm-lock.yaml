@@ -15,8 +15,17 @@ importers:
         specifier: ^8.0.0
         version: 8.0.0
 
-  apps/adminpannel:
+  apps/admin-panel:
     dependencies:
+      '@evation/db-schemas':
+        specifier: workspace:*
+        version: link:../../packages/db-schemas
+      '@evation/shared-constants':
+        specifier: workspace:*
+        version: link:../../packages/shared-constants
+      '@evation/shared-utils':
+        specifier: workspace:*
+        version: link:../../packages/shared-utils
       '@hookform/resolvers':
         specifier: ^3.9.1
         version: 3.10.0(react-hook-form@7.75.0(react@19.2.6))
@@ -250,8 +259,27 @@ importers:
         specifier: 5.7.3
         version: 5.7.3
 
+  packages/db-schemas:
+    dependencies:
+      '@evation/shared-constants':
+        specifier: workspace:*
+        version: link:../shared-constants
+      mongoose:
+        specifier: ^9.4.1
+        version: 9.6.1
+
+  packages/shared-constants: {}
+
+  packages/shared-utils: {}
+
   services/innotech-gateway:
     dependencies:
+      '@evation/db-schemas':
+        specifier: workspace:*
+        version: link:../../packages/db-schemas
+      '@evation/shared-constants':
+        specifier: workspace:*
+        version: link:../../packages/shared-constants
       '@faker-js/faker':
         specifier: ^10.4.0
         version: 10.4.0
@@ -288,6 +316,15 @@ importers:
 
   services/logging-data-extraction:
     dependencies:
+      '@evation/db-schemas':
+        specifier: workspace:*
+        version: link:../../packages/db-schemas
+      '@evation/shared-constants':
+        specifier: workspace:*
+        version: link:../../packages/shared-constants
+      '@evation/shared-utils':
+        specifier: workspace:*
+        version: link:../../packages/shared-utils
       dotenv:
         specifier: ^17.4.2
         version: 17.4.2

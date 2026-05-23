@@ -17,7 +17,7 @@ const { faker }            = require('@faker-js/faker');
 const crypto               = require('crypto');
 const mongoose             = require('mongoose');
 const connectMaliciousDB   = require('../../logging-data-extraction/config/maliciousDb');
-const HoneyTokenSchema     = require('../../logging-data-extraction/models/HoneyToken');
+const { HoneyTokenSchema } = require('@evation/db-schemas');
 
 // In-memory cache so the detector middleware doesn't hit Mongo on every
 // request. The DB remains the source of truth.

@@ -1,5 +1,7 @@
 # InnoTech Honeypot — Attack Demo Guide
 
+**Codebase map:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — where traps, telemetry, admin API, and shared packages live.
+
 Use this checklist when presenting the project. In the browser use **only** `http://localhost:3000` — the HR portal lives at `/gateway/*` (proxied to the gateway service). Traps and employee flows use that UI. After login everyone lands on `/gateway/workspace/`; live attack telemetry is at `/gateway/dashboard/` (sidebar link only when DB `role` is `admin`).
 
 ## Prerequisites
@@ -18,7 +20,7 @@ pnpm dev:full
 | Attack monitor (`role=admin` only) | http://localhost:3000/gateway/dashboard/ | Linked from sidebar / quick links — not auto-redirect |
 | Telemetry (Socket.IO) | http://localhost:3002 | Behind the scenes |
 
-**Env:** `apps/adminpannel/.env.local` must define `SAFEZONE_DB_URI`, `MALICIOUS_DB_URI`, matching socket tokens (`ADMIN_SOCKET_TOKEN` = `NEXT_PUBLIC_ADMIN_SOCKET_TOKEN`), and **`DEV_PUBLIC_HOST`** (`localhost` or your LAN/Hamachi IP — see `.env.local.example`).
+**Env:** `apps/admin-panel/.env.local` must define `SAFEZONE_DB_URI`, `MALICIOUS_DB_URI`, matching socket tokens (`ADMIN_SOCKET_TOKEN` = `NEXT_PUBLIC_ADMIN_SOCKET_TOKEN`), and **`DEV_PUBLIC_HOST`** (`localhost` or your LAN/Hamachi IP — see `.env.local.example`).
 
 **Verify socket:** Admin UI status should show **Live** (not Offline).
 

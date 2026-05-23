@@ -4,8 +4,8 @@
 const path = require('path');
 const fs = require('fs');
 
-const adminEnv = path.join(__dirname, '../../../apps/adminpannel/.env.local');
-if (fs.existsSync(adminEnv)) require('dotenv').config({ path: adminEnv });
+const adminEnv = path.join(__dirname, '../../../apps/admin-panel/.env.local');
+if (fs.existsSync(adminEnv)) require('dotenv').config({ path: adminEnv, quiet: true });
 
 const uri = process.env.MALICIOUS_DB_URI;
 if (!uri) {

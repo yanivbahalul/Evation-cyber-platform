@@ -20,7 +20,7 @@ const fakeLoginTrap = require('../traps/fakeLogin');
 const honeyToken    = require('../traps/honeyToken');
 const sandboxXSS    = require('../traps/sandboxXSS');
 
-const TRAP_TYPES    = require('../../logging-data-extraction/constants/trapTypes');
+const TRAP_TYPES    = require('@evation/shared-constants');
 const LoggerService = require('../../logging-data-extraction/services/LoggerService');
 const { emitLiveAlert } = require('../utils/telemetryLiveAlert');
 const attackLog     = require('../utils/attackLog');

@@ -33,7 +33,7 @@ pnpm install
 pnpm dev:full
 ```
 
-### Required env (`apps/adminpannel/.env.local`)
+### Required env (`apps/admin-panel/.env.local`)
 
 | Variable | Purpose |
 |----------|---------|
