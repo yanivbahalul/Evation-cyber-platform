@@ -11,7 +11,11 @@ if (fs.existsSync(adminEnvPath) && !process.env.SAFEZONE_DB_URI) {
 }
 require('../../apps/admin-panel/scripts/applyDevPublicHost.cjs').applyDevPublicHost();
 const { initLanEgressGeo } = require('../logging-data-extraction/services/geoService');
-initLanEgressGeo().catch(() => {});
+initLanEgressGeo().catch((err) => {
+    require('./utils/attackLog').warn('GATEWAY', 'lan_egress_geo_init_failed', {
+        error: err?.message || String(err),
+    });
+});
 const cookieParser = require('cookie-parser');
 const realController = require('./controllers/realController'); // MVC: Logic is separated 
 const gatekeeper = require('./middleware/gatekeeper');
@@ -40,12 +44,7 @@ if (!dbURI) {
     throw new Error('Missing MONGODB_URI (or SAFEZONE_DB_URI) env var for gateway');
 }
 
-mongoose.connect(dbURI)
-    .then(() => require('./utils/attackLog').info('GATEWAY', 'safezone_database_connected', {}))
-    .catch((err) => {
-        require('./utils/attackLog').error('GATEWAY', 'safezone_database_connection_failed', { error: err.message });
-        process.exitCode = 1;
-    });
+const attackLogBoot = require('./utils/attackLog');
 
 // 2. Middleware & View Engine
 app.set('view engine', 'ejs'); // Server-Side Rendering with EJS 
@@ -179,7 +178,33 @@ if (mount && mount !== '/') {
 }
 app.use(mount, router);
 
-app.listen(PORT, () => {
-    const base = BASE_PATH ? `http://localhost:${PORT}${BASE_PATH}` : `http://localhost:${PORT}`;
-    require('./utils/attackLog').info('GATEWAY', 'server_listening', { url: base });
+async function startServer() {
+    try {
+        await mongoose.connect(dbURI);
+        attackLogBoot.info('GATEWAY', 'safezone_database_connected', {});
+    } catch (err) {
+        attackLogBoot.error('GATEWAY', 'safezone_database_connection_failed', { error: err.message });
+        process.exit(1);
+    }
+
+    const server = app.listen(PORT, () => {
+        const base = BASE_PATH ? `http://localhost:${PORT}${BASE_PATH}` : `http://localhost:${PORT}`;
+        attackLogBoot.info('GATEWAY', 'server_listening', { url: base });
+    });
+
+    const shutdown = (signal) => {
+        attackLogBoot.info('GATEWAY', 'shutdown_started', { signal });
+        server.close(() => {
+            mongoose.disconnect().finally(() => process.exit(0));
+        });
+        setTimeout(() => process.exit(1), 10_000).unref();
+    };
+
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
+    process.on('SIGINT', () => shutdown('SIGINT'));
+}
+
+startServer().catch((err) => {
+    attackLogBoot.error('GATEWAY', 'server_start_failed', { error: err?.message || String(err) });
+    process.exit(1);
 });

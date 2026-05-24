@@ -9,19 +9,25 @@ import { verifyGatewayAuthToken } from './gatewayJwt'
 export async function requireAuth(req: NextRequest) {
   const adminToken = req.cookies.get('admin_auth')?.value
   if (adminToken) {
-    const payload = await verifyJwt<{ sub: string }>(adminToken, 'auth')
-    if (!payload.sub) throw new Error('missing_auth')
-    return payload
+    try {
+      const payload = await verifyJwt<{ sub: string }>(adminToken, 'auth')
+      if (payload.sub) return payload
+    } catch {
+      // fall through to gateway cookie
+    }
   }
 
   const gatewayToken = req.cookies.get('auth')?.value
   if (gatewayToken) {
-    const payload = await verifyGatewayAuthToken<{ username?: string; sub?: string }>(gatewayToken)
-    const sub = (payload.username || String(payload.sub || '')).trim()
-    if (!sub) throw new Error('missing_auth')
-    return { sub }
+    try {
+      const payload = await verifyGatewayAuthToken<{ username?: string; sub?: string }>(gatewayToken)
+      const sub = (payload.username || String(payload.sub || '')).trim()
+      if (!sub) throw new Error('missing_auth')
+      return { sub }
+    } catch {
+      // fall through
+    }
   }
 
   throw new Error('missing_auth')
 }
-

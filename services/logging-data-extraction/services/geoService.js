@@ -4,10 +4,15 @@ const geoip = require('geoip-lite');
 const { isPrivateIp, normalizeIp } = require('@evation/shared-utils');
 
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+const NEGATIVE_CACHE_TTL_MS = 15 * 60 * 1000;
+const MAX_CACHE_SIZE = 5000;
 const LOOKUP_TIMEOUT_MS = 4000;
 
-/** @type {Map<string, { geo: object, at: number }>} */
+/** @type {Map<string, { geo: object, at: number, ttlMs: number }>} */
 const cache = new Map();
+
+/** @type {Map<string, Promise<object>>} */
+const inFlight = new Map();
 
 /** Geo of this deployment's public egress — used for LAN (192.168.x.x) attackers. */
 let lanEgressGeo = null;
@@ -115,10 +120,19 @@ async function lookupOnline(ip) {
   return fromIpApiPayload(data);
 }
 
+function evictCacheIfNeeded() {
+  while (cache.size > MAX_CACHE_SIZE) {
+    const oldest = cache.keys().next().value;
+    if (oldest === undefined) break;
+    cache.delete(oldest);
+  }
+}
+
 function readCache(ip) {
   const hit = cache.get(ip);
   if (!hit) return null;
-  if (Date.now() - hit.at > CACHE_TTL_MS) {
+  const ttl = hit.ttlMs ?? CACHE_TTL_MS;
+  if (Date.now() - hit.at > ttl) {
     cache.delete(ip);
     return null;
   }
@@ -126,8 +140,10 @@ function readCache(ip) {
 }
 
 function writeCache(ip, geo) {
-  if (!geo?.city || geo.city === 'Unknown') return geo;
-  cache.set(ip, { geo, at: Date.now() });
+  const isUnknown = !geo?.city || geo.city === 'Unknown';
+  const ttlMs = isUnknown ? NEGATIVE_CACHE_TTL_MS : CACHE_TTL_MS;
+  cache.set(ip, { geo, at: Date.now(), ttlMs });
+  evictCacheIfNeeded();
   return geo;
 }
 
@@ -151,12 +167,7 @@ function privateLanGeo() {
   return { ...ISRAEL_FALLBACK };
 }
 
-/**
- * Resolve city + coordinates for an attacker IP (offline DB, online API, LAN egress).
- * @param {string} rawIp
- * @returns {Promise<{ city: string, lat: number|null, lng: number|null, country?: string, source?: string }>}
- */
-async function resolveIpGeo(rawIp) {
+async function resolveIpGeoImpl(rawIp) {
   const ip = normalizeIp(rawIp);
   if (!ip || ip === 'unknown') {
     return { city: 'Unknown', lat: null, lng: null, source: 'none' };
@@ -188,6 +199,30 @@ async function resolveIpGeo(rawIp) {
   }
 
   return writeCache(ip, geo);
+}
+
+/**
+ * Resolve city + coordinates for an attacker IP (offline DB, online API, LAN egress).
+ * @param {string} rawIp
+ * @returns {Promise<{ city: string, lat: number|null, lng: number|null, country?: string, source?: string }>}
+ */
+async function resolveIpGeo(rawIp) {
+  const ip = normalizeIp(rawIp);
+  if (!ip || ip === 'unknown') {
+    return { city: 'Unknown', lat: null, lng: null, source: 'none' };
+  }
+
+  const cached = readCache(ip);
+  if (cached) return cached;
+
+  const pending = inFlight.get(ip);
+  if (pending) return pending;
+
+  const promise = resolveIpGeoImpl(rawIp).finally(() => {
+    inFlight.delete(ip);
+  });
+  inFlight.set(ip, promise);
+  return promise;
 }
 
 /** Warm LAN fallback from this host's public IP (e.g. Israel for campus demos). */
@@ -241,6 +276,7 @@ async function initLanEgressGeo() {
 /** Drop stale Unknown entries after deploy / egress warm-up. */
 function clearGeoCache() {
   cache.clear();
+  inFlight.clear();
 }
 
 module.exports = {

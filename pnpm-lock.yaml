@@ -304,6 +304,9 @@ importers:
       express-useragent:
         specifier: ^2.1.0
         version: 2.1.0
+      geoip-lite:
+        specifier: ^2.0.1
+        version: 2.0.1
       jsonwebtoken:
         specifier: ^9.0.2
         version: 9.0.3

@@ -16,6 +16,10 @@ function normalizeIp(raw) {
   // Express / Node may wrap IPv4 in brackets
   if (ip.startsWith('[') && ip.endsWith(']')) ip = ip.slice(1, -1);
 
+  // Strip IPv4 port suffix (192.168.0.1:12345)
+  const v4Port = ip.match(/^(\d{1,3}(?:\.\d{1,3}){3}):\d+$/);
+  if (v4Port) ip = v4Port[1];
+
   if (ip === '::1') return '127.0.0.1';
 
   return ip;
@@ -68,6 +72,24 @@ function isTrustedLocalProxy(req) {
   return isLoopback(peer);
 }
 
+function parseTrustedProxyList() {
+  const raw = process.env.TRUSTED_PROXY_IPS;
+  if (!raw || !String(raw).trim()) return [];
+  return String(raw)
+    .split(',')
+    .map((part) => normalizeIp(part.trim()))
+    .filter(Boolean);
+}
+
+/** True when the immediate TCP peer is a known reverse proxy (loopback or TRUSTED_PROXY_IPS). */
+function isTrustedProxy(req) {
+  if (isTrustedLocalProxy(req)) return true;
+  const peer = normalizeIp(req?.socket?.remoteAddress) || normalizeIp(req?.ip);
+  if (!peer) return false;
+  const trusted = parseTrustedProxyList();
+  return trusted.some((t) => peer === t || (t.endsWith('.') && peer.startsWith(t)));
+}
+
 /**
  * @param {import('http').IncomingMessage & { threatInfo?: { originIP?: string }, ip?: string }} req
  * @returns {string}
@@ -75,19 +97,21 @@ function isTrustedLocalProxy(req) {
 function resolveAttackerIp(req) {
   const candidates = [];
 
-  const fromThreat = normalizeIp(req?.threatInfo?.originIP);
-  if (fromThreat) candidates.push(fromThreat);
-
   // Set by admin-panel middleware when Next proxies /gateway → gateway (trusted local hop only)
   if (isTrustedLocalProxy(req)) {
     const fromClientHeader = normalizeIp(headerValue(req, 'x-client-ip'));
     if (fromClientHeader) candidates.push(fromClientHeader);
   }
 
+  if (isTrustedProxy(req)) {
+    candidates.push(
+      ...parseForwardedChain(headerValue(req, 'x-forwarded-for')),
+      normalizeIp(headerValue(req, 'x-real-ip')),
+      normalizeIp(headerValue(req, 'cf-connecting-ip')),
+    );
+  }
+
   candidates.push(
-    ...parseForwardedChain(headerValue(req, 'x-forwarded-for')),
-    normalizeIp(headerValue(req, 'x-real-ip')),
-    normalizeIp(headerValue(req, 'cf-connecting-ip')),
     normalizeIp(req?.socket?.remoteAddress),
     normalizeIp(req?.ip),
   );
@@ -96,8 +120,10 @@ function resolveAttackerIp(req) {
     if (ip && !isLoopback(ip)) return ip;
   }
 
-  const fallback = candidates.find(Boolean);
-  return fallback || 'unknown';
+  const nonLoopback = candidates.filter((ip) => ip && !isLoopback(ip));
+  if (nonLoopback.length > 0) return nonLoopback[0];
+
+  return 'unknown';
 }
 
 module.exports = {
@@ -107,4 +133,5 @@ module.exports = {
   parseForwardedChain,
   resolveAttackerIp,
   isTrustedLocalProxy,
+  isTrustedProxy,
 };

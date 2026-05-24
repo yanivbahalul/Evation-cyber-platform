@@ -49,57 +49,105 @@ const { upsertFromAttackSafe } = require('./services/AttackerProfileService');
 const { resolveIpGeo, initLanEgressGeo } = require('./services/geoService');
 
 async function enrichLiveAlertBody(body) {
-    const ip = body?.attackerIp;
-    const hasCity = body?.city && body.city !== 'Unknown';
-    const geo = !hasCity && ip ? await resolveIpGeo(ip) : null;
-    return {
-        ...body,
-        city: hasCity ? body.city : (geo?.city ?? body?.city ?? 'Unknown'),
-        lat: body?.lat || geo?.lat || 0,
-        lng: body?.lng || geo?.lng || 0,
-    };
+  const ip = body?.attackerIp;
+  const hasCity = body?.city && body.city !== 'Unknown';
+  const geo = !hasCity && ip ? await resolveIpGeo(ip) : null;
+  return {
+    ...body,
+    city: hasCity ? body.city : (geo?.city ?? body?.city ?? 'Unknown'),
+    lat: body?.lat ?? geo?.lat ?? 0,
+    lng: body?.lng ?? geo?.lng ?? 0,
+  };
 }
 
 // Gateway (decoy) → telemetry: upsert profile + broadcast liveAlert (AttackEvent already saved in gateway)
 app.post('/internal/live-alert', async (req, res) => {
+  try {
     attackLog.info('TELEMETRY', 'live_alert_received_from_gateway', {
-        trap: req.body?.trapType,
-        ip: req.body?.attackerIp,
-        trace_id: req.body?.traceId,
+      trap: req.body?.trapType,
+      ip: req.body?.attackerIp,
+      trace_id: req.body?.traceId,
     });
     const expected = process.env.ADMIN_SOCKET_TOKEN;
     if (!expected) {
-        return res.status(503).json({ success: false, error: 'ADMIN_SOCKET_TOKEN not configured' });
+      return res.status(503).json({ success: false, error: 'ADMIN_SOCKET_TOKEN not configured' });
     }
     const auth = req.headers.authorization || '';
     const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
     if (token !== expected) {
-        return res.status(401).json({ success: false, error: 'Unauthorized' });
+      return res.status(401).json({ success: false, error: 'Unauthorized' });
     }
 
     const body = await enrichLiveAlertBody(req.body || {});
     await upsertFromAttackSafe(body);
     SocketService.emitLiveAlert(body);
     return res.json({ success: true });
+  } catch (err) {
+    attackLog.error('TELEMETRY', 'live_alert_handler_failed', {
+      error: err?.message || String(err),
+    });
+    return res.status(500).json({ success: false, error: 'live_alert_failed' });
+  }
 });
 
 // A test trap route
 app.get('/test-trap', telemetryTracker(TRAP_TYPES.DATA_BOMB), (req, res) => {
-    // Simulate wasting the attacker's time
-    setTimeout(() => {
-        res.send("Trap Finished. Look at the logs and the socket alert!");
-    }, 1500); 
+  // Simulate wasting the attacker's time
+  setTimeout(() => {
+    res.send('Trap Finished. Look at the logs and the socket alert!');
+  }, 1500);
+});
+
+app.use((err, req, res, next) => {
+  attackLog.error('TELEMETRY', 'unhandled_express_error', {
+    path: req?.originalUrl || req?.path,
+    error: err?.message || String(err),
+  });
+  if (res.headersSent) return next(err);
+  res.status(500).json({ success: false, error: 'internal_error' });
 });
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3002;
 
-initLanEgressGeo()
-    .catch(() => {})
-    .finally(() => {
-        http.listen(PORT, () => {
-            attackLog.info('TELEMETRY', 'server_listening', {
-                url: `http://localhost:${PORT}`,
-                test_trap: `${PORT}/test-trap`,
-            });
-        });
+async function startServer() {
+  try {
+    await initLanEgressGeo();
+  } catch (err) {
+    attackLog.warn('TELEMETRY', 'lan_egress_geo_init_failed', {
+      error: err?.message || String(err),
     });
+  }
+
+  try {
+    await maliciousConn.asPromise();
+    attackLog.info('TELEMETRY', 'malicious_database_ready', {});
+  } catch (err) {
+    attackLog.error('TELEMETRY', 'malicious_database_connection_failed', {
+      error: err?.message || String(err),
+    });
+    process.exit(1);
+  }
+
+  http.listen(PORT, () => {
+    attackLog.info('TELEMETRY', 'server_listening', {
+      url: `http://localhost:${PORT}`,
+      test_trap: `${PORT}/test-trap`,
+    });
+  });
+
+  const shutdown = (signal) => {
+    attackLog.info('TELEMETRY', 'shutdown_started', { signal });
+    http.close(() => {
+      maliciousConn.close().finally(() => process.exit(0));
+    });
+    setTimeout(() => process.exit(1), 10_000).unref();
+  };
+
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
+}
+
+startServer().catch((err) => {
+  attackLog.error('TELEMETRY', 'server_start_failed', { error: err?.message || String(err) });
+  process.exit(1);
+});

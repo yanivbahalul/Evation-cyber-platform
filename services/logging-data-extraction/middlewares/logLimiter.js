@@ -11,23 +11,28 @@ const logLimiter = (req, res, next) => {
     // Rely on your newly upgraded getAttackerIp logic from Sagiv
     const ip = getAttackerIp(req);
     const now = Date.now();
-    
+
     if (!floodTracker.has(ip)) {
         floodTracker.set(ip, []);
     }
-    
+
     const timestamps = floodTracker.get(ip);
-    
+
     // Clean up memory: Keep only requests from the last 5 seconds (5000ms)
     const recentHits = timestamps.filter(time => now - time < 5000);
     recentHits.push(now);
-    floodTracker.set(ip, recentHits);
-    
+
+    if (recentHits.length === 0) {
+        floodTracker.delete(ip);
+    } else {
+        floodTracker.set(ip, recentHits);
+    }
+
     // Threshold: If an attacker triggers more than 30 traps in 5 seconds, they are log-flooding.
     if (recentHits.length > 30) {
         require('../utils/attackLog').warn('TELEMETRY', 'log_flood_detected_db_writes_paused', { ip, window_ms: 5000, max_per_window: 30 });
         req.isLogFlooding = true; // Flags it so TelemetryService knows to ignore it
-        
+
         // At this point we could also trigger an IP Ban (Yaniv's dashboard feature)
     }
 

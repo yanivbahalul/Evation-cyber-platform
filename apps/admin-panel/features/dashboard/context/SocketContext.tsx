@@ -95,6 +95,8 @@ interface SocketContextValue {
   attackEvents: AttackEvent[]
   attackerProfiles: AttackerProfile[]
   honeyTokens: HoneyToken[]
+  dataStale: boolean
+  lastRefreshError: string | null
   clearAlerts: () => void
   refresh: () => Promise<void>
 }
@@ -372,12 +374,18 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   const [attackEvents, setAttackEvents] = useState<AttackEvent[]>([])
   const [attackerProfiles, setAttackerProfiles] = useState<AttackerProfile[]>([])
   const [honeyTokens, setHoneyTokens] = useState<HoneyToken[]>([])
+  const [dataStale, setDataStale] = useState(false)
+  const [lastRefreshError, setLastRefreshError] = useState<string | null>(null)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const idxRef = useRef(0)
   const socketRef = useRef<Socket | null>(null)
+  const refreshGenerationRef = useRef(0)
+  const refreshInFlightRef = useRef(false)
 
   const setDemoMode = useCallback((enabled: boolean) => {
+    refreshGenerationRef.current += 1
+    if (enabled) idxRef.current = 0
     setDemoModeState(enabled)
     try {
       localStorage.setItem('demo_mode', enabled ? '1' : '0')
@@ -386,31 +394,56 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (signal?: AbortSignal) => {
     if (demoMode) return
-    const [eventsRes, attackersRes, tokensRes] = await Promise.all([
-      fetch('/api/admin/events?limit=200', { method: 'GET' }),
-      fetch('/api/admin/attackers', { method: 'GET' }),
-      fetch('/api/admin/honeytokens', { method: 'GET' }),
-    ])
+    if (refreshInFlightRef.current) return
 
-    if (!eventsRes.ok || !attackersRes.ok || !tokensRes.ok) {
-      return
+    const generation = refreshGenerationRef.current
+    refreshInFlightRef.current = true
+
+    try {
+      const [eventsRes, attackersRes, tokensRes] = await Promise.all([
+        fetch('/api/admin/events?limit=200', { method: 'GET', signal }),
+        fetch('/api/admin/attackers', { method: 'GET', signal }),
+        fetch('/api/admin/honeytokens', { method: 'GET', signal }),
+      ])
+
+      if (signal?.aborted || generation !== refreshGenerationRef.current) return
+
+      if (!eventsRes.ok || !attackersRes.ok || !tokensRes.ok) {
+        const status = [eventsRes.status, attackersRes.status, tokensRes.status].join(',')
+        setLastRefreshError(`HTTP ${status}`)
+        setDataStale(true)
+        return
+      }
+
+      const [eventsJson, attackersJson, tokensJson] = await Promise.all([
+        eventsRes.json(),
+        attackersRes.json(),
+        tokensRes.json(),
+      ])
+
+      if (signal?.aborted || generation !== refreshGenerationRef.current) return
+
+      if (!eventsJson?.success || !attackersJson?.success || !tokensJson?.success) {
+        setLastRefreshError('API returned success=false')
+        setDataStale(true)
+        return
+      }
+
+      setAttackEvents(Array.isArray(eventsJson.data) ? eventsJson.data : [])
+      setAttackerProfiles(Array.isArray(attackersJson.data) ? attackersJson.data : [])
+      setHoneyTokens(Array.isArray(tokensJson.data) ? tokensJson.data : [])
+      setLastRefreshError(null)
+      setDataStale(false)
+    } catch (err) {
+      if (signal?.aborted || generation !== refreshGenerationRef.current) return
+      const message = err instanceof Error ? err.message : String(err)
+      setLastRefreshError(message)
+      setDataStale(true)
+    } finally {
+      refreshInFlightRef.current = false
     }
-
-    const [eventsJson, attackersJson, tokensJson] = await Promise.all([
-      eventsRes.json(),
-      attackersRes.json(),
-      tokensRes.json(),
-    ])
-
-    if (!eventsJson?.success || !attackersJson?.success || !tokensJson?.success) {
-      return
-    }
-
-    setAttackEvents(eventsJson.data ?? [])
-    setAttackerProfiles(attackersJson.data ?? [])
-    setHoneyTokens(tokensJson.data ?? [])
   }, [demoMode])
 
   useEffect(() => {
@@ -435,6 +468,10 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     setLiveAlerts([])
 
     if (demoMode) {
+      refreshGenerationRef.current += 1
+      idxRef.current = 0
+      setDataStale(false)
+      setLastRefreshError(null)
       setAttackEvents(MOCK_EVENTS)
       setAttackerProfiles(MOCK_PROFILES)
       setHoneyTokens(MOCK_TOKENS)
@@ -461,40 +498,61 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
 
     const socketUrl =
       process.env.NEXT_PUBLIC_TELEMETRY_SOCKET_URL || 'http://localhost:3002'
-    const token = process.env.NEXT_PUBLIC_ADMIN_SOCKET_TOKEN || 'admin-secret'
+    const envToken = process.env.NEXT_PUBLIC_ADMIN_SOCKET_TOKEN
+    const isProd = process.env.NODE_ENV === 'production'
+    const token = envToken || (isProd ? '' : 'admin-secret')
 
-    const sock = io(socketUrl, {
-      auth: { token },
-      transports: ['websocket', 'polling'],
-      reconnection: true,
-    })
-    socketRef.current = sock
+    if (isProd && !envToken) {
+      setLastRefreshError('NEXT_PUBLIC_ADMIN_SOCKET_TOKEN is not configured')
+      setDataStale(true)
+    }
 
-    sock.on('connect', () => setConnected(true))
-    sock.on('disconnect', () => setConnected(false))
-    sock.on('connect_error', (err: Error) => {
-      setConnected(false)
-      if (process.env.NODE_ENV === 'development') {
-        console.warn('[admin socket] connect_error →', socketUrl, err?.message || err)
-      }
-    })
+    const abort = new AbortController()
+    refreshGenerationRef.current += 1
 
-    sock.on('liveAlert', (data: Record<string, unknown>) => {
-      const alert = mapSocketLiveAlert(data)
-      setLiveAlerts(prev => [alert, ...prev].slice(0, 200))
-    })
+    let sock: Socket | null = null
+    if (token) {
+      sock = io(socketUrl, {
+        auth: { token },
+        transports: ['websocket', 'polling'],
+        reconnection: true,
+      })
+      socketRef.current = sock
 
-    refresh().catch(() => {})
+      sock.on('connect', () => setConnected(true))
+      sock.on('disconnect', () => setConnected(false))
+      sock.on('connect_error', (err: Error) => {
+        setConnected(false)
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('[admin socket] connect_error →', socketUrl, err?.message || err)
+        }
+      })
+
+      sock.on('liveAlert', (data: Record<string, unknown>) => {
+        const alert = mapSocketLiveAlert(data)
+        setLiveAlerts(prev => [alert, ...prev].slice(0, 200))
+      })
+    }
+
+    refresh(abort.signal).catch(() => {})
     pollRef.current = setInterval(() => {
-      refresh().catch(() => {})
+      refresh(abort.signal).catch(() => {})
     }, 10_000)
 
     return () => {
+      abort.abort()
+      refreshGenerationRef.current += 1
       if (intervalRef.current) clearInterval(intervalRef.current)
       if (pollRef.current) clearInterval(pollRef.current)
       if (socketRef.current) {
         socketRef.current.disconnect()
         socketRef.current = null
+      }
+      if (sock) {
+        sock.off('connect')
+        sock.off('disconnect')
+        sock.off('connect_error')
+        sock.off('liveAlert')
       }
     }
   }, [demoMode, refresh])
@@ -511,8 +569,10 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         attackEvents,
         attackerProfiles,
         honeyTokens,
+        dataStale,
+        lastRefreshError,
         clearAlerts,
-        refresh,
+        refresh: () => refresh(),
       }}
     >
       {children}

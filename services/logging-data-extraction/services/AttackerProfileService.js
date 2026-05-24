@@ -4,6 +4,18 @@ const connectMaliciousDB = require('../config/maliciousDb');
 const attackLog = require('../utils/attackLog');
 const { resolveIpGeo } = require('./geoService');
 
+const MAX_TRACE_IDS = 500;
+
+function geoFromAttackData(attackData) {
+  const city = attackData?.city;
+  if (!city || city === 'Unknown') return null;
+  return {
+    city,
+    lat: attackData.lat ?? null,
+    lng: attackData.lng ?? null,
+  };
+}
+
 /**
  * Upsert attacker profile from a trap / live-alert payload (gateway or telemetryTracker).
  * @param {object} attackData
@@ -16,17 +28,19 @@ async function upsertFromAttack(attackData) {
   if (!maliciousConn?.models?.AttackerProfile) return null;
 
   const AttackerProfile = maliciousConn.model('AttackerProfile');
-  const geo = await resolveIpGeo(attackerIp);
+  const callerGeo = geoFromAttackData(attackData);
+  const geo = callerGeo || (await resolveIpGeo(attackerIp));
   const fp = attackData.fingerprint || {};
   const riskDelta = 1 + (fp.riskScore || 0);
+  const now = new Date();
 
   const update = {
-    $setOnInsert: { ip: attackerIp, firstSeen: Date.now() },
+    $setOnInsert: { ip: attackerIp, firstSeen: now },
     $set: {
-      lastSeen: Date.now(),
+      lastSeen: now,
       city: geo.city,
-      lat: geo.lat,
-      lng: geo.lng,
+      lat: geo.lat ?? 0,
+      lng: geo.lng ?? 0,
       os: fp.os,
       platform: fp.platform,
       browser: fp.browserVersion || fp.browser,
@@ -37,7 +51,9 @@ async function upsertFromAttack(attackData) {
   };
 
   if (attackData.traceId) {
-    update.$addToSet = { traceIds: attackData.traceId };
+    update.$push = {
+      traceIds: { $each: [attackData.traceId], $slice: -MAX_TRACE_IDS },
+    };
   }
 
   return AttackerProfile.findOneAndUpdate({ ip: attackerIp }, update, {

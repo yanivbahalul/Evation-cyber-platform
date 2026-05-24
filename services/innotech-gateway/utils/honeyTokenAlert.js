@@ -40,11 +40,19 @@ async function reportHoneyTokenHit(req) {
     attackLog.error('TRAP', 'honey_token_hit_save_failed', { ip: eventData.attackerIp, error: err.message });
   }
 
-  try {
-    await emitLiveAlert(eventData);
+  const alertResult = await emitLiveAlert(eventData);
+  if (alertResult.status === 'sent') {
     attackLog.info('TRAP', 'honey_token_hit_live_alert_sent', { ip: eventData.attackerIp });
-  } catch (err) {
-    attackLog.error('TRAP', 'honey_token_hit_live_alert_failed', { ip: eventData.attackerIp, error: err.message });
+  } else if (alertResult.status === 'skipped') {
+    attackLog.warn('TRAP', 'honey_token_hit_live_alert_skipped', {
+      ip: eventData.attackerIp,
+      reason: alertResult.reason,
+    });
+  } else {
+    attackLog.error('TRAP', 'honey_token_hit_live_alert_failed', {
+      ip: eventData.attackerIp,
+      error: alertResult.reason || 'unknown',
+    });
   }
 }
 

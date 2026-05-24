@@ -111,8 +111,8 @@ async function report(trapType, req, opts = {}) {
     attackLog.error('TRAP', 'save_to_database_failed', { trap: trapType, ip: attackerIp, error: err.message });
   }
 
-  try {
-    await emitLiveAlert({ ...eventData, timestamp: Date.now() });
+  const alertResult = await emitLiveAlert({ ...eventData, timestamp: Date.now() });
+  if (alertResult.status === 'sent') {
     attackLog.info('TRAP', 'live_alert_sent_to_admin', {
       trap: trapType,
       trap_label: attackLog.trapLabel(trapType),
@@ -120,8 +120,18 @@ async function report(trapType, req, opts = {}) {
       trace_id: req.traceId,
       telemetry_url: process.env.NEXT_PUBLIC_TELEMETRY_SOCKET_URL || 'http://localhost:3002',
     });
-  } catch (err) {
-    attackLog.error('TRAP', 'live_alert_failed', { trap: trapType, ip: attackerIp, error: err.message });
+  } else if (alertResult.status === 'skipped') {
+    attackLog.warn('TRAP', 'live_alert_skipped', {
+      trap: trapType,
+      ip: attackerIp,
+      reason: alertResult.reason,
+    });
+  } else {
+    attackLog.error('TRAP', 'live_alert_failed', {
+      trap: trapType,
+      ip: attackerIp,
+      error: alertResult.reason || 'unknown',
+    });
   }
 }
 
