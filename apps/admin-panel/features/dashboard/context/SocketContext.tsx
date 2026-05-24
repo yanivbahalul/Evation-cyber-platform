@@ -26,8 +26,14 @@ export interface HoneyToken {
   }>
 }
 
+function randomEventId(): string {
+  const c = globalThis.crypto
+  if (c && typeof c.randomUUID === 'function') return c.randomUUID()
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 11)}`
+}
+
 function mapSocketLiveAlert(data: Record<string, unknown>): LiveAlert {
-  const eventID = typeof data.eventID === 'string' ? data.eventID : crypto.randomUUID()
+  const eventID = typeof data.eventID === 'string' ? data.eventID : randomEventId()
   const trapType = normalizeTrapType(String(data.trapType ?? 'DATA_BOMB'))
   const fingerprint = (data.fingerprint as LiveAlert['fingerprint']) ?? {}
   const ts =
@@ -439,7 +445,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         idxRef.current++
         const alert: LiveAlert = {
           ...tmpl,
-          eventID: crypto.randomUUID(),
+          eventID: randomEventId(),
           timestamp: new Date().toISOString(),
         }
         setLiveAlerts(prev => [alert, ...prev].slice(0, 50))

@@ -9,7 +9,13 @@ const { isLegacySignInPath } = require('../config/deceptionPaths');
 const bannedIPs = new Set(['1.2.3.4', '5.6.7.8']);
 
 const patterns = {
+    /** URLs, contact forms, query strings — broader heuristics. */
     SQLI: /(?:\b(SELECT|INSERT|UPDATE|DELETE|DROP|UNION|ALTER|CREATE|EXEC|EXECUTE)\b|(?:'|")\s*(?:OR|AND)\s+|(?:OR|AND)\s+['"]?\d+['"]?\s*=\s*['"]?\d+|--|#|\/\*|\*\/|;|\bSLEEP\s*\(|\bBENCHMARK\s*\(|\bWAITFOR\s+DELAY|\binformation_schema\b|\bCHAR\s*\(|\bCONCAT\s*\(|\b0x[0-9a-fA-F]{4,})/i,
+    /**
+     * Login / register only — do not treat lone #, ;, or -- in passwords as SQLi
+     * (common when users mash the keyboard during brute-force guessing).
+     */
+    AUTH_SQLI: /(?:\b(SELECT|INSERT|UPDATE|DELETE|DROP|UNION|ALTER|CREATE|EXEC|EXECUTE)\b|(?:'|")\s*(?:OR|AND)\s+|(?:OR|AND)\s+['"]?\d+['"]?\s*=\s*['"]?\d+|(?:'|")[^'"]*(?:--|#)|\/\*|\*\/|;\s*(?:SELECT|DROP|UNION|INSERT|UPDATE|DELETE|ALTER|CREATE)\b|\bUNION\s+SELECT\b|\bSLEEP\s*\(|\bBENCHMARK\s*\(|\bWAITFOR\s+DELAY|\binformation_schema\b|\bCHAR\s*\(|\bCONCAT\s*\(|\b0x[0-9a-fA-F]{4,})/i,
     XSS: /(<script|javascript:|onerror=|alert\(|onload=)/i,
     DATA_BOMB: /(backup\.zip|\.zip\b|\/backup|download=|export=|dump=|full.?backup)/i,
     RECON: /(wp-admin|wp-login|\.env|phpmyadmin|admin\.php|\/\.git|actuator\/health|swagger|api\/v1\/users)/i,
@@ -40,11 +46,11 @@ function uniqueOrdered(types) {
     return out;
 }
 
-function matchContent(content, userAgent = '') {
+function matchContent(content, userAgent = '', { sqlPattern = patterns.SQLI } = {}) {
     const types = [];
     const ua = String(userAgent || '');
     if (patterns.SCANNER_UA.test(ua)) types.push(TRAP_TYPES.SCANNER);
-    if (patterns.SQLI.test(content)) types.push(TRAP_TYPES.SQLI);
+    if (sqlPattern.test(content)) types.push(TRAP_TYPES.SQLI);
     if (patterns.SSRF.test(content)) types.push(TRAP_TYPES.SSRF);
     if (patterns.PATH_TRAVERSAL.test(content)) types.push(TRAP_TYPES.PATH_TRAVERSAL);
     if (patterns.XSS.test(content)) types.push(TRAP_TYPES.XSS);
@@ -57,7 +63,7 @@ exports.isBlacklisted = (ip) => bannedIPs.has(ip);
 
 exports.getThreatTypesFromCredentials = (body = {}, userAgent = '') => {
     const content = [body.username, body.password].filter(Boolean).join(' ');
-    return matchContent(content, userAgent);
+    return matchContent(content, userAgent, { sqlPattern: patterns.AUTH_SQLI });
 };
 
 exports.getThreatTypes = (data = {}, userAgent = '') => {

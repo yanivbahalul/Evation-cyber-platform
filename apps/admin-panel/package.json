@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "clean": "rm -rf .next",
     "dev": "next dev",
     "dev:all": "dotenv -e .env.local -- concurrently -n ui,gateway -c blue,green \"next dev -p 3000\" \"BASE_PATH=/gateway PORT=4001 MONGODB_URI=$SAFEZONE_DB_URI pnpm --dir ../../services/innotech-gateway dev\"",
     "build": "next build",
