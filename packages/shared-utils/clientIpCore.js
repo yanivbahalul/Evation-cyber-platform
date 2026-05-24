@@ -29,6 +29,20 @@ function isLoopback(ip) {
   return false;
 }
 
+/** RFC1918, link-local, and other non-routable ranges (no MaxMind / geoip-lite city). */
+function isPrivateIp(ip) {
+  const n = normalizeIp(ip);
+  if (!n) return false;
+  if (isLoopback(n)) return true;
+  if (n.startsWith('10.')) return true;
+  if (n.startsWith('192.168.')) return true;
+  if (n.startsWith('169.254.')) return true;
+  if (/^172\.(1[6-9]|2\d|3[01])\./.test(n)) return true;
+  if (n.startsWith('fc') || n.startsWith('fd')) return true; // IPv6 ULA
+  if (n.startsWith('fe80:')) return true; // IPv6 link-local
+  return false;
+}
+
 function headerValue(req, name) {
   const headers = req?.headers;
   if (!headers) return '';
@@ -89,6 +103,7 @@ function resolveAttackerIp(req) {
 module.exports = {
   normalizeIp,
   isLoopback,
+  isPrivateIp,
   parseForwardedChain,
   resolveAttackerIp,
   isTrustedLocalProxy,

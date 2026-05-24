@@ -45,17 +45,18 @@ const telemetryTracker = require('./middlewares/telemetryTracker');
 
 const TRAP_TYPES = require('@evation/shared-constants');
 
-const geoip = require('geoip-lite');
 const { upsertFromAttackSafe } = require('./services/AttackerProfileService');
+const { resolveIpGeo, initLanEgressGeo } = require('./services/geoService');
 
-function enrichLiveAlertBody(body) {
+async function enrichLiveAlertBody(body) {
     const ip = body?.attackerIp;
-    const geo = ip ? geoip.lookup(ip) : null;
+    const hasCity = body?.city && body.city !== 'Unknown';
+    const geo = !hasCity && ip ? await resolveIpGeo(ip) : null;
     return {
         ...body,
-        city: geo?.city ?? body?.city ?? 'Unknown',
-        lat: geo?.ll?.[0] ?? body?.lat ?? 0,
-        lng: geo?.ll?.[1] ?? body?.lng ?? 0,
+        city: hasCity ? body.city : (geo?.city ?? body?.city ?? 'Unknown'),
+        lat: body?.lat || geo?.lat || 0,
+        lng: body?.lng || geo?.lng || 0,
     };
 }
 
@@ -76,7 +77,7 @@ app.post('/internal/live-alert', async (req, res) => {
         return res.status(401).json({ success: false, error: 'Unauthorized' });
     }
 
-    const body = enrichLiveAlertBody(req.body || {});
+    const body = await enrichLiveAlertBody(req.body || {});
     await upsertFromAttackSafe(body);
     SocketService.emitLiveAlert(body);
     return res.json({ success: true });
@@ -92,7 +93,13 @@ app.get('/test-trap', telemetryTracker(TRAP_TYPES.DATA_BOMB), (req, res) => {
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3002;
 
-// Start listening
-http.listen(PORT, () => {
-    attackLog.info('TELEMETRY', 'server_listening', { url: `http://localhost:${PORT}`, test_trap: `${PORT}/test-trap` });
-});
+initLanEgressGeo()
+    .catch(() => {})
+    .finally(() => {
+        http.listen(PORT, () => {
+            attackLog.info('TELEMETRY', 'server_listening', {
+                url: `http://localhost:${PORT}`,
+                test_trap: `${PORT}/test-trap`,
+            });
+        });
+    });

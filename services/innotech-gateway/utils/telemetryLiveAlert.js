@@ -1,15 +1,18 @@
 'use strict';
 
 const attackLog = require('./attackLog');
+const { enrichAttackGeo } = require('./enrichAttackGeo');
 
 async function emitLiveAlert(trapData) {
+  const enriched = await enrichAttackGeo(trapData);
+
   const base =
     process.env.TELEMETRY_URL ||
     process.env.NEXT_PUBLIC_TELEMETRY_SOCKET_URL ||
     'http://localhost:3002';
   const token = process.env.ADMIN_SOCKET_TOKEN;
   if (!token) {
-    attackLog.warn('TRAP', 'live_alert_skipped_no_token', { trap: trapData?.trapType });
+    attackLog.warn('TRAP', 'live_alert_skipped_no_token', { trap: enriched?.trapType });
     return;
   }
 
@@ -20,7 +23,7 @@ async function emitLiveAlert(trapData) {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify(trapData),
+    body: JSON.stringify(enriched),
   });
 
   if (!res.ok) {

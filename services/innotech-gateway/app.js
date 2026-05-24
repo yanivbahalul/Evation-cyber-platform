@@ -10,6 +10,8 @@ if (fs.existsSync(adminEnvPath) && !process.env.SAFEZONE_DB_URI) {
     require('dotenv').config({ path: adminEnvPath, ...dotenvQuiet });
 }
 require('../../apps/admin-panel/scripts/applyDevPublicHost.cjs').applyDevPublicHost();
+const { initLanEgressGeo } = require('../logging-data-extraction/services/geoService');
+initLanEgressGeo().catch(() => {});
 const cookieParser = require('cookie-parser');
 const realController = require('./controllers/realController'); // MVC: Logic is separated 
 const gatekeeper = require('./middleware/gatekeeper');

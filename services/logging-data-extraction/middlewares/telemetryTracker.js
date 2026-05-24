@@ -4,6 +4,7 @@ const SocketService = require('../services/SocketService');
 const { upsertFromAttackSafe } = require('../services/AttackerProfileService');
 const { getAttackerIp } = require('@evation/shared-utils');
 const attackLog = require('../utils/attackLog');
+const { resolveIpGeo } = require('../services/geoService');
 
 const telemetryTracker = (trapType) => {
     return (req, res, next) => {
@@ -13,6 +14,7 @@ const telemetryTracker = (trapType) => {
             const wasted_time_ms = Date.now() - startTime;
 
             const attackerIp = getAttackerIp(req);
+            const geo = await resolveIpGeo(attackerIp);
             const payload = req.body
                 ? JSON.stringify(req.body)
                 : req.query ? JSON.stringify(req.query) : 'N/A';
@@ -25,6 +27,9 @@ const telemetryTracker = (trapType) => {
                 payload,
                 wasted_time_ms,
                 bytes_sent,
+                city: geo.city,
+                lat: geo.lat ?? 0,
+                lng: geo.lng ?? 0,
                 traceId: req.traceId,
                 method: req.method,
                 path: req.originalUrl || req.path,

@@ -1,8 +1,8 @@
 'use strict';
 
-const geoip = require('geoip-lite');
 const connectMaliciousDB = require('../config/maliciousDb');
 const attackLog = require('../utils/attackLog');
+const { resolveIpGeo } = require('./geoService');
 
 /**
  * Upsert attacker profile from a trap / live-alert payload (gateway or telemetryTracker).
@@ -16,7 +16,7 @@ async function upsertFromAttack(attackData) {
   if (!maliciousConn?.models?.AttackerProfile) return null;
 
   const AttackerProfile = maliciousConn.model('AttackerProfile');
-  const geo = geoip.lookup(attackerIp);
+  const geo = await resolveIpGeo(attackerIp);
   const fp = attackData.fingerprint || {};
   const riskDelta = 1 + (fp.riskScore || 0);
 
@@ -24,9 +24,9 @@ async function upsertFromAttack(attackData) {
     $setOnInsert: { ip: attackerIp, firstSeen: Date.now() },
     $set: {
       lastSeen: Date.now(),
-      city: geo ? geo.city : 'Unknown',
-      lat: geo && geo.ll ? geo.ll[0] : null,
-      lng: geo && geo.ll ? geo.ll[1] : null,
+      city: geo.city,
+      lat: geo.lat,
+      lng: geo.lng,
       os: fp.os,
       platform: fp.platform,
       browser: fp.browserVersion || fp.browser,
