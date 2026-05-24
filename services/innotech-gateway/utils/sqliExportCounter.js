@@ -1,5 +1,7 @@
 'use strict';
 
+const { getAttackerIp } = require('@evation/shared-utils');
+
 const byIp = new Map();
 const TTL_MS = 60 * 60_000;
 
@@ -10,17 +12,9 @@ setInterval(() => {
   }
 }, 5 * 60_000).unref();
 
-function getIP(req) {
-  return (
-    req.headers['x-forwarded-for']?.split(',')[0].trim() ||
-    req.ip ||
-    'unknown'
-  );
-}
-
 /** Odd attempts → fake dump; even → tarpit error (feels like an overloaded DB). */
 exports.shouldShowCredentialDump = (req) => {
-  const ip = getIP(req);
+  const ip = getAttackerIp(req);
   const prev = byIp.get(ip)?.count || 0;
   const count = prev + 1;
   byIp.set(ip, { count, at: Date.now() });

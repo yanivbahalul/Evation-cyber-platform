@@ -1,12 +1,8 @@
-const getAttackerIp = (req) => {
-  const forwarded = req.headers['x-forwarded-for'];
-  const realIp = req.headers['x-real-ip'];
+'use strict';
 
-  if (forwarded) {
-    return forwarded.split(',')[0].trim();
-  }
+const { resolveAttackerIp } = require('./clientIpCore');
 
-  return realIp || req.socket?.remoteAddress || req.ip;
-};
+/** @param {import('http').IncomingMessage} req */
+const getAttackerIp = (req) => resolveAttackerIp(req);
 
 module.exports = getAttackerIp;

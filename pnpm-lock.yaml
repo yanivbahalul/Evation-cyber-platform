@@ -280,6 +280,9 @@ importers:
       '@evation/shared-constants':
         specifier: workspace:*
         version: link:../../packages/shared-constants
+      '@evation/shared-utils':
+        specifier: workspace:*
+        version: link:../../packages/shared-utils
       '@faker-js/faker':
         specifier: ^10.4.0
         version: 10.4.0

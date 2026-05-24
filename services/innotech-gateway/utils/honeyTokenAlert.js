@@ -1,18 +1,10 @@
 'use strict';
 
 const TRAP_TYPES = require('@evation/shared-constants');
+const { getAttackerIp } = require('@evation/shared-utils');
 const LoggerService = require('../../logging-data-extraction/services/LoggerService');
 const { emitLiveAlert } = require('./telemetryLiveAlert');
 const attackLog = require('./attackLog');
-
-function getIP(req) {
-  return (
-    req.threatInfo?.originIP ||
-    req.headers['x-forwarded-for']?.split(',')[0].trim() ||
-    req.ip ||
-    'unknown'
-  );
-}
 
 function buildEventFields(req) {
   return {
@@ -28,7 +20,7 @@ function buildEventFields(req) {
 
 async function reportHoneyTokenHit(req) {
   const eventData = {
-    attackerIp: getIP(req),
+    attackerIp: getAttackerIp(req),
     trapType: TRAP_TYPES.HONEY_TOKEN,
     payload: JSON.stringify({ action: 'token_used', path: req.originalUrl || req.path }),
     wasted_time_ms: 0,

@@ -4,10 +4,11 @@
  */
 const detectionService = require('../services/detectionService');
 const attackLog = require('../utils/attackLog');
+const { getAttackerIp } = require('@evation/shared-utils');
 
 module.exports = (req, res, next) => {
     const startTime = Date.now();
-    const clientIP = req.ip;
+    const clientIP = getAttackerIp(req);
     const userAgent = req.headers['user-agent'] || '';
 
     if (detectionService.isBlacklisted(clientIP)) {

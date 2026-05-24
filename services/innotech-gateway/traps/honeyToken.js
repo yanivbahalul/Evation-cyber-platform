@@ -18,21 +18,11 @@ const crypto               = require('crypto');
 const mongoose             = require('mongoose');
 const connectMaliciousDB   = require('../../logging-data-extraction/config/maliciousDb');
 const { HoneyTokenSchema } = require('@evation/db-schemas');
+const { getAttackerIp } = require('@evation/shared-utils');
 
 // In-memory cache so the detector middleware doesn't hit Mongo on every
 // request. The DB remains the source of truth.
 const memCache = new Map(); // apiKey OR jwt → { fakeUsername, _id }
-
-function getIP(req) {
-  return (
-    req.threatInfo?.originIP ||
-    req.headers['x-forwarded-for']?.split(',')[0].trim() ||
-    req.headers['x-real-ip'] ||
-    req.ip ||
-    req.socket?.remoteAddress ||
-    'unknown'
-  );
-}
 
 function fakeJwt(user) {
   const b64 = (obj) => Buffer.from(JSON.stringify(obj)).toString('base64url');
@@ -79,7 +69,7 @@ exports.generate = async (req) => {
     issuedAt:  new Date().toISOString(),
     expiresIn: 86400,
     honey:     true,
-    sourceIP:  getIP(req),
+    sourceIP:  getAttackerIp(req),
   };
 
   // Persist into Max's collection

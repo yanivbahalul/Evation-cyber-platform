@@ -1,3 +1,7 @@
 const getAttackerIp = require('./getAttackerIp');
+const clientIpCore = require('./clientIpCore');
 
-module.exports = { getAttackerIp };
+module.exports = {
+  getAttackerIp,
+  ...clientIpCore,
+};

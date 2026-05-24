@@ -7,6 +7,7 @@
  */
 
 const TRAP_TYPES = require('@evation/shared-constants');
+const { getAttackerIp } = require('@evation/shared-utils');
 const attackLog = require('../utils/attackLog');
 
 const LOCKOUT_AFTER    = 10;
@@ -14,17 +15,6 @@ const LOCKOUT_DELAY_MS = 10_000;
 const COUNTER_TTL_MS   = 60 * 60_000;
 
 const attempts = new Map();
-
-function getIP(req) {
-  return (
-    req.threatInfo?.originIP ||
-    req.headers['x-forwarded-for']?.split(',')[0].trim() ||
-    req.headers['x-real-ip'] ||
-    req.ip ||
-    req.socket?.remoteAddress ||
-    'unknown'
-  );
-}
 
 function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
 
@@ -64,7 +54,7 @@ async function respond(req, res, status, body, meta) {
 
 exports.handle = async (req, res, { report } = {}) => {
   const startTime = Date.now();
-  const ip        = getIP(req);
+  const ip        = getAttackerIp(req);
   const username  = req.body?.username || req.body?.email || '(missing)';
   const payload   = JSON.stringify({ username, ip });
   const meta      = { startTime, report, payload };

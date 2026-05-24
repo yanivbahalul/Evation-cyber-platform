@@ -1,6 +1,7 @@
 'use strict';
 
 const honeyToken = require('../traps/honeyToken');
+const { getAttackerIp } = require('@evation/shared-utils');
 const attackLog = require('../utils/attackLog');
 
 function extractToken(req) {
@@ -12,23 +13,13 @@ function extractToken(req) {
   return null;
 }
 
-function getIP(req) {
-  return (
-    req.headers['x-forwarded-for']?.split(',')[0].trim() ||
-    req.headers['x-real-ip'] ||
-    req.ip ||
-    req.socket?.remoteAddress ||
-    'unknown'
-  );
-}
-
 module.exports = async function honeyTokenDetector(req, res, next) {
   try {
     const token = extractToken(req);
     if (!token) return next();
     if (!(await honeyToken.isHoney(token))) return next();
 
-    const ip = getIP(req);
+    const ip = getAttackerIp(req);
     await honeyToken.recordUsage(token, { attackerIp: ip, networkContext: 'HTTP' });
 
     attackLog.info('GATEWAY', 'honey_token_used', {

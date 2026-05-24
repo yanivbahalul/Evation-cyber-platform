@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { canAccessAttackMonitorEdge, PORTAL_HOME, resolvePortalUsernameEdge } from '@/lib/auth/portalAccessEdge'
+import { applyGatewayClientIpHeaders } from '@/lib/forwardGatewayClientIp'
 
 /**
  * Block non-admin operators from the Blue Team dashboard URL before the page shell loads.
@@ -9,24 +10,39 @@ function edgeSecretsConfigured() {
   return !!(process.env.JWT_SECRET || process.env.GATEWAY_JWT_SECRET)
 }
 
+function nextWithGatewayClientIp(req: NextRequest) {
+  const headers = applyGatewayClientIpHeaders(req, new Headers(req.headers))
+  return NextResponse.next({ request: { headers } })
+}
+
 export async function middleware(req: NextRequest) {
-  if (!edgeSecretsConfigured()) {
+  const pathname = req.nextUrl.pathname
+
+  if (!pathname.startsWith('/gateway')) {
     return NextResponse.next()
   }
 
-  const username = await resolvePortalUsernameEdge(req)
-  if (!username) {
-    return NextResponse.redirect(new URL('/gateway/login/', req.url))
+  const isDashboard =
+    pathname === '/gateway/dashboard' || pathname === '/gateway/dashboard/'
+
+  if (isDashboard && edgeSecretsConfigured()) {
+    const username = await resolvePortalUsernameEdge(req)
+    if (!username) {
+      return NextResponse.redirect(new URL('/gateway/login/', req.url))
+    }
+
+    const allowed = await canAccessAttackMonitorEdge(req)
+    if (!allowed) {
+      return NextResponse.redirect(new URL(PORTAL_HOME, req.url))
+    }
   }
 
-  const allowed = await canAccessAttackMonitorEdge(req)
-  if (!allowed) {
-    return NextResponse.redirect(new URL(PORTAL_HOME, req.url))
-  }
-
-  return NextResponse.next()
+  // Inject X-Forwarded-For / X-Client-IP before next.config rewrites proxy to Express.
+  return nextWithGatewayClientIp(req)
 }
 
 export const config = {
-  matcher: ['/gateway/dashboard', '/gateway/dashboard/'],
+  matcher: ['/gateway', '/gateway/:path*'],
+  // Node runtime so we can read the TCP peer (LAN clients) before /gateway rewrites to Express.
+  runtime: 'nodejs',
 }

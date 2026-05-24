@@ -15,6 +15,7 @@
   "dependencies": {
     "@evation/db-schemas": "workspace:*",
     "@evation/shared-constants": "workspace:*",
+    "@evation/shared-utils": "workspace:*",
     "@faker-js/faker": "^10.4.0",
     "bcryptjs": "^3.0.3",
     "cookie-parser": "^1.4.7",

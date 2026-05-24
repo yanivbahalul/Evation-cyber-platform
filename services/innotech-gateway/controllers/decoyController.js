@@ -21,6 +21,7 @@ const honeyToken    = require('../traps/honeyToken');
 const sandboxXSS    = require('../traps/sandboxXSS');
 
 const TRAP_TYPES    = require('@evation/shared-constants');
+const { getAttackerIp } = require('@evation/shared-utils');
 const LoggerService = require('../../logging-data-extraction/services/LoggerService');
 const { emitLiveAlert } = require('../utils/telemetryLiveAlert');
 const attackLog     = require('../utils/attackLog');
@@ -53,21 +54,6 @@ function buildFakeCredentialRows() {
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-
-/**
- * Resolve the attacker IP. Prefer the one Sagiv's gatekeeper attached so we
- * don't disagree with the rest of the pipeline.
- */
-function getIP(req) {
-  return (
-    req.threatInfo?.originIP ||
-    req.headers['x-forwarded-for']?.split(',')[0].trim() ||
-    req.headers['x-real-ip'] ||
-    req.ip ||
-    req.socket?.remoteAddress ||
-    'unknown'
-  );
-}
 
 /**
  * Stringify the relevant parts of the request so Max can store the raw
@@ -107,7 +93,7 @@ function buildEventFields(req, opts = {}) {
  */
 async function report(trapType, req, opts = {}) {
   const payload    = opts.payload  ?? extractPayload(req);
-  const attackerIp = getIP(req);
+  const attackerIp = getAttackerIp(req);
 
   const eventData = {
     attackerIp,

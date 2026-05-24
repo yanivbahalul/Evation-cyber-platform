@@ -1,5 +1,6 @@
 'use strict';
 
+const { getAttackerIp } = require('@evation/shared-utils');
 const attackLog = require('./attackLog');
 
 const COUNTER_TTL_MS = 60 * 60_000;
@@ -15,20 +16,12 @@ setInterval(() => {
   }
 }, 5 * 60_000).unref();
 
-function getIP(req) {
-  return (
-    req.headers['x-forwarded-for']?.split(',')[0].trim() ||
-    req.ip ||
-    'unknown'
-  );
-}
-
 function getKey(req) {
   // Prefer the stable attacker trace cookie (works even behind proxies / Next rewrites).
   // Fallback to IP if trace isn't available for any reason.
   return (req.traceId && typeof req.traceId === 'string' && req.traceId.trim())
     ? `trace:${req.traceId.trim()}`
-    : `ip:${getIP(req)}`;
+    : `ip:${getAttackerIp(req)}`;
 }
 
 function pickThreshold() {
@@ -39,7 +32,7 @@ function pickThreshold() {
 /** @returns {boolean} true when attacker should be handed to the fake login trap */
 exports.shouldHandoffToDecoyLogin = (req) => {
   const key = getKey(req);
-  const ip = getIP(req);
+  const ip = getAttackerIp(req);
   const state = failedByIp.get(key) || { count: 0, lastSeen: 0, threshold: pickThreshold() };
   state.count += 1;
   state.lastSeen = Date.now();
