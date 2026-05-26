@@ -12,7 +12,7 @@ Quick navigation for developers. For attack demos and trap walkthroughs, see [RE
 | [`packages/shared-constants/`](../packages/shared-constants/) | `TRAP_TYPES` enum (gateway + telemetry + admin) |
 | [`packages/shared-utils/`](../packages/shared-utils/) | `getAttackerIp` and shared helpers |
 | [`packages/db-schemas/`](../packages/db-schemas/) | Mongoose schemas (malicious DB, admin users, safezone users) |
-| [`scripts/`](../scripts/) | [`qa/`](../scripts/qa/) automated tests, [`yaniv-test/`](../scripts/yaniv-test/) remote trap simulation |
+| [`scripts/`](../scripts/) | [`yaniv-test/`](../scripts/yaniv-test/) remote trap simulation (`pnpm trap:demo`) |
 
 ## Where to find things
 
@@ -58,11 +58,11 @@ pnpm dev:full
 - Browser: http://localhost:3000/gateway/
 - Env: `apps/admin-panel/.env.local` (`SAFEZONE_DB_URI`, `MALICIOUS_DB_URI`, socket tokens, `DEV_PUBLIC_HOST`)
 
-## QA
+## Trap simulation (optional)
 
 ```bash
-pnpm qa:smoke
-pnpm qa:all
+pnpm trap:demo
+pnpm trap:chain
 ```
 
-See [QA_MASTER_CHECKLIST.md](./QA_MASTER_CHECKLIST.md).
+See [scripts/yaniv-test/README.md](../scripts/yaniv-test/README.md). Manual QA checklist: [QA_MASTER_CHECKLIST.md](./QA_MASTER_CHECKLIST.md).

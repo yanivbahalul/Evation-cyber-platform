@@ -2,14 +2,7 @@
 
 Master checklist for manual QA across all four layers. Trap step-by-step payloads and curl examples live in **[ATTACK_DEMO_GUIDE.md](./ATTACK_DEMO_GUIDE.md)** — use this file for pass/fail tracking only.
 
-**Automation:** `pnpm qa:all` (or `bash scripts/qa/run-all.sh`) after `pnpm dev:full`. Logs: [`docs/qa-automated-results.txt`](./qa-automated-results.txt).
-
-| Script | Covers |
-|--------|--------|
-| `scripts/qa/smoke.sh` | S2–S3, R2–R3, F12, traps T1–T10, E1–E3, E5, E9, A1–A2 |
-| `scripts/qa/auth-matrix.sh` | F3–F4, R1, R4, R7 (needs `QA_TEST_ADMIN_PASSWORD`) |
-| `scripts/qa/resilience-extra.sh` | E4, E13, T7 page |
-| `services/logging-data-extraction/scripts/verifyQaEvents.js` | T1–T10 in Mongo + T-KC traceId |
+**Trap simulation (optional):** `pnpm trap:demo` or `scripts/yaniv-test/run-kill-chain.sh` after `pnpm dev:full` — see [ATTACK_DEMO_GUIDE.md](./ATTACK_DEMO_GUIDE.md).
 
 ---
 
@@ -18,7 +11,7 @@ Master checklist for manual QA across all four layers. Trap step-by-step payload
 | Field | Value |
 |-------|-------|
 | Date | 2026-05-21 |
-| Tester | automated (`pnpm qa:all`) |
+| Tester | (manual) |
 | Branch / commit | `4fbd83b` |
 | `pnpm dev:full` | pass (stack on :3000 / :3002; use trailing-slash URLs) |
 | Demo Mode on dashboard | manual — confirm OFF in browser (S5) |
@@ -208,7 +201,7 @@ For each trap: trigger → verify UI/HTTP → verify `trapType` in dashboard / l
 
 ## Defects log
 
-Record failures found during QA runs. `qa-smoke.sh` may append automated findings here.
+Record failures found during manual QA runs.
 
 | ID | Severity | Layer | Test ID | Summary | Repro | Status |
 |----|----------|-------|---------|---------|-------|--------|
@@ -236,7 +229,7 @@ Record failures found during QA runs. `qa-smoke.sh` may append automated finding
 
 | Tool | Scope |
 |------|--------|
-| `scripts/qa/smoke.sh` | S2, S3, R3, F12, trap HTTP probes |
+| `pnpm trap:demo` / `scripts/yaniv-test/` | Trap HTTP probes (T1–T10) |
 | Vitest | `detectionService.js` regex regression |
 | Supertest | Admin API R3–R8 |
 | Playwright | F1–F16, one trap e2e |
