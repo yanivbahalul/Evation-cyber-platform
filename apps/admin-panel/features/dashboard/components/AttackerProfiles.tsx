@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useSocket } from '@/features/dashboard/context/SocketContext'
 import { useInvestigation } from '@/features/investigation/context/InvestigationContext'
 import type { AttackerProfile } from '@/lib/types/telemetry'
-import { shortTrace } from '@/lib/attackIntel'
+import { shortTrace, uniqueTraceIds } from '@/lib/attackIntel'
 import { Bot, Monitor, MapPin, Ban, Search } from 'lucide-react'
 
 interface AttackerProfilesProps {
@@ -93,9 +93,10 @@ export default function AttackerProfiles({ onNavigateInvestigate }: AttackerProf
             <Row
               label="traceIds"
               value={
-                selected.traceIds?.length
-                  ? selected.traceIds.map(id => shortTrace(id)).join(', ')
-                  : '—'
+                (() => {
+                  const ids = uniqueTraceIds(selected.traceIds)
+                  return ids.length ? ids.map(id => shortTrace(id)).join(', ') : '—'
+                })()
               }
             />
           </div>
@@ -121,6 +122,7 @@ function ProfileCard({
   onInvestigate: (traceId?: string) => void
 }) {
   const rc = riskColor(profile.riskScore)
+  const traces = uniqueTraceIds(profile.traceIds)
   return (
     <div
       onClick={onSelect}
@@ -160,9 +162,9 @@ function ProfileCard({
         <span className="truncate">{profile.browser}</span>
       </div>
 
-      {profile.traceIds && profile.traceIds.length > 0 && (
+      {traces.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-1">
-          {profile.traceIds.slice(0, 3).map(id => (
+          {traces.slice(0, 3).map(id => (
             <button
               key={id}
               type="button"

@@ -71,3 +71,15 @@ export interface AttackerTimeline {
   profile: AttackerProfile | null
   events: AttackEvent[]
 }
+
+export interface HoneyToken {
+  _id: string
+  fakeUsername: string
+  fakePassword: string
+  isTriggered: boolean
+  triggeredLogs: Array<{
+    attackerIp: string
+    timestamp: string
+    networkContext: string
+  }>
+}

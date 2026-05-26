@@ -20,26 +20,38 @@ interface TopBarProps {
 }
 
 export default function TopBar({ active }: TopBarProps) {
-  const { liveAlerts, demoMode, setDemoMode, clearAlerts, refresh } = useSocket()
+  const { liveAlerts, demoMode, setDemoMode, clearAlerts, refresh, isSyncing, hasDashboardData } =
+    useSocket()
   const [openNotifications, setOpenNotifications] = useState(false)
   const [portalReady, setPortalReady] = useState(false)
 
   const latest = useMemo(() => liveAlerts.slice(0, 8), [liveAlerts])
-  const now = new Date().toLocaleString('en-GB', {
-    day: '2-digit', month: 'short', year: 'numeric',
-    hour: '2-digit', minute: '2-digit', second: '2-digit',
-    hour12: false,
-  })
+  const [now, setNow] = useState('')
 
   useEffect(() => {
     setPortalReady(true)
+    const format = () =>
+      new Date().toLocaleString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+      })
+    setNow(format())
+    const id = setInterval(format, 1000)
+    return () => clearInterval(id)
   }, [])
 
   return (
     <header className="relative z-50 flex items-center justify-between px-6 py-3.5 bg-surface border-b border-border shrink-0">
       <div>
         <h2 className="text-base font-semibold text-foreground">{TAB_TITLES[active]}</h2>
-        <p className="text-xs font-mono text-muted-foreground mt-0.5">{now} UTC</p>
+        <p className="text-xs font-mono text-muted-foreground mt-0.5" suppressHydrationWarning>
+          {now ? `${now} UTC` : '—'}
+        </p>
       </div>
 
       <div className="flex items-center gap-3 relative">
@@ -56,8 +68,14 @@ export default function TopBar({ active }: TopBarProps) {
               demoMode ? 'bg-accent' : 'bg-success'
             }`}
           />
-          {demoMode ? 'DEMO' : 'LIVE'}
+          {demoMode ? 'DEMO' : isSyncing ? 'SYNC' : 'LIVE'}
         </div>
+
+        {!demoMode && isSyncing && hasDashboardData && (
+          <span className="text-[10px] font-mono text-muted-foreground px-2 py-1 rounded-md border border-border">
+            Updating…
+          </span>
+        )}
 
         {/* Demo toggle */}
         <button

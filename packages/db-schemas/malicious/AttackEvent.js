@@ -61,4 +61,6 @@ const AttackEventSchema = new mongoose.Schema(
   }
 );
 
+AttackEventSchema.index({ timestamp: -1 });
+
 module.exports = AttackEventSchema;

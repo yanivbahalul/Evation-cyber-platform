@@ -1,4 +1,5 @@
 import type { AttackEvent } from '@/lib/types/telemetry'
+import { uniqueTraceIds } from '@/lib/attackIntel'
 
 export function mapAttackEventDoc(e: Record<string, unknown>): AttackEvent {
   const ts = e.timestamp instanceof Date ? e.timestamp : new Date(String(e.timestamp ?? Date.now()))
@@ -49,6 +50,6 @@ export function mapAttackerProfileDoc(p: Record<string, unknown>) {
     riskScore: Number(p.riskScore ?? 0),
     firstSeen: (p.firstSeen instanceof Date ? p.firstSeen : new Date(String(p.firstSeen))).toISOString(),
     lastSeen: (p.lastSeen instanceof Date ? p.lastSeen : new Date(String(p.lastSeen))).toISOString(),
-    traceIds: Array.isArray(p.traceIds) ? p.traceIds.map(String) : [],
+    traceIds: uniqueTraceIds(Array.isArray(p.traceIds) ? p.traceIds.map(String) : []),
   }
 }

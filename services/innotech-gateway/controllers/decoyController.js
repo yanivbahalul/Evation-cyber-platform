@@ -105,13 +105,11 @@ async function report(trapType, req, opts = {}) {
     ...buildEventFields(req, opts),
   };
 
-  try {
-    await LoggerService.logAttack(eventData);
-  } catch (err) {
-    attackLog.error('TRAP', 'save_to_database_failed', { trap: trapType, ip: attackerIp, error: err.message });
-  }
-
   const alertResult = await emitLiveAlert({ ...eventData, timestamp: Date.now() });
+
+  LoggerService.logAttack(eventData).catch((err) => {
+    attackLog.error('TRAP', 'save_to_database_failed', { trap: trapType, ip: attackerIp, error: err.message });
+  });
   if (alertResult.status === 'sent') {
     attackLog.info('TRAP', 'live_alert_sent_to_admin', {
       trap: trapType,

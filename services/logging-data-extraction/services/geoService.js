@@ -202,6 +202,31 @@ async function resolveIpGeoImpl(rawIp) {
 }
 
 /**
+ * Instant geo for live alerts — cache, LAN egress, or geoip-lite only (no HTTP).
+ * @param {string} rawIp
+ */
+function resolveIpGeoFast(rawIp) {
+  const ip = normalizeIp(rawIp);
+  if (!ip || ip === 'unknown') {
+    return { city: 'Unknown', lat: null, lng: null, source: 'none' };
+  }
+
+  const cached = readCache(ip);
+  if (cached) return cached;
+
+  if (isPrivateIp(ip)) {
+    return privateLanGeo();
+  }
+
+  const geo = fromGeoipLite(ip);
+  if (geo) {
+    return writeCache(ip, geo);
+  }
+
+  return { city: 'Unknown', lat: null, lng: null, source: 'pending' };
+}
+
+/**
  * Resolve city + coordinates for an attacker IP (offline DB, online API, LAN egress).
  * @param {string} rawIp
  * @returns {Promise<{ city: string, lat: number|null, lng: number|null, country?: string, source?: string }>}
@@ -281,6 +306,7 @@ function clearGeoCache() {
 
 module.exports = {
   resolveIpGeo,
+  resolveIpGeoFast,
   initLanEgressGeo,
   clearGeoCache,
   formatCity,

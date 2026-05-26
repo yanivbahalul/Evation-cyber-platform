@@ -5,7 +5,10 @@ import {
   parseForwardedChain,
 } from '@evation/shared-utils'
 
-/** Best-effort client IP for the browser tab hitting the UI (before /gateway rewrite). */
+/**
+ * Client IP for the browser tab hitting the UI (before /gateway rewrite).
+ * Prefers LAN/public; uses 127.0.0.1 when the tab is on localhost; "unknown" only with no signal.
+ */
 export function resolveMiddlewareClientIp(req: NextRequest): string {
   const candidates: string[] = []
 

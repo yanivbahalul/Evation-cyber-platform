@@ -46,18 +46,32 @@ const telemetryTracker = require('./middlewares/telemetryTracker');
 const TRAP_TYPES = require('@evation/shared-constants');
 
 const { upsertFromAttackSafe } = require('./services/AttackerProfileService');
-const { resolveIpGeo, initLanEgressGeo } = require('./services/geoService');
+const { resolveIpGeo, resolveIpGeoFast, initLanEgressGeo } = require('./services/geoService');
 
-async function enrichLiveAlertBody(body) {
+function enrichLiveAlertBody(body) {
   const ip = body?.attackerIp;
   const hasCity = body?.city && body.city !== 'Unknown';
-  const geo = !hasCity && ip ? await resolveIpGeo(ip) : null;
-  return {
+  const geo = !hasCity && ip ? resolveIpGeoFast(ip) : null;
+  const enriched = {
     ...body,
     city: hasCity ? body.city : (geo?.city ?? body?.city ?? 'Unknown'),
     lat: body?.lat ?? geo?.lat ?? 0,
     lng: body?.lng ?? geo?.lng ?? 0,
   };
+  if (!hasCity && ip && (!geo?.city || geo.city === 'Unknown')) {
+    void resolveIpGeo(ip)
+      .then((fullGeo) => {
+        if (!fullGeo?.city || fullGeo.city === 'Unknown') return;
+        return upsertFromAttackSafe({
+          ...enriched,
+          city: fullGeo.city,
+          lat: fullGeo.lat ?? 0,
+          lng: fullGeo.lng ?? 0,
+        });
+      })
+      .catch(() => {});
+  }
+  return enriched;
 }
 
 // Gateway (decoy) → telemetry: upsert profile + broadcast liveAlert (AttackEvent already saved in gateway)
@@ -78,9 +92,9 @@ app.post('/internal/live-alert', async (req, res) => {
       return res.status(401).json({ success: false, error: 'Unauthorized' });
     }
 
-    const body = await enrichLiveAlertBody(req.body || {});
-    await upsertFromAttackSafe(body);
+    const body = enrichLiveAlertBody(req.body || {});
     SocketService.emitLiveAlert(body);
+    void upsertFromAttackSafe(body);
     return res.json({ success: true });
   } catch (err) {
     attackLog.error('TELEMETRY', 'live_alert_handler_failed', {

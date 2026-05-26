@@ -50,3 +50,8 @@ export async function getTelemetryModels() {
   }
 }
 
+// Warm Mongo on server boot so the first dashboard load is not blocked on connect.
+if (process.env.MALICIOUS_DB_URI) {
+  getTelemetryConn().catch(() => {})
+}
+

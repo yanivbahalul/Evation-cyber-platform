@@ -21,7 +21,7 @@ const TRAP_COLORS: Record<string, string> = {
 }
 
 export default function AttackerWorkspace() {
-  const { demoMode, attackEvents, attackerProfiles } = useSocket()
+  const { demoMode, attackEvents, attackerProfiles, getTimelineForIp } = useSocket()
   const { target, openInvestigation, clearInvestigation } = useInvestigation()
   const [ipInput, setIpInput] = useState(target?.ip ?? '')
   const [traceInput, setTraceInput] = useState(target?.traceId ?? '')
@@ -36,7 +36,16 @@ export default function AttackerWorkspace() {
   const loadTimeline = useCallback(async () => {
     const ip = ipInput.trim()
     if (!ip) return
-    setLoading(true)
+
+    const trace = traceInput.trim()
+    const instant = !demoMode ? getTimelineForIp(ip, trace || undefined) : null
+    if (instant && (instant.profile || instant.events.length > 0)) {
+      setTimeline(instant)
+      setLoading(false)
+    } else {
+      setLoading(true)
+    }
+
     try {
       if (demoMode) {
         const profile =
@@ -76,7 +85,7 @@ export default function AttackerWorkspace() {
     } finally {
       setLoading(false)
     }
-  }, [ipInput, traceInput, demoMode, attackEvents, attackerProfiles])
+  }, [ipInput, traceInput, demoMode, attackEvents, attackerProfiles, getTimelineForIp])
 
   useEffect(() => {
     if (target?.ip) loadTimeline()

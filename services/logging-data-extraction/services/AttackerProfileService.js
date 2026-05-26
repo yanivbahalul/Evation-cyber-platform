@@ -4,8 +4,6 @@ const connectMaliciousDB = require('../config/maliciousDb');
 const attackLog = require('../utils/attackLog');
 const { resolveIpGeo } = require('./geoService');
 
-const MAX_TRACE_IDS = 500;
-
 function geoFromAttackData(attackData) {
   const city = attackData?.city;
   if (!city || city === 'Unknown') return null;
@@ -51,9 +49,7 @@ async function upsertFromAttack(attackData) {
   };
 
   if (attackData.traceId) {
-    update.$push = {
-      traceIds: { $each: [attackData.traceId], $slice: -MAX_TRACE_IDS },
-    };
+    update.$addToSet = { traceIds: attackData.traceId };
   }
 
   return AttackerProfile.findOneAndUpdate({ ip: attackerIp }, update, {

@@ -9,22 +9,21 @@ import React, {
   useCallback,
 } from 'react'
 import { io, type Socket } from 'socket.io-client'
-import type { AttackEvent, AttackerProfile, LiveAlert, TrapType } from '@/lib/types/telemetry'
+import type {
+  AttackEvent,
+  AttackerProfile,
+  AttackerTimeline,
+  HoneyToken,
+  LiveAlert,
+  TrapType,
+} from '@/lib/types/telemetry'
 import { normalizeTrapType } from '@/lib/attackIntel'
+import {
+  readDashboardCache,
+  writeDashboardCache,
+} from '@/lib/dashboardCache'
 
-export type { AttackEvent, AttackerProfile, LiveAlert, TrapType } from '@/lib/types/telemetry'
-
-export interface HoneyToken {
-  _id: string
-  fakeUsername: string
-  fakePassword: string
-  isTriggered: boolean
-  triggeredLogs: Array<{
-    attackerIp: string
-    timestamp: string
-    networkContext: string
-  }>
-}
+export type { AttackEvent, AttackerProfile, HoneyToken, LiveAlert, TrapType } from '@/lib/types/telemetry'
 
 function randomEventId(): string {
   const c = globalThis.crypto
@@ -96,10 +95,17 @@ interface SocketContextValue {
   attackerProfiles: AttackerProfile[]
   honeyTokens: HoneyToken[]
   dataStale: boolean
+  /** True while a background refresh is in flight (UI can show cached data meanwhile). */
+  isSyncing: boolean
+  /** True once we have events/profiles/tokens from cache or a successful fetch. */
+  hasDashboardData: boolean
   lastRefreshError: string | null
+  getTimelineForIp: (ip: string, traceId?: string) => AttackerTimeline | null
   clearAlerts: () => void
   refresh: () => Promise<void>
 }
+
+export type DashboardBootstrap = Omit<DashboardSnapshot, 'savedAt'>
 
 const SocketContext = createContext<SocketContextValue | null>(null)
 
@@ -367,7 +373,26 @@ const LIVE_TEMPLATES: Omit<LiveAlert, 'eventID' | 'timestamp'>[] = [
   },
 ]
 
-export function SocketProvider({ children }: { children: React.ReactNode }) {
+function applySnapshot(
+  snapshot: DashboardBootstrap,
+  setters: {
+    setAttackEvents: (v: AttackEvent[]) => void
+    setAttackerProfiles: (v: AttackerProfile[]) => void
+    setHoneyTokens: (v: HoneyToken[]) => void
+  },
+) {
+  setters.setAttackEvents(Array.isArray(snapshot.events) ? snapshot.events : [])
+  setters.setAttackerProfiles(Array.isArray(snapshot.profiles) ? snapshot.profiles : [])
+  setters.setHoneyTokens(Array.isArray(snapshot.honeyTokens) ? snapshot.honeyTokens : [])
+}
+
+export function SocketProvider({
+  children,
+  bootstrap,
+}: {
+  children: React.ReactNode
+  bootstrap?: DashboardBootstrap | null
+}) {
   const [connected, setConnected] = useState(false)
   const [demoMode, setDemoModeState] = useState(false)
   const [liveAlerts, setLiveAlerts] = useState<LiveAlert[]>([])
@@ -375,6 +400,8 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   const [attackerProfiles, setAttackerProfiles] = useState<AttackerProfile[]>([])
   const [honeyTokens, setHoneyTokens] = useState<HoneyToken[]>([])
   const [dataStale, setDataStale] = useState(false)
+  const [isSyncing, setIsSyncing] = useState(true)
+  const [hasDashboardData, setHasDashboardData] = useState(false)
   const [lastRefreshError, setLastRefreshError] = useState<string | null>(null)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -382,6 +409,9 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   const socketRef = useRef<Socket | null>(null)
   const refreshGenerationRef = useRef(0)
   const refreshInFlightRef = useRef(false)
+  const refreshPendingRef = useRef(false)
+  const refreshAfterAlertRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const timelinePrefetchRef = useRef<Set<string>>(new Set())
 
   const setDemoMode = useCallback((enabled: boolean) => {
     refreshGenerationRef.current += 1
@@ -394,48 +424,52 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
+  const applyDashboardPayload = useCallback((payload: DashboardBootstrap) => {
+    applySnapshot(payload, { setAttackEvents, setAttackerProfiles, setHoneyTokens })
+    writeDashboardCache(payload)
+    setHasDashboardData(true)
+    setDataStale(false)
+    setLastRefreshError(null)
+  }, [])
+
   const refresh = useCallback(async (signal?: AbortSignal) => {
     if (demoMode) return
-    if (refreshInFlightRef.current) return
+    if (refreshInFlightRef.current) {
+      refreshPendingRef.current = true
+      return
+    }
 
     const generation = refreshGenerationRef.current
     refreshInFlightRef.current = true
+    setIsSyncing(true)
 
     try {
-      const [eventsRes, attackersRes, tokensRes] = await Promise.all([
-        fetch('/api/admin/events?limit=200', { method: 'GET', signal }),
-        fetch('/api/admin/attackers', { method: 'GET', signal }),
-        fetch('/api/admin/honeytokens', { method: 'GET', signal }),
-      ])
+      const res = await fetch('/api/admin/dashboard?limit=200', { method: 'GET', signal })
 
       if (signal?.aborted || generation !== refreshGenerationRef.current) return
 
-      if (!eventsRes.ok || !attackersRes.ok || !tokensRes.ok) {
-        const status = [eventsRes.status, attackersRes.status, tokensRes.status].join(',')
-        setLastRefreshError(`HTTP ${status}`)
+      if (!res.ok) {
+        setLastRefreshError(`HTTP ${res.status}`)
         setDataStale(true)
         return
       }
 
-      const [eventsJson, attackersJson, tokensJson] = await Promise.all([
-        eventsRes.json(),
-        attackersRes.json(),
-        tokensRes.json(),
-      ])
+      const json = await res.json()
 
       if (signal?.aborted || generation !== refreshGenerationRef.current) return
 
-      if (!eventsJson?.success || !attackersJson?.success || !tokensJson?.success) {
+      if (!json?.success || !json?.data) {
         setLastRefreshError('API returned success=false')
         setDataStale(true)
         return
       }
 
-      setAttackEvents(Array.isArray(eventsJson.data) ? eventsJson.data : [])
-      setAttackerProfiles(Array.isArray(attackersJson.data) ? attackersJson.data : [])
-      setHoneyTokens(Array.isArray(tokensJson.data) ? tokensJson.data : [])
-      setLastRefreshError(null)
-      setDataStale(false)
+      const { events, profiles, honeyTokens: tokens } = json.data as DashboardBootstrap
+      applyDashboardPayload({
+        events: Array.isArray(events) ? events : [],
+        profiles: Array.isArray(profiles) ? profiles : [],
+        honeyTokens: Array.isArray(tokens) ? tokens : [],
+      })
     } catch (err) {
       if (signal?.aborted || generation !== refreshGenerationRef.current) return
       const message = err instanceof Error ? err.message : String(err)
@@ -443,8 +477,47 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       setDataStale(true)
     } finally {
       refreshInFlightRef.current = false
+      if (generation === refreshGenerationRef.current) setIsSyncing(false)
+      if (refreshPendingRef.current) {
+        refreshPendingRef.current = false
+        void refresh(signal)
+      }
     }
-  }, [demoMode])
+  }, [demoMode, applyDashboardPayload])
+
+  const getTimelineForIp = useCallback(
+    (ip: string, traceId?: string): AttackerTimeline | null => {
+      const trimmed = ip.trim()
+      if (!trimmed) return null
+      const profile = attackerProfiles.find(p => p.ip === trimmed) ?? null
+      let events = attackEvents.filter(e => e.attackerIp === trimmed)
+      const tid = traceId?.trim()
+      if (tid) {
+        events = events.filter(e => !e.traceId || e.traceId === tid)
+      }
+      if (!profile && events.length === 0) return null
+      events = [...events].sort(
+        (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+      )
+      return { profile, events }
+    },
+    [attackEvents, attackerProfiles],
+  )
+
+  useEffect(() => {
+    if (bootstrap) {
+      applyDashboardPayload(bootstrap)
+      return
+    }
+    const cached = readDashboardCache()
+    if (cached) {
+      applyDashboardPayload({
+        events: cached.events,
+        profiles: cached.profiles,
+        honeyTokens: cached.honeyTokens,
+      })
+    }
+  }, [bootstrap, applyDashboardPayload])
 
   useEffect(() => {
     try {
@@ -475,6 +548,8 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       setAttackEvents(MOCK_EVENTS)
       setAttackerProfiles(MOCK_PROFILES)
       setHoneyTokens(MOCK_TOKENS)
+      setHasDashboardData(true)
+      setIsSyncing(false)
 
       const connectTimer = setTimeout(() => setConnected(true), 700)
       intervalRef.current = setInterval(() => {
@@ -531,16 +606,30 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       sock.on('liveAlert', (data: Record<string, unknown>) => {
         const alert = mapSocketLiveAlert(data)
         setLiveAlerts(prev => [alert, ...prev].slice(0, 200))
+        if (refreshAfterAlertRef.current) clearTimeout(refreshAfterAlertRef.current)
+        refreshAfterAlertRef.current = setTimeout(() => {
+          refreshAfterAlertRef.current = null
+          refresh(abort.signal).catch(() => {})
+        }, 600)
       })
     }
 
     refresh(abort.signal).catch(() => {})
     pollRef.current = setInterval(() => {
-      refresh(abort.signal).catch(() => {})
-    }, 10_000)
+      if (document.visibilityState === 'visible') {
+        refresh(abort.signal).catch(() => {})
+      }
+    }, 4_000)
+
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') refresh(abort.signal).catch(() => {})
+    }
+    document.addEventListener('visibilitychange', onVisible)
 
     return () => {
       abort.abort()
+      document.removeEventListener('visibilitychange', onVisible)
+      if (refreshAfterAlertRef.current) clearTimeout(refreshAfterAlertRef.current)
       refreshGenerationRef.current += 1
       if (intervalRef.current) clearInterval(intervalRef.current)
       if (pollRef.current) clearInterval(pollRef.current)
@@ -557,6 +646,22 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     }
   }, [demoMode, refresh])
 
+  useEffect(() => {
+    if (demoMode || !hasDashboardData || attackerProfiles.length === 0) return
+
+    const top = [...attackerProfiles]
+      .sort((a, b) => b.riskScore - a.riskScore)
+      .slice(0, 4)
+
+    for (const p of top) {
+      if (timelinePrefetchRef.current.has(p.ip)) continue
+      timelinePrefetchRef.current.add(p.ip)
+      fetch(`/api/admin/attackers/${encodeURIComponent(p.ip)}/timeline?limit=200`, {
+        method: 'GET',
+      }).catch(() => {})
+    }
+  }, [demoMode, hasDashboardData, attackerProfiles])
+
   const clearAlerts = useCallback(() => setLiveAlerts([]), [])
 
   return (
@@ -570,7 +675,10 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         attackerProfiles,
         honeyTokens,
         dataStale,
+        isSyncing,
+        hasDashboardData,
         lastRefreshError,
+        getTimelineForIp,
         clearAlerts,
         refresh: () => refresh(),
       }}

@@ -49,6 +49,20 @@ export function shortTrace(traceId?: string): string {
   return traceId.length > 8 ? `${traceId.slice(0, 8)}…` : traceId
 }
 
+/** Preserve order; drop empty/duplicate trace IDs (Mongo may still hold legacy dupes). */
+export function uniqueTraceIds(traceIds?: string[]): string[] {
+  if (!traceIds?.length) return []
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const raw of traceIds) {
+    const id = String(raw).trim()
+    if (!id || seen.has(id)) continue
+    seen.add(id)
+    out.push(id)
+  }
+  return out
+}
+
 export function learningHints(events: AttackEvent[], userAgent?: string): string[] {
   const hints: string[] = []
   const ua = (userAgent || events.find(e => e.userAgent)?.userAgent || '').toLowerCase()

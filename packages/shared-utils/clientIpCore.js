@@ -2,7 +2,9 @@
 
 /**
  * Resolve the real client IP behind reverse proxies (Next.js, Nginx, etc.).
- * Skips loopback hops so UI→gateway rewrites do not collapse to 127.0.0.1.
+ * Prefers the first non-loopback address in the trusted chain (LAN / public).
+ * Falls back to 127.0.0.1 only for same-machine dev (x-client-ip or local proxy hop).
+ * Returns "unknown" when there is no IP signal at all.
  */
 
 function normalizeIp(raw) {
@@ -94,13 +96,21 @@ function isTrustedProxy(req) {
  * @param {import('http').IncomingMessage & { threatInfo?: { originIP?: string }, ip?: string }} req
  * @returns {string}
  */
+function firstLoopback(candidates) {
+  for (const ip of candidates) {
+    if (ip && isLoopback(ip)) return ip;
+  }
+  return '';
+}
+
 function resolveAttackerIp(req) {
   const candidates = [];
+  let stampedClientIp = '';
 
   // Set by admin-panel middleware when Next proxies /gateway → gateway (trusted local hop only)
   if (isTrustedLocalProxy(req)) {
-    const fromClientHeader = normalizeIp(headerValue(req, 'x-client-ip'));
-    if (fromClientHeader) candidates.push(fromClientHeader);
+    stampedClientIp = normalizeIp(headerValue(req, 'x-client-ip'));
+    if (stampedClientIp) candidates.push(stampedClientIp);
   }
 
   if (isTrustedProxy(req)) {
@@ -120,8 +130,15 @@ function resolveAttackerIp(req) {
     if (ip && !isLoopback(ip)) return ip;
   }
 
-  const nonLoopback = candidates.filter((ip) => ip && !isLoopback(ip));
-  if (nonLoopback.length > 0) return nonLoopback[0];
+  // Same-machine dev: middleware stamped loopback, or only a local proxy hop (Next → gateway).
+  if (stampedClientIp && isLoopback(stampedClientIp)) {
+    return stampedClientIp;
+  }
+
+  if (isTrustedLocalProxy(req)) {
+    const localOnly = firstLoopback(candidates);
+    if (localOnly) return localOnly;
+  }
 
   return 'unknown';
 }

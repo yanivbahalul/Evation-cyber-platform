@@ -4,7 +4,7 @@ const SocketService = require('../services/SocketService');
 const { upsertFromAttackSafe } = require('../services/AttackerProfileService');
 const { getAttackerIp } = require('@evation/shared-utils');
 const attackLog = require('../utils/attackLog');
-const { resolveIpGeo } = require('../services/geoService');
+const { resolveIpGeo, resolveIpGeoFast } = require('../services/geoService');
 
 function safeStringify(value) {
     try {
@@ -38,7 +38,7 @@ const telemetryTracker = (trapType) => {
 
                     if (req.isLogFlooding) return;
 
-                    const geo = await resolveIpGeo(attackerIp);
+                    const geo = resolveIpGeoFast(attackerIp);
                     const payload = req.body
                         ? safeStringify(req.body)
                         : req.query ? safeStringify(req.query) : 'N/A';
@@ -65,7 +65,18 @@ const telemetryTracker = (trapType) => {
                     LoggerService.logAttack(attackData).catch((err) => {
                         attackLog.error('TELEMETRY', 'attack_log_pipeline_failed', { trap: trapType, error: err?.message || err });
                     });
-                    await upsertFromAttackSafe(attackData);
+                    void upsertFromAttackSafe(attackData);
+                    void resolveIpGeo(attackerIp)
+                        .then((fullGeo) => {
+                            if (!fullGeo?.city || fullGeo.city === 'Unknown' || fullGeo.city === geo.city) return;
+                            return upsertFromAttackSafe({
+                                ...attackData,
+                                city: fullGeo.city,
+                                lat: fullGeo.lat ?? 0,
+                                lng: fullGeo.lng ?? 0,
+                            });
+                        })
+                        .catch(() => {});
                 } catch (err) {
                     attackLog.error('TELEMETRY', 'finish_handler_failed', {
                         trap: trapType,
