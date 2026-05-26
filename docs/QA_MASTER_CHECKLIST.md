@@ -2,13 +2,13 @@
 
 Master checklist for manual QA across all four layers. Trap step-by-step payloads and curl examples live in **[ATTACK_DEMO_GUIDE.md](./ATTACK_DEMO_GUIDE.md)** — use this file for pass/fail tracking only.
 
-**Automation:** `pnpm qa:all` (or `bash scripts/qa-run-all.sh`) after `pnpm dev:full`. Logs: [`docs/qa-automated-results.txt`](./qa-automated-results.txt).
+**Automation:** `pnpm qa:all` (or `bash scripts/qa/run-all.sh`) after `pnpm dev:full`. Logs: [`docs/qa-automated-results.txt`](./qa-automated-results.txt).
 
 | Script | Covers |
 |--------|--------|
-| `scripts/qa-smoke.sh` | S2–S3, R2–R3, F12, traps T1–T10, E1–E3, E5, E9, A1–A2 |
-| `scripts/qa-auth-matrix.sh` | F3–F4, R1, R4, R7 (needs `QA_TEST_ADMIN_PASSWORD`) |
-| `scripts/qa-resilience-extra.sh` | E4, E13, T7 page |
+| `scripts/qa/smoke.sh` | S2–S3, R2–R3, F12, traps T1–T10, E1–E3, E5, E9, A1–A2 |
+| `scripts/qa/auth-matrix.sh` | F3–F4, R1, R4, R7 (needs `QA_TEST_ADMIN_PASSWORD`) |
+| `scripts/qa/resilience-extra.sh` | E4, E13, T7 page |
 | `services/logging-data-extraction/scripts/verifyQaEvents.js` | T1–T10 in Mongo + T-KC traceId |
 
 ---
@@ -236,7 +236,7 @@ Record failures found during QA runs. `qa-smoke.sh` may append automated finding
 
 | Tool | Scope |
 |------|--------|
-| `scripts/qa-smoke.sh` | S2, S3, R3, F12, trap HTTP probes |
+| `scripts/qa/smoke.sh` | S2, S3, R3, F12, trap HTTP probes |
 | Vitest | `detectionService.js` regex regression |
 | Supertest | Admin API R3–R8 |
 | Playwright | F1–F16, one trap e2e |

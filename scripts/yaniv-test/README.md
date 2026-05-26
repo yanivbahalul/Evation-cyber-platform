@@ -58,11 +58,13 @@ TARGET=honey.lab.local PORT=3000 ./run-all.sh
 ## הרצה מרוכזת
 
 ```bash
-# כל המלכודות ברצף (כמו demo-traps-lite)
+# כל המלכודות ברצף
 ./run-all.sh
+# או מהשורש: pnpm trap:demo
 
 # שרשרת הרג (מומלץ להדגמה — SQLi → XSS → bomb → brute → recon → token)
 ./run-kill-chain.sh
+# או: pnpm trap:chain
 ```
 
 אחרי הרצה: פתחו `http://TARGET:3000/gateway/dashboard/` (מצב Demo **כבוי**) ובדקו **Investigate** לפי `traceId` שמודפס בסוף.
@@ -70,4 +72,5 @@ TARGET=honey.lab.local PORT=3000 ./run-all.sh
 ## מסמכים נוספים
 
 - [ATTACK_DEMO_GUIDE.md](../../docs/ATTACK_DEMO_GUIDE.md) — פירוט מלא לכל מלכודת
-- `../demo-traps-lite.sh` — גרסה מקומית קצרה (localhost)
+- [`../README.md`](../README.md) — מבנה `scripts/` (qa מול yaniv-test)
+- `../demo-traps-lite.sh` — קיצור דרך ל-`run-all.sh` עם `HOST`/`TARGET`

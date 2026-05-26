@@ -12,7 +12,7 @@ Quick navigation for developers. For attack demos and trap walkthroughs, see [RE
 | [`packages/shared-constants/`](../packages/shared-constants/) | `TRAP_TYPES` enum (gateway + telemetry + admin) |
 | [`packages/shared-utils/`](../packages/shared-utils/) | `getAttackerIp` and shared helpers |
 | [`packages/db-schemas/`](../packages/db-schemas/) | Mongoose schemas (malicious DB, admin users, safezone users) |
-| [`scripts/`](../scripts/) | QA smoke and auth-matrix scripts |
+| [`scripts/`](../scripts/) | [`qa/`](../scripts/qa/) automated tests, [`yaniv-test/`](../scripts/yaniv-test/) remote trap simulation |
 
 ## Where to find things
 
