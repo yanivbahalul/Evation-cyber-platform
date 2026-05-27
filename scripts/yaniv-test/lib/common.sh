@@ -12,7 +12,7 @@ fi
 
 # TARGET = IP or DNS of the admin-panel host (port 3000 by default).
 TARGET="${TARGET:-${HOST:-localhost}}"
-PORT="${PORT:-3000}"
+PORT="${PORT:-8080}"
 SCHEME="${SCHEME:-http}"
 GATEWAY_PATH="${GATEWAY_PATH:-/gateway}"
 PAUSE="${PAUSE:-1.5}"
@@ -33,7 +33,9 @@ _common_cleanup() {
 }
 
 _common_init() {
-  rm -f "$COOKIE"
+  if [[ "${KEEP_COOKIE:-0}" != "1" ]]; then
+    rm -f "$COOKIE"
+  fi
   echo "→ Target: ${BASE}/"
   echo "→ Cookie jar: ${COOKIE}"
   echo ""

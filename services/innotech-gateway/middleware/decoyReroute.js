@@ -31,6 +31,13 @@ module.exports = async function decoyReroute(req, res, next) {
   try {
     switch (threat) {
       case TRAP_TYPES.DATA_BOMB:
+        // DATA_BOMB regex currently matches `export=...`, which can collide with the DB export decoy
+        // (e.g. `/internal/services/database?export=credentials`). For DB routes, always prefer
+        // the SQLI database handler so the attacker receives the credential dump illusion.
+        if (isDatabaseTrapPath(req.path)) {
+          if (res.headersSent) return;
+          return decoyController.handleDatabaseExport(req, res);
+        }
         await decoyController.serveDataBomb(req, res);
         return;
       case TRAP_TYPES.SQLI: {

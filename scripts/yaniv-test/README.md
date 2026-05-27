@@ -120,6 +120,10 @@ chmod +x *.sh lib/common.sh
 
 אחרי הרצה: dashboard → **Investigate** לפי `traceId`.
 
+### Brute force (יציבות דמו)
+הסף של מלכודת ה‑Brute Force **מוגרל בין 5 ל‑10 ניסיונות** (כדי להקשות על תוקפים להבין את החוקיות).
+לכן `09-brute-force.sh` מנסה עד 10 פעמים ועוצר כשמזהה handoff.
+
 ## מסמכים
 
 - [README.md — Attack demo guide](../../README.md#attack-demo-guide)

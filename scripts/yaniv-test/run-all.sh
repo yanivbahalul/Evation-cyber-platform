@@ -8,6 +8,13 @@ trap _common_cleanup EXIT
 require_target
 _common_init
 
+# Keep a single cookie jar across all steps so the gateway correlates all
+# requests to the same attacker_trace_id (traceId).
+COOKIE_JAR="${COOKIE_JAR:-${TMPDIR:-/tmp}/evation-run-all.cookie}"
+export COOKIE_JAR
+KEEP_COOKIE=1
+export KEEP_COOKIE
+
 echo "Running all trap scripts (pause ${PAUSE}s between steps)…"
 echo ""
 
@@ -22,6 +29,4 @@ echo ""
 "${DIR}/09-brute-force.sh"
 "${DIR}/10-honey-token.sh"
 
-KEEP_COOKIE=1
-export KEEP_COOKIE
 print_trace
