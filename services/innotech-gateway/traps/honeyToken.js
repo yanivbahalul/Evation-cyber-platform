@@ -17,22 +17,12 @@ const { faker }            = require('@faker-js/faker');
 const crypto               = require('crypto');
 const mongoose             = require('mongoose');
 const connectMaliciousDB   = require('../../logging-data-extraction/config/maliciousDb');
-const HoneyTokenSchema     = require('../../logging-data-extraction/models/HoneyToken');
+const { HoneyTokenSchema } = require('@evation/db-schemas');
+const { getAttackerIp } = require('@evation/shared-utils');
 
 // In-memory cache so the detector middleware doesn't hit Mongo on every
 // request. The DB remains the source of truth.
 const memCache = new Map(); // apiKey OR jwt → { fakeUsername, _id }
-
-function getIP(req) {
-  return (
-    req.threatInfo?.originIP ||
-    req.headers['x-forwarded-for']?.split(',')[0].trim() ||
-    req.headers['x-real-ip'] ||
-    req.ip ||
-    req.socket?.remoteAddress ||
-    'unknown'
-  );
-}
 
 function fakeJwt(user) {
   const b64 = (obj) => Buffer.from(JSON.stringify(obj)).toString('base64url');
@@ -53,7 +43,7 @@ function getHoneyTokenModel() {
     const conn = connectMaliciousDB();
     return conn.models.HoneyToken || conn.model('HoneyToken', HoneyTokenSchema);
   } catch (err) {
-    console.warn('[HoneyToken] Mongo unavailable, falling back to in-memory only:', err.message);
+    require('../utils/attackLog').warn('TRAP', 'honey_token_db_unavailable_using_memory', { error: err.message });
     return null;
   }
 }
@@ -79,7 +69,7 @@ exports.generate = async (req) => {
     issuedAt:  new Date().toISOString(),
     expiresIn: 86400,
     honey:     true,
-    sourceIP:  getIP(req),
+    sourceIP:  getAttackerIp(req),
   };
 
   // Persist into Max's collection
@@ -93,7 +83,7 @@ exports.generate = async (req) => {
       memCache.set(apiKey, { fakeUsername: user.email, _id: doc._id });
       memCache.set(jwt,    { fakeUsername: user.email, _id: doc._id });
     } catch (err) {
-      console.error('[HoneyToken] persistence failed:', err.message);
+      require('../utils/attackLog').error('TRAP', 'honey_token_save_failed', { error: err.message });
       memCache.set(apiKey, { fakeUsername: user.email });
       memCache.set(jwt,    { fakeUsername: user.email });
     }
@@ -102,7 +92,11 @@ exports.generate = async (req) => {
     memCache.set(jwt,    { fakeUsername: user.email });
   }
 
-  console.log(`[HoneyToken] issued apiKey=${apiKey.slice(0, 12)}... to ${bundle.sourceIP}`);
+  require('../utils/attackLog').info('TRAP', 'honey_token_issued', {
+    ip: bundle.sourceIP,
+    token_prefix: apiKey.slice(0, 12),
+    fake_user: user.email,
+  });
   return bundle;
 };
 
@@ -122,7 +116,7 @@ exports.isHoney = async (value) => {
       return true;
     }
   } catch (err) {
-    console.error('[HoneyToken] lookup failed:', err.message);
+    require('../utils/attackLog').error('TRAP', 'honey_token_lookup_failed', { error: err.message });
   }
   return false;
 };
@@ -145,6 +139,6 @@ exports.recordUsage = async (value, ctx = {}) => {
       }
     );
   } catch (err) {
-    console.error('[HoneyToken] recordUsage failed:', err.message);
+    require('../utils/attackLog').error('TRAP', 'honey_token_usage_record_failed', { error: err.message });
   }
 };

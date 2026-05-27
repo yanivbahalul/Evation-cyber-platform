@@ -2,20 +2,28 @@
   <div class="brand">
     <div class="brand-badge" aria-hidden="true"></div>
     <div>
-      <div>InnoTech Internal Services</div>
-      <span class="brand-sub">Safe Zone Portal</span>
+      <div><%= typeof brandTitle !== 'undefined' ? brandTitle : 'InnoTech Internal Services' %></div>
+      <span class="brand-sub"><%= typeof brandSub !== 'undefined' ? brandSub : 'Safe Zone Portal' %></span>
     </div>
   </div>
 
-  <div class="pill">
+  <div class="pill" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
     <% if (user) { %>
-      Signed in as <strong><%= user.username %></strong>
-      <span class="muted2">·</span>
-      <span class="badge"><%= user.role %></span>
+      <span>
+        Signed in as <strong><%= user.username %></strong>
+        <span class="muted2">·</span>
+        <span class="badge"><%= user.role %></span>
+      </span>
+      <% if (typeof showSignOut !== 'undefined' && showSignOut) { %>
+        <% const out = (typeof dp !== 'undefined' && dp.signOut) ? dp.signOut : '/internal/auth/signout' %>
+        <form method="POST" action="<%= (typeof withBase === 'function' ? withBase(out) : out) %>" style="margin: 0;">
+          <button type="submit" class="btn" style="padding: 6px 12px; font-size: 12px;">Sign out</button>
+        </form>
+      <% } %>
     <% } else { %>
-      <strong>Guest</strong>
+      <strong><%= typeof accessLabel !== 'undefined' ? accessLabel : 'Guest' %></strong>
       <span class="muted2">·</span>
-      <span class="muted">public access</span>
+      <span class="muted"><%= typeof accessDetail !== 'undefined' ? accessDetail : 'public access' %></span>
     <% } %>
   </div>
 </div>

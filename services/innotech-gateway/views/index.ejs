@@ -42,21 +42,13 @@
 
         <% if (user) { %>
           <div class="btn-row">
-            <a class="btn primary" href="<%= withBase('/dashboard') %>">Enter dashboard</a>
+            <a class="btn primary" href="<%= withBase('/workspace') %>">Enter dashboard</a>
             <a class="btn" href="<%= withBase('/documents') %>">Browse documents</a>
             <a class="btn" href="<%= withBase('/profile') %>">My profile</a>
-            <% if (user.role === 'admin') { %>
-              <a class="btn" href="<%= adminPanelUrl %>" target="_blank" rel="noreferrer">Open Admin Panel</a>
-            <% } %>
           </div>
         <% } else { %>
           <div class="btn-row">
-            <a class="btn primary" href="<%= withBase('/login') %>">Employee Login</a>
-            <a class="btn" href="<%= withBase('/register') %>">Create account</a>
-            <a class="btn" href="<%= withBase('/contact') %>">Contact IT Support</a>
-          </div>
-          <div class="muted2" style="margin-top: 10px; font-size: 13px;">
-            Note: This is an internal portal demo. Some links are informational only.
+            <a class="btn primary" href="<%= withBase('/contact') %>">Contact IT Support</a>
           </div>
         <% } %>
       </div>

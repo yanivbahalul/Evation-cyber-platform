@@ -1,5 +1,7 @@
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const AdminUser = require('../models/AdminUser');
+const RealEmployee = require('../models/RealEmployee');
 
 let devEphemeralSecret = null;
 
@@ -25,15 +27,58 @@ function verifyAuthToken(token) {
   return jwt.verify(token, secret, { algorithms: ['HS256'], issuer: 'innotech-gateway' });
 }
 
-function authOptional(req, _res, next) {
+async function authOptional(req, res, next) {
   const token = req.cookies?.auth;
-  if (!token) return next();
+  if (token) {
+    try {
+      req.user = verifyAuthToken(token);
+    } catch {
+      // Ignore invalid/expired tokens; treat as logged out.
+    }
+  }
   try {
-    req.user = verifyAuthToken(token);
+    await attachOpsAccess(req, res);
   } catch {
-    // Ignore invalid/expired tokens; treat as logged out.
+    res.locals.canAccessOps = false;
   }
   next();
+}
+
+async function operatorRoleForUsername(username) {
+  if (!username) return false;
+  const au = await AdminUser.findOne({ username, isActive: true }).select('role').lean();
+  if (au) return au.role === 'admin';
+  const u = await RealEmployee.findOne({ username, isActive: true }).select('role').lean();
+  if (u) return u.role === 'admin';
+  return false;
+}
+
+function sessionClaimsAdmin(req) {
+  return String(req.user?.role || 'user') === 'admin';
+}
+
+/** Attack monitor nav — DB `admin` AND session role `admin` (blocks stale cookies / wrong JWT). */
+async function attachOpsAccess(req, res) {
+  res.locals.canAccessOps = false;
+
+  if (req.user?.username) {
+    const dbAdmin = await operatorRoleForUsername(req.user.username);
+    res.locals.canAccessOps = dbAdmin && sessionClaimsAdmin(req);
+    return;
+  }
+
+  const adminAuth = req.cookies?.admin_auth;
+  const secret = process.env.JWT_SECRET;
+  if (adminAuth && secret) {
+    try {
+      const payload = jwt.verify(adminAuth, secret, { algorithms: ['HS256'], issuer: 'innotech-honeynet' });
+      if (payload.purpose === 'auth' && payload.sub) {
+        res.locals.canAccessOps = await operatorRoleForUsername(payload.sub);
+      }
+    } catch {
+      // ignore
+    }
+  }
 }
 
 function requireAuth(req, res, next) {
@@ -41,11 +86,13 @@ function requireAuth(req, res, next) {
   next();
 }
 
-function requireAdmin(req, res, next) {
+async function requireAdmin(req, res, next) {
   if (!req.user) return res.redirect(req.withBase('/login'));
-  if (req.user.role !== 'admin') return res.status(403).send('Forbidden');
+  const name = req.user.username || String(req.user.sub || '');
+  if (!name || !(await operatorRoleForUsername(name))) {
+    return res.status(403).send('Forbidden');
+  }
   next();
 }
 
-module.exports = { signAuthToken, authOptional, requireAuth, requireAdmin };
-
+module.exports = { signAuthToken, authOptional, attachOpsAccess, requireAuth, requireAdmin, operatorRoleForUsername };

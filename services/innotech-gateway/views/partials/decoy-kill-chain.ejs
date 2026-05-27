@@ -1,0 +1,13 @@
+<% const wb = typeof withBase === 'function' ? withBase : (p) => p %>
+<% const paths = typeof dp !== 'undefined' ? dp : {} %>
+<div style="border:1px solid rgba(14,165,165,0.35); background: rgba(14,165,165,0.08); padding: 12px 14px; border-radius: 12px; margin-bottom: 14px;">
+  <div style="font-weight:650;">Recommended next steps</div>
+  <div class="muted2" style="margin-top: 4px; margin-bottom: 10px;">
+    Legacy administrator workflows — continue in order for full environment export.
+  </div>
+  <div class="btn-row">
+    <a class="btn" href="<%= wb(paths.database || '/internal/services/database') %>">Database services</a>
+    <a class="btn" href="<%= wb(paths.apiKeys || '/internal/integrations/keys') %>">API integration keys</a>
+    <a class="btn primary" href="<%= wb('/documents?download=backup.zip') %>">System backup (ZIP)</a>
+  </div>
+</div>

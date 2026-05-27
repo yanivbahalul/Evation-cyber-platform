@@ -6,7 +6,7 @@
         <span>Home</span><span class="muted2">↗</span>
       </a>
       <% if (user) { %>
-        <a class="<%= active === 'dashboard' ? 'active' : '' %>" href="<%= withBase('/dashboard') %>">
+        <a class="<%= active === 'dashboard' ? 'active' : '' %>" href="<%= withBase('/workspace') %>">
           <span>Dashboard</span><span class="muted2">⌁</span>
         </a>
         <a class="<%= active === 'profile' ? 'active' : '' %>" href="<%= withBase('/profile') %>">
@@ -25,6 +25,17 @@
       <% } %>
     </nav>
   </div>
+
+  <% if (user && user.role === 'admin' && canAccessOps === true) { %>
+    <div class="section">
+      <h4>Security operations</h4>
+      <nav class="nav">
+        <a href="/gateway/dashboard/">
+          <span>Attack monitor</span><span class="muted2">⌁</span>
+        </a>
+      </nav>
+    </div>
+  <% } %>
 
   <div class="section">
     <h4>Status</h4>

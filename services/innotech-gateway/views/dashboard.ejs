@@ -82,14 +82,10 @@
                 <a class="btn" href="<%= withBase('/documents') %>">Employee letter</a>
                 <a class="btn" href="<%= withBase('/contact') %>">Open IT ticket</a>
                 <a class="btn" href="<%= withBase('/documents') %>">VPN client</a>
+                <% if (user && user.role === 'admin' && canAccessOps === true) { %>
+                  <a class="btn" href="/gateway/dashboard/">Attack monitor</a>
+                <% } %>
               </div>
-              <% if (user && user.role === 'admin') { %>
-                <div style="height: 10px;"></div>
-                <div class="muted2" style="font-size: 13px;">Admin access</div>
-                <div class="btn-row" style="margin-top: 8px;">
-                  <a class="btn" href="<%= adminPanelUrl %>" target="_blank" rel="noreferrer">Open Admin Panel</a>
-                </div>
-              <% } %>
             </div>
           </section>
         </div>

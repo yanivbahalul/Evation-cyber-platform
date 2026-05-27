@@ -8,7 +8,8 @@
  */
 
 const { Readable } = require('stream');
-const TRAP_TYPES   = require('../../logging-data-extraction/constants/trapTypes');
+const TRAP_TYPES   = require('@evation/shared-constants');
+const attackLog    = require('../utils/attackLog');
 
 const CHUNK_SIZE  = 64 * 1024;                 // 64 KB per push
 const TOTAL_BYTES = 100 * 1024 * 1024 * 1024;  // 100 GB cap
@@ -33,6 +34,15 @@ exports.stream = (req, res, { report } = {}) => {
   const startTime = Date.now();
   const bomb      = new GarbageStream(TOTAL_BYTES);
   let bytesSent   = 0;
+  let finalized   = false;
+
+  attackLog.info('TRAP', 'data_bomb_stream_started', {
+    trap: TRAP_TYPES.DATA_BOMB,
+    trap_label: attackLog.trapLabel(TRAP_TYPES.DATA_BOMB),
+    max_bytes: TOTAL_BYTES,
+    filename: 'backup.zip',
+    ...attackLog.requestFields(req),
+  });
 
   res.status(200);
   res.setHeader('Content-Type',        'application/zip');
@@ -43,11 +53,20 @@ exports.stream = (req, res, { report } = {}) => {
   bomb.on('data', (chunk) => { bytesSent += chunk.length; });
 
   const finalize = async () => {
+    if (finalized) return;
+    finalized = true;
     bomb.destroy();
+    const wasted = Date.now() - startTime;
+    attackLog.info('TRAP', 'data_bomb_stream_ended', {
+      trap: TRAP_TYPES.DATA_BOMB,
+      wasted_ms: wasted,
+      bytes_sent: bytesSent,
+      ...attackLog.requestFields(req),
+    });
     if (report) {
       await report(TRAP_TYPES.DATA_BOMB, req, {
         startTime,
-        wasted_time_ms: Date.now() - startTime,
+        wasted_time_ms: wasted,
         bytes_sent: bytesSent,
       });
     }
@@ -58,6 +77,6 @@ exports.stream = (req, res, { report } = {}) => {
   res.on('finish', finalize);
 
   bomb.pipe(res).on('error', (err) => {
-    console.log(`[DataBomb] stream error: ${err.code || err.message}`);
+    attackLog.warn('TRAP', 'data_bomb_stream_error', { error: err.code || err.message, bytes_sent: bytesSent });
   });
 };

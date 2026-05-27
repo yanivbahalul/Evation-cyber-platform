@@ -1,0 +1,39 @@
+<% const p = typeof dp !== 'undefined' ? dp : {} %>
+<% const signedIn = typeof legacyUser !== 'undefined' && legacyUser %>
+<aside class="sidebar">
+  <div class="section">
+    <h4>Administrator</h4>
+    <nav class="nav">
+      <a class="<%= active === 'console' ? 'active' : '' %>" href="<%= withBase(p.console || '/internal/console') %>">
+        <span>Console</span><span class="muted2">⌁</span>
+      </a>
+      <% if (!signedIn) { %>
+      <a class="<%= active === 'legacy-login' ? 'active' : '' %>" href="<%= withBase(p.legacySignIn || '/internal/auth/legacy') %>">
+        <span>Legacy sign-in</span><span class="muted2">→</span>
+      </a>
+      <% } %>
+      <a class="<%= active === 'database' ? 'active' : '' %>" href="<%= withBase(p.database || '/internal/services/database') %>">
+        <span>Database</span><span class="muted2">⌁</span>
+      </a>
+      <a class="<%= active === 'api' ? 'active' : '' %>" href="<%= withBase(p.apiKeys || '/internal/integrations/keys') %>">
+        <span>API keys</span><span class="muted2">⌁</span>
+      </a>
+      <a class="" href="<%= withBase('/documents?download=backup.zip') %>">
+        <span>System backup</span><span class="muted2">↓</span>
+      </a>
+    </nav>
+  </div>
+  <div class="section">
+    <h4>Status</h4>
+    <div class="muted" style="font-size: 13px; line-height: 1.5;">
+      Zone: <span class="badge warn">Legacy</span><br />
+      Session: <span class="badge <%= signedIn ? 'ok' : (typeof sessionBadge !== 'undefined' ? sessionBadge : 'ok') %>"><%= signedIn ? 'Active' : (typeof sessionLabel !== 'undefined' ? sessionLabel : 'Active') %></span>
+    </div>
+  </div>
+  <div class="section">
+    <h4>Corporate</h4>
+    <form method="POST" action="<%= withBase(signedIn ? ((p.signOut) || '/internal/auth/signout') : '/logout') %>" style="margin: 0;">
+      <button type="submit" class="btn danger" style="width: 100%;">Logout</button>
+    </form>
+  </div>
+</aside>

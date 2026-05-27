@@ -1,0 +1,11 @@
+{
+  "name": "@evation/db-schemas",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.js",
+  "type": "commonjs",
+  "dependencies": {
+    "@evation/shared-constants": "workspace:*",
+    "mongoose": "^9.4.1"
+  }
+}

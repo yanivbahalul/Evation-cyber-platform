@@ -1,0 +1,53 @@
+# Local / staging stack: Nginx edge + three app services.
+# Uses apps/admin-panel/.env (same file as pnpm dev:full).
+services:
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      admin-panel:
+        condition: service_started
+      gateway:
+        condition: service_started
+      telemetry:
+        condition: service_started
+    restart: unless-stopped
+
+  admin-panel:
+    build:
+      context: ..
+      dockerfile: infra/docker/Dockerfile.admin-panel
+    env_file:
+      - ../apps/admin-panel/.env
+    environment:
+      GATEWAY_ORIGIN: http://gateway:4001
+      NEXT_PUBLIC_TELEMETRY_SOCKET_URL: http://localhost:8080
+    expose:
+      - "3000"
+
+  gateway:
+    build:
+      context: ..
+      dockerfile: infra/docker/Dockerfile.gateway
+    env_file:
+      - ../apps/admin-panel/.env
+    environment:
+      PORT: 4001
+      BASE_PATH: /gateway
+      MONGODB_URI: ${SAFEZONE_DB_URI}
+    expose:
+      - "4001"
+    restart: unless-stopped
+
+  telemetry:
+    build:
+      context: ..
+      dockerfile: infra/docker/Dockerfile.telemetry
+    env_file:
+      - ../apps/admin-panel/.env
+    expose:
+      - "3002"
+    restart: unless-stopped

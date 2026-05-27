@@ -1,0 +1,35 @@
+<% const title = 'Internal File Viewer — InnoTech' %>
+<% const wb = typeof withBase === 'function' ? withBase : (p) => p %>
+<%- include('../partials/head', { title, withBase: wb }) %>
+
+<div class="container">
+  <%- include('../partials/topbar', {
+    user: typeof legacyUser !== 'undefined' ? legacyUser : null,
+    withBase: wb,
+    brandTitle: 'InnoTech Administrator Services',
+    brandSub: 'Legacy file bridge',
+    accessLabel: 'Operator',
+    accessDetail: 'read-only'
+  }) %>
+
+  <div class="layout">
+    <%- include('../partials/decoy-sidebar', { active: 'console', withBase: wb, legacyUser: typeof legacyUser !== 'undefined' ? legacyUser : null }) %>
+    <main class="card">
+      <div class="hero">
+        <div class="kicker">Path traversal probe</div>
+        <h2 style="margin: 0 0 8px;">Internal file viewer</h2>
+        <div class="muted">Resolved path (simulated): <code><%= requested %></code></div>
+      </div>
+      <div class="card-inner">
+        <%- include('../partials/decoy-kill-chain', { withBase: wb, dp: typeof dp !== 'undefined' ? dp : {} }) %>
+        <pre style="font-size:13px; line-height:1.5; color: var(--primary);">root:x:0:0:root:/root:/bin/bash
+daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+www-data:x:33:33:www-data:/var/www:/usr/sbin/nologin
+innotech_svc:x:1001:1001::/opt/innotech:/bin/bash</pre>
+        <p class="muted2" style="margin-top:12px;">Display only — files are not served from production hosts.</p>
+      </div>
+    </main>
+  </div>
+</div>
+
+<%- include('../partials/foot') %>

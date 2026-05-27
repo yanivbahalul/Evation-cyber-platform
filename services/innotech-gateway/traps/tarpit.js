@@ -2,76 +2,99 @@
 
 /**
  * Tarpit ("בור הזפת") — fires on SQLI detection.
- * Keeps the attacker's HTTP socket open for 30–120s, trickling fake DB
- * "Querying..." dots, then sends a believable MySQL error and closes.
- * Non-blocking: setTimeout + Promise + AbortController.
+ * HTML responses are buffered (single res.send) so they work through the Next.js /gateway proxy.
  */
 
-const TRAP_TYPES = require('../../logging-data-extraction/constants/trapTypes');
+const TRAP_TYPES = require('@evation/shared-constants');
+const attackLog = require('../utils/attackLog');
 
-// Tunables
-const MIN_HOLD_MS  = 30_000;
-const MAX_HOLD_MS  = 120_000;
-const HEARTBEAT_MS = 4_000;
+const isDev = process.env.NODE_ENV !== 'production';
+const MIN_HOLD_MS = isDev ? 4_000 : 30_000;
+const MAX_HOLD_MS = isDev ? 8_000 : 120_000;
+const HEARTBEAT_MS = 400;
 
 const FAKE_ERRORS = [
-  "ERROR 1205 (HY000): Lock wait timeout exceeded; try restarting transaction",
-  "ERROR 2013 (HY000): Lost connection to MySQL server during query",
-  "ERROR 1040 (HY000): Too many connections",
-  "ERROR 1114 (HY000): The table 'users' is full",
-  "ERROR 2006 (HY000): MySQL server has gone away",
+  'ERROR 1205 (HY000): Lock wait timeout exceeded; try restarting transaction',
+  'ERROR 2013 (HY000): Lost connection to MySQL server during query',
+  'ERROR 1040 (HY000): Too many connections',
+  'ERROR 1114 (HY000): The table \'users\' is full',
+  'ERROR 2006 (HY000): MySQL server has gone away',
 ];
 
 function randomBetween(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-function sleep(ms, abortSignal) {
-  return new Promise((resolve) => {
-    const t = setTimeout(resolve, ms);
-    abortSignal?.addEventListener('abort', () => {
-      clearTimeout(t);
-      resolve();
-    }, { once: true });
-  });
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-exports.hold = async (req, res, { report } = {}) => {
+function htmlShell(body) {
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>InnoTech — Database</title>
+<style>
+  :root{--bg:#070d10;--text:rgba(255,255,255,.92);--muted:rgba(255,255,255,.55);--primary:#0ea5a5;}
+  body{margin:0;min-height:100vh;font-family:ui-sans-serif,system-ui,sans-serif;color:var(--text);
+  background:#070d10 radial-gradient(1200px 600px at 20% -10%,rgba(14,165,165,.18),transparent 55%);}
+  .wrap{max-width:720px;margin:0 auto;padding:28px 20px}
+  .card{border:1px solid rgba(255,255,255,.08);border-radius:14px;background:rgba(255,255,255,.04);padding:20px}
+  pre{margin:0;font-family:ui-monospace,monospace;font-size:14px;color:var(--primary);white-space:pre-wrap}
+  .meta{margin-top:14px;font-size:12px;color:var(--muted)}
+</style></head>
+<body><div class="wrap"><div class="card"><div class="meta">INNOTECH · DATABASE SERVICES</div><pre id="out">${body}</pre>
+<p class="meta">Internal query interface · hr_finance replica</p></div></div></body></html>`;
+}
+
+exports.hold = async (req, res, { report, trapType = TRAP_TYPES.SQLI } = {}) => {
   const startTime = Date.now();
-  const holdMs    = randomBetween(MIN_HOLD_MS, MAX_HOLD_MS);
-  let   bytesSent = 0;
+  const holdMs = randomBetween(MIN_HOLD_MS, MAX_HOLD_MS);
 
-  const ac = new AbortController();
-  req.on('close', () => ac.abort());
+  attackLog.info('TRAP', 'tarpit_started', {
+    trap: trapType,
+    trap_label: attackLog.trapLabel(trapType),
+    hold_ms: holdMs,
+    ...attackLog.requestFields(req),
+  });
 
-  res.status(200);
-  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-  res.setHeader('X-Powered-By', 'PHP/5.4.16'); // bait
-  res.flushHeaders?.();
-  const initial = 'Querying database';
-  try { res.write(initial); bytesSent += Buffer.byteLength(initial); } catch { /* ignore */ }
+  const accept = String(req.headers.accept || '');
+  const wantsHtml =
+    accept.includes('text/html') ||
+    req.method === 'POST' ||
+    req.method === 'GET' ||
+    (!accept.includes('application/json') && !accept.includes('text/plain'));
 
-  const deadline = startTime + holdMs;
-  while (Date.now() < deadline && !ac.signal.aborted) {
-    const remaining = deadline - Date.now();
-    await sleep(Math.min(HEARTBEAT_MS, remaining), ac.signal);
-    if (ac.signal.aborted) break;
-    try { res.write('.'); bytesSent += 1; } catch { break; }
+  let body = 'Querying database';
+  const steps = Math.max(1, Math.floor(holdMs / HEARTBEAT_MS));
+  for (let i = 0; i < steps; i++) {
+    await sleep(HEARTBEAT_MS);
+    body += '.';
   }
+  const err = FAKE_ERRORS[randomBetween(0, FAKE_ERRORS.length - 1)];
+  body += `\n\n${err}`;
 
-  if (!ac.signal.aborted && !res.writableEnded) {
-    const err = FAKE_ERRORS[randomBetween(0, FAKE_ERRORS.length - 1)];
-    const tail = `\n\n${err}\n`;
-    try { res.write(tail); bytesSent += Buffer.byteLength(tail); res.end(); }
-    catch { /* socket already closed */ }
-  }
+  const wasted = Date.now() - startTime;
+  const bytesSent = Buffer.byteLength(wantsHtml ? htmlShell(body) : body, 'utf8');
 
-  // Final report — overrides the entry-time one with accurate stats
+  attackLog.info('TRAP', 'tarpit_finished', {
+    trap: trapType,
+    wasted_ms: wasted,
+    bytes: bytesSent,
+    ...attackLog.requestFields(req),
+  });
+
   if (report) {
-    await report(TRAP_TYPES.SQLI, req, {
+    await report(trapType, req, {
       startTime,
-      wasted_time_ms: Date.now() - startTime,
+      wasted_time_ms: wasted,
       bytes_sent: bytesSent,
     });
   }
+
+  if (res.headersSent) return;
+
+  res.setHeader('X-Powered-By', 'PHP/5.4.16');
+  if (wantsHtml) {
+    return res.status(200).type('html').send(htmlShell(body));
+  }
+  return res.status(200).type('text/plain').send(body);
 };

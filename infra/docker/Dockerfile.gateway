@@ -1,0 +1,21 @@
+FROM node:22-alpine AS base
+WORKDIR /app
+RUN corepack enable
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages ./packages
+COPY services/innotech-gateway ./services/innotech-gateway
+COPY services/logging-data-extraction ./services/logging-data-extraction
+COPY apps/admin-panel/scripts ./apps/admin-panel/scripts
+
+RUN corepack prepare pnpm@11.0.8 --activate \
+  && pnpm install --frozen-lockfile \
+    --filter innotech-gateway... \
+    --filter hit_evation_cyber...
+
+WORKDIR /app/services/innotech-gateway
+ENV NODE_ENV=production
+ENV PORT=4001
+ENV BASE_PATH=/gateway
+EXPOSE 4001
+CMD ["node", "app.js"]

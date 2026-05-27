@@ -1,0 +1,12 @@
+aws_region              = "eu-west-1"
+project_name            = "innotech-honeypot"
+domain_name             = "honeypot.example.com"
+acm_certificate_arn     = "arn:aws:acm:eu-west-1:123456789012:certificate/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+image_tag               = "latest"
+trusted_proxy_cidrs     = ["10.0.0.0/8"]
+
+# Create secrets in AWS Secrets Manager first, then paste ARNs:
+safezone_db_uri_secret_arn  = "arn:aws:secretsmanager:eu-west-1:123456789012:secret:safezone-db-uri"
+malicious_db_uri_secret_arn = "arn:aws:secretsmanager:eu-west-1:123456789012:secret:malicious-db-uri"
+jwt_secret_arn              = "arn:aws:secretsmanager:eu-west-1:123456789012:secret:jwt-secret"
+socket_token_secret_arn     = "arn:aws:secretsmanager:eu-west-1:123456789012:secret:socket-token"

@@ -3,29 +3,95 @@
  * Domain: Threat Intelligence & Logic [cite: 3]
  */
 
-// In-memory blacklist for O(1) lookups 
-const bannedIPs = new Set(['1.2.3.4', '5.6.7.8']); 
+const TRAP_TYPES = require('@evation/shared-constants');
+const { isLegacySignInPath } = require('../config/deceptionPaths');
 
-// Audited Regex patterns to prevent ReDoS [cite: 14]
+const banService = require('./banService');
+
 const patterns = {
-    SQLI: /(SELECT|INSERT|UPDATE|DELETE|DROP|UNION|--|;)/i,
-    XSS: /(<script|javascript:|onerror=|alert\(|onload=)/i
+    /** URLs, contact forms, query strings — broader heuristics. */
+    SQLI: /(?:\b(SELECT|INSERT|UPDATE|DELETE|DROP|UNION|ALTER|CREATE|EXEC|EXECUTE)\b|(?:'|")\s*(?:OR|AND)\s+|(?:OR|AND)\s+['"]?\d+['"]?\s*=\s*['"]?\d+|--|#|\/\*|\*\/|;|\bSLEEP\s*\(|\bBENCHMARK\s*\(|\bWAITFOR\s+DELAY|\binformation_schema\b|\bCHAR\s*\(|\bCONCAT\s*\(|\b0x[0-9a-fA-F]{4,})/i,
+    /**
+     * Login / register only — do not treat lone #, ;, or -- in passwords as SQLi
+     * (common when users mash the keyboard during brute-force guessing).
+     */
+    AUTH_SQLI: /(?:\b(SELECT|INSERT|UPDATE|DELETE|DROP|UNION|ALTER|CREATE|EXEC|EXECUTE)\b|(?:'|")\s*(?:OR|AND)\s+|(?:OR|AND)\s+['"]?\d+['"]?\s*=\s*['"]?\d+|(?:'|")[^'"]*(?:--|#)|\/\*|\*\/|;\s*(?:SELECT|DROP|UNION|INSERT|UPDATE|DELETE|ALTER|CREATE)\b|\bUNION\s+SELECT\b|\bSLEEP\s*\(|\bBENCHMARK\s*\(|\bWAITFOR\s+DELAY|\binformation_schema\b|\bCHAR\s*\(|\bCONCAT\s*\(|\b0x[0-9a-fA-F]{4,})/i,
+    XSS: /(<script|javascript:|onerror=|alert\(|onload=)/i,
+    DATA_BOMB: /(backup\.zip|\.zip\b|\/backup|download=|export=|dump=|full.?backup)/i,
+    RECON: /(wp-admin|wp-login|\.env|phpmyadmin|admin\.php|\/\.git|actuator\/health|swagger|api\/v1\/users)/i,
+    PATH_TRAVERSAL: /(\.\.\/|\.\.\\|%2e%2e|%2fetc%2f|\/etc\/passwd|file:\/\/)/i,
+    SSRF: /(url\s*=\s*https?|169\.254\.|metadata\.google|\/latest\/meta-data|localhost:\d+|127\.0\.0\.1)/i,
+    SCANNER_UA: /sqlmap|nikto|acunetix|nmap|masscan|zgrab|wpscan|dirbuster|gobuster|burp/i,
 };
 
-/**
- * checkIP: Validates if an IP is in the reputation blacklist 
- */
-exports.isBlacklisted = (ip) => bannedIPs.has(ip);
+const PRIORITY = [
+    TRAP_TYPES.SCANNER,
+    TRAP_TYPES.SQLI,
+    TRAP_TYPES.SSRF,
+    TRAP_TYPES.PATH_TRAVERSAL,
+    TRAP_TYPES.XSS,
+    TRAP_TYPES.DATA_BOMB,
+    TRAP_TYPES.RECON,
+];
 
-/**
- * analyzePayload: Scans data for specific threat signatures [cite: 13]
- * @returns {string|null} The type of threat detected (SQLI/XSS) or null
- */
-exports.getThreatType = (data) => {
+function uniqueOrdered(types) {
+    const seen = new Set();
+    const out = [];
+    for (const t of PRIORITY) {
+        if (types.includes(t) && !seen.has(t)) {
+            seen.add(t);
+            out.push(t);
+        }
+    }
+    return out;
+}
+
+function matchContent(content, userAgent = '', { sqlPattern = patterns.SQLI } = {}) {
+    const types = [];
+    const ua = String(userAgent || '');
+    if (patterns.SCANNER_UA.test(ua)) types.push(TRAP_TYPES.SCANNER);
+    if (sqlPattern.test(content)) types.push(TRAP_TYPES.SQLI);
+    if (patterns.SSRF.test(content)) types.push(TRAP_TYPES.SSRF);
+    if (patterns.PATH_TRAVERSAL.test(content)) types.push(TRAP_TYPES.PATH_TRAVERSAL);
+    if (patterns.XSS.test(content)) types.push(TRAP_TYPES.XSS);
+    if (patterns.DATA_BOMB.test(content)) types.push(TRAP_TYPES.DATA_BOMB);
+    if (patterns.RECON.test(content)) types.push(TRAP_TYPES.RECON);
+    return uniqueOrdered(types);
+}
+
+exports.isBlacklisted = (ip) => banService.isBlacklisted(ip);
+
+exports.getThreatTypesFromCredentials = (body = {}, userAgent = '') => {
+    const content = [body.username, body.password].filter(Boolean).join(' ');
+    return matchContent(content, userAgent, { sqlPattern: patterns.AUTH_SQLI });
+};
+
+exports.getThreatTypes = (data = {}, userAgent = '') => {
     const content = Object.values(data).join(' ');
-    
-    if (patterns.SQLI.test(content)) return 'SQLI';
-    if (patterns.XSS.test(content)) return 'XSS';
-    
-    return null;
+    return matchContent(content, userAgent);
+};
+
+/** @deprecated use getThreatTypes — first match only */
+exports.getThreatTypeFromCredentials = (body = {}, userAgent = '') => {
+    const types = exports.getThreatTypesFromCredentials(body, userAgent);
+    return types[0] || null;
+};
+
+/** @deprecated use getThreatTypes — first match only */
+exports.getThreatType = (data = {}, userAgent = '') => {
+    const types = exports.getThreatTypes(data, userAgent);
+    return types[0] || null;
+};
+
+exports.isAuthFormPath = (path = '') => {
+    const p = String(path);
+    return (
+        p === '/login' ||
+        p.endsWith('/login') ||
+        p.includes('/login/verify-otp') ||
+        p === '/register' ||
+        p.endsWith('/register') ||
+        p.includes('/register/verify-otp') ||
+        isLegacySignInPath(p)
+    );
 };

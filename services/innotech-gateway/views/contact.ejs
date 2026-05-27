@@ -11,13 +11,19 @@
       <div class="hero">
         <div class="kicker">Support</div>
         <h2 style="margin: 0 0 8px;">Contact IT Support</h2>
-        <div class="muted">Demo form. Submissions are not processed.</div>
+        <div class="muted">Submit a ticket — processed by the internal helpdesk queue.</div>
       </div>
 
       <div class="card-inner">
-        <form class="form" onsubmit="alert('Ticket submitted (demo).'); return false;">
-          <input class="input" placeholder="Subject (e.g. VPN access request)" required />
-          <textarea class="input" rows="5" placeholder="Describe the issue..." required></textarea>
+        <% if (success) { %>
+          <div class="badge ok" style="margin-bottom: 12px;">Ticket received — reference will be emailed shortly</div>
+        <% } %>
+        <% if (formError) { %>
+          <div class="badge" style="margin-bottom: 12px; background: #fee2e2; color: #991b1b;"><%= formError %></div>
+        <% } %>
+        <form class="form" method="POST" action="<%= withBase('/contact') %>">
+          <input class="input" name="subject" placeholder="Subject (e.g. VPN access request)" value="<%= typeof subject !== 'undefined' ? subject : '' %>" required />
+          <textarea class="input" name="message" rows="5" placeholder="Describe the issue..." required><%= typeof message !== 'undefined' ? message : '' %></textarea>
           <button class="btn primary" type="submit" style="width: 100%;">Submit ticket</button>
         </form>
 
@@ -30,4 +36,3 @@
 </div>
 
 <%- include('partials/foot') %>
-
