@@ -1,0 +1,60 @@
+<% const title = 'InnoTech — Internal Search' %>
+<%- include('partials/head', { title }) %>
+
+<div class="container">
+  <%- include('partials/topbar', { user }) %>
+
+  <div class="layout">
+    <%- include('partials/sidebar', { user, active: 'search', adminPanelUrl }) %>
+
+    <main class="card">
+      <div class="hero">
+        <div class="kicker">Directory</div>
+        <h2 style="margin: 0 0 8px;">Search Employee Database</h2>
+        <div class="muted">Lookup colleagues by name, email or department.</div>
+      </div>
+
+      <div class="card-inner">
+        <form class="form" method="GET" action="<%= withBase('/search') %>" style="display: flex; gap: 10px; align-items: center;">
+          <input class="input" type="text" name="q" placeholder="e.g. Cohen, finance, dana@…" value="<%= query || '' %>" autofocus style="flex: 1;" />
+          <button class="btn primary" type="submit">Search</button>
+        </form>
+
+        <% if (query) { %>
+          <div class="muted2" style="margin-top: 14px;">
+            Showing <%= results.length %> result<%= results.length === 1 ? '' : 's' %> for
+            <strong><%- queryHtml %></strong>
+          </div>
+
+          <% if (results.length === 0) { %>
+            <div class="muted" style="margin-top: 18px;">
+              No employees matched your query. Try a partial name or department.
+            </div>
+          <% } else { %>
+            <table class="table" style="margin-top: 14px;">
+              <thead>
+                <tr><th>Name</th><th>Email</th><th>Department</th><th>Office</th></tr>
+              </thead>
+              <tbody>
+                <% results.forEach(r => { %>
+                  <tr>
+                    <td><%= r.name %></td>
+                    <td class="muted2"><%= r.email %></td>
+                    <td><span class="badge"><%= r.department %></span></td>
+                    <td class="muted2"><%= r.office %></td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          <% } %>
+        <% } else { %>
+          <div class="muted" style="margin-top: 18px;">
+            Tip: use partial names. Search runs against the live HR directory.
+          </div>
+        <% } %>
+      </div>
+    </main>
+  </div>
+</div>
+
+<%- include('partials/foot') %>

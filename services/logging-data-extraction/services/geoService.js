@@ -63,6 +63,7 @@ function fromIpWhoPayload(data) {
     countryCode: data.country_code || undefined,
     lat: typeof data.latitude === 'number' ? data.latitude : null,
     lng: typeof data.longitude === 'number' ? data.longitude : null,
+    isp: data.connection?.isp || data.connection?.org || undefined,
     source: 'ipwho.is',
   };
 }
@@ -82,6 +83,7 @@ function fromIpApiPayload(data) {
     countryCode: data.countryCode || undefined,
     lat: typeof data.lat === 'number' ? data.lat : null,
     lng: typeof data.lon === 'number' ? data.lon : null,
+    isp: data.isp || data.org || data.as || undefined,
     source: 'ip-api.com',
   };
 }
@@ -98,7 +100,7 @@ async function fetchIpWho(path) {
 
 async function fetchIpApi(ip) {
   const path = ip ? `${encodeURIComponent(ip)}` : '';
-  const url = `http://ip-api.com/json/${path}?fields=status,message,country,countryCode,regionName,city,lat,lon`;
+  const url = `http://ip-api.com/json/${path}?fields=status,message,country,countryCode,regionName,city,lat,lon,isp,org,as`;
   const res = await fetch(url, {
     signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS),
     headers: HTTP_HEADERS,

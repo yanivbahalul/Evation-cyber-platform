@@ -9,10 +9,12 @@ const AttackerProfileSchema = new mongoose.Schema({
   city: String,
   lat: Number,
   lng: Number,
+  isp: String,                 // ISP / ASN org from geo lookup (Requirements §Attacker Fingerprint)
   os: String,
   platform: String,
   browser: String,
   deviceType: String,
+  screenResolution: String,    // e.g. "1920x1080" — populated via client-side beacon
   isBot: { type: Boolean, default: false },
   riskScore: {
     type: Number,

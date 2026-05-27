@@ -32,19 +32,23 @@ async function upsertFromAttack(attackData) {
   const riskDelta = 1 + (fp.riskScore || 0);
   const now = new Date();
 
+  const $set = {
+    lastSeen: now,
+    city: geo.city,
+    lat: geo.lat ?? 0,
+    lng: geo.lng ?? 0,
+    os: fp.os,
+    platform: fp.platform,
+    browser: fp.browserVersion || fp.browser,
+    deviceType: fp.deviceType,
+    isBot: !!fp.isBot,
+  };
+  if (geo.isp) $set.isp = geo.isp;
+  if (fp.screenResolution) $set.screenResolution = fp.screenResolution;
+
   const update = {
     $setOnInsert: { ip: attackerIp, firstSeen: now },
-    $set: {
-      lastSeen: now,
-      city: geo.city,
-      lat: geo.lat ?? 0,
-      lng: geo.lng ?? 0,
-      os: fp.os,
-      platform: fp.platform,
-      browser: fp.browserVersion || fp.browser,
-      deviceType: fp.deviceType,
-      isBot: !!fp.isBot,
-    },
+    $set,
     $inc: { riskScore: riskDelta },
   };
 
@@ -70,4 +74,29 @@ async function upsertFromAttackSafe(attackData) {
   }
 }
 
-module.exports = { upsertFromAttack, upsertFromAttackSafe };
+/**
+ * Beacon-only update: records screen resolution for an attacker IP that
+ * ALREADY exists in the malicious DB. Does not create new profiles — so a
+ * stray beacon from a legit user never lands in attacker_profiles.
+ */
+async function recordScreenResolution(attackerIp, screenResolution) {
+  if (!attackerIp || !screenResolution) return null;
+  try {
+    const maliciousConn = connectMaliciousDB();
+    if (!maliciousConn?.models?.AttackerProfile) return null;
+    const AttackerProfile = maliciousConn.model('AttackerProfile');
+    return await AttackerProfile.findOneAndUpdate(
+      { ip: attackerIp },
+      { $set: { screenResolution, lastSeen: new Date() } },
+      { upsert: false, returnDocument: 'after' },
+    );
+  } catch (err) {
+    attackLog.error('TELEMETRY', 'screen_resolution_update_failed', {
+      ip: attackerIp,
+      error: err.message,
+    });
+    return null;
+  }
+}
+
+module.exports = { upsertFromAttack, upsertFromAttackSafe, recordScreenResolution };

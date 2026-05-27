@@ -117,12 +117,14 @@ export default function AttackerProfiles({ onNavigateInvestigate }: AttackerProf
           </div>
           <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
             <Row label="ip" value={selected.ip} />
+            <Row label="isp" value={selected.isp ?? '—'} />
             <Row label="city" value={selected.city} />
             <Row label="coordinates" value={`[${selected.lat}, ${selected.lng}]`} />
             <Row label="os" value={selected.os} />
             <Row label="platform" value={selected.platform ?? '—'} />
             <Row label="browser" value={selected.browser} />
             <Row label="deviceType" value={selected.deviceType ?? '—'} />
+            <Row label="screenResolution" value={selected.screenResolution ?? '—'} />
             <Row
               label="isBot"
               value={String(selected.isBot)}

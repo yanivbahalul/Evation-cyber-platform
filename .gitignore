@@ -8,6 +8,8 @@ out/
 # Env and secrets
 .env
 .env*.local
+*.env
+!*.example.env
 
 # QA run output (generated)
 docs/qa-automated-results.txt

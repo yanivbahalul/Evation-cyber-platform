@@ -496,6 +496,47 @@ exports.renderContactPage = (req, res) => {
     });
 };
 
+const SEARCH_DIRECTORY = [
+    { name: 'Dana Cohen',     email: 'dana.cohen@innotech.local',    department: 'Finance',     office: 'HQ — 3rd floor' },
+    { name: 'Ofir Cohen',     email: 'ofir.cohen@innotech.local',    department: 'R&D',         office: 'HQ — 5th floor' },
+    { name: 'Maya Levi',      email: 'maya.levi@innotech.local',     department: 'HR',          office: 'HQ — 2nd floor' },
+    { name: 'Tomer Bar',      email: 'tomer.bar@innotech.local',     department: 'IT',          office: 'HQ — 4th floor' },
+    { name: 'Noa Friedman',   email: 'noa.f@innotech.local',         department: 'Finance',     office: 'Branch — TLV' },
+    { name: 'Eitan Mizrahi',  email: 'eitan.m@innotech.local',       department: 'Operations',  office: 'HQ — 1st floor' },
+    { name: 'Shira Azulay',   email: 'shira.a@innotech.local',       department: 'Marketing',   office: 'HQ — 4th floor' },
+    { name: 'Yossi Peretz',   email: 'yossi.p@innotech.local',       department: 'R&D',         office: 'Branch — Haifa' },
+];
+
+function escapeHtml(s) {
+    return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+exports.renderSearchPage = (req, res) => {
+    if (req.trapHandled || res.headersSent) return;
+    const query = String(req.query?.q || '').trim();
+    const needle = query.toLowerCase();
+    const results = !needle
+        ? []
+        : SEARCH_DIRECTORY.filter((row) =>
+            row.name.toLowerCase().includes(needle) ||
+            row.email.toLowerCase().includes(needle) ||
+            row.department.toLowerCase().includes(needle)
+        );
+
+    res.render('search', {
+        user: req.user || null,
+        adminPanelUrl: process.env.ADMIN_PANEL_URL || 'http://localhost:3000',
+        query,
+        queryHtml: escapeHtml(query),
+        results,
+    });
+};
+
 exports.submitContact = (req, res) => {
     if (req.trapHandled || res.headersSent) return;
     res.render('contact', {

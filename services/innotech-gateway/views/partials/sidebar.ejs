@@ -15,6 +15,9 @@
         <a class="<%= active === 'documents' ? 'active' : '' %>" href="<%= withBase('/documents') %>">
           <span>Documents</span><span class="muted2">⌁</span>
         </a>
+        <a class="<%= active === 'search' ? 'active' : '' %>" href="<%= withBase('/search') %>">
+          <span>Search Directory</span><span class="muted2">⌁</span>
+        </a>
       <% } else { %>
         <a class="<%= active === 'login' ? 'active' : '' %>" href="<%= withBase('/login') %>">
           <span>Employee Login</span><span class="muted2">→</span>

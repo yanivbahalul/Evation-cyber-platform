@@ -136,6 +136,27 @@ router.get('/profile', requireAuth, realController.renderProfilePage);
 router.get('/documents', requireAuth, realController.renderDocumentsPage);
 router.get('/contact', realController.renderContactPage);
 router.post('/contact', realController.submitContact);
+router.get('/search', realController.renderSearchPage);
+
+// Screen-resolution beacon (Requirements §Attacker Fingerprint → device).
+// Only updates rows that already exist in attacker_profiles.
+router.post('/telemetry/screen-beacon', express.json(), async (req, res) => {
+    try {
+        const { getAttackerIp } = require('@evation/shared-utils');
+        const { recordScreenResolution } = require('../logging-data-extraction/services/AttackerProfileService');
+        const ip = getAttackerIp(req);
+        const w = Number(req.body?.w);
+        const h = Number(req.body?.h);
+        if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) {
+            return res.status(204).end();
+        }
+        const resolution = `${Math.min(w, 9999)}x${Math.min(h, 9999)}`;
+        await recordScreenResolution(ip, resolution);
+        res.status(204).end();
+    } catch {
+        res.status(204).end();
+    }
+});
 
 function onBothPaths(canon, alias, register) {
   register(canon);
@@ -153,6 +174,9 @@ onBothPaths(DP.database, DP_ALIAS.database, (p) => {
 onBothPaths(DP.archiveExport, DP_ALIAS.archiveExport, (p) => router.get(p, decoyController.serveDataBomb));
 onBothPaths(DP.apiKeys, DP_ALIAS.apiKeys, (p) => router.get(p, decoyController.serveHoneyToken));
 router.get(DP.fileViewer, decoyController.renderFileViewer);
+// Infinite redirect labyrinth — scrapers follow forever; humans give up.
+router.get(/^\/internal\/archives(\/.*)?$/, decoyController.serveInfiniteRedirect);
+router.get(/^\/admin\/v1\/backup(\/.*)?$/, decoyController.serveInfiniteRedirectLegacy);
 router.all(DP.fetchStatus, decoyController.renderFetchStatus);
 router.get('/robots.txt', (req, res) => {
   const base = BASE_PATH || '';

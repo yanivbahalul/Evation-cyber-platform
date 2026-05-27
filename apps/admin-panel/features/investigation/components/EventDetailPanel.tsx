@@ -88,6 +88,7 @@ export default function EventDetailPanel({ event, onClose }: EventDetailPanelPro
           <Row label="platform" value={event.fingerprint.platform ?? '—'} />
           <Row label="browser" value={event.fingerprint.browserVersion ?? event.fingerprint.browser ?? '—'} />
           <Row label="device" value={event.fingerprint.deviceType ?? '—'} />
+          <Row label="screen" value={event.fingerprint.screenResolution ?? '—'} />
           <Row
             label="isBot"
             value={String(event.fingerprint.isBot ?? false)}

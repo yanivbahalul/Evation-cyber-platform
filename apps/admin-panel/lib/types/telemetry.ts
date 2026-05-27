@@ -19,6 +19,7 @@ export interface AttackerFingerprint {
   deviceType?: string
   isBot?: boolean
   riskScore?: number
+  screenResolution?: string
 }
 
 export interface AttackEvent {
@@ -56,10 +57,12 @@ export interface AttackerProfile {
   city: string
   lat: number
   lng: number
+  isp?: string
   os: string
   platform?: string
   browser: string
   deviceType?: string
+  screenResolution?: string
   isBot: boolean
   riskScore: number
   firstSeen: string

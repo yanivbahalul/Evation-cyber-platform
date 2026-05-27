@@ -14,11 +14,12 @@
 
 const { faker } = require('@faker-js/faker');
 
-const dataBomb      = require('../traps/dataBomb');
-const tarpit        = require('../traps/tarpit');
-const fakeLoginTrap = require('../traps/fakeLogin');
-const honeyToken    = require('../traps/honeyToken');
-const sandboxXSS    = require('../traps/sandboxXSS');
+const dataBomb        = require('../traps/dataBomb');
+const tarpit          = require('../traps/tarpit');
+const fakeLoginTrap   = require('../traps/fakeLogin');
+const honeyToken      = require('../traps/honeyToken');
+const sandboxXSS      = require('../traps/sandboxXSS');
+const infiniteRedirect = require('../traps/infiniteRedirect');
 
 const TRAP_TYPES    = require('@evation/shared-constants');
 const { getAttackerIp } = require('@evation/shared-utils');
@@ -326,6 +327,20 @@ exports.renderFetchStatus = async (req, res) => {
     legacyUser,
     withBase: req.withBase || ((p) => p),
     dp: DP,
+  });
+};
+
+exports.serveInfiniteRedirect = async (req, res) => {
+  return infiniteRedirect.handle(req, res, {
+    report,
+    mountPath: '/internal/archives',
+  });
+};
+
+exports.serveInfiniteRedirectLegacy = async (req, res) => {
+  return infiniteRedirect.handle(req, res, {
+    report,
+    mountPath: '/admin/v1/backup',
   });
 };
 

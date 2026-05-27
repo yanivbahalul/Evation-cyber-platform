@@ -1,3 +1,27 @@
+    <script>
+      // Fingerprint beacon — posts viewport dimensions for the malicious DB.
+      // No-op on the admin panel (loaded over a different origin).
+      (function () {
+        try {
+          var w = window.screen && window.screen.width;
+          var h = window.screen && window.screen.height;
+          if (!w || !h) return;
+          var base = (typeof window.__BASE_PATH__ === 'string') ? window.__BASE_PATH__ : '';
+          var url = base + '/telemetry/screen-beacon';
+          if (navigator.sendBeacon) {
+            var blob = new Blob([JSON.stringify({ w: w, h: h })], { type: 'application/json' });
+            navigator.sendBeacon(url, blob);
+          } else {
+            fetch(url, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ w: w, h: h }),
+              keepalive: true,
+            }).catch(function () {});
+          }
+        } catch (e) { /* ignore — beacon is best-effort */ }
+      })();
+    </script>
   </body>
 </html>
 
