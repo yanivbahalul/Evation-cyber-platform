@@ -1,76 +1,127 @@
-# yaniv-test — סימולציית תקיפות מרחוק (InnoTech Honeypot)
+# yaniv-test — סימולציית תקיפות (InnoTech Honeypot)
 
-סקריפטי `curl` להפעלה **ממחשב אחר** נגד כתובת IP או DNS של שרת ה-honeypot (פורט 3000, נתיב `/gateway`).
+> **הרשאה בלבד:** השתמשו רק במערכות שבבעלותכם או עם אישור מפורש. לא לתקיפת אתרים חיצוניים.
 
-> **הרשאה בלבד:** השתמשו רק במערכות שבבעלותכם או שקיבלתם אישור מפורש לבדוק (מעבדה, דמו, QA). הסקריפטים מיועדים לבדיקת מלכודות הפלטפורמה — לא לתקיפת אתרים חיצוניים.
+---
 
-## דרישות במחשב התוקף
+## מה רואים ב-GitHub (בקצרה)
 
-- `bash`, `curl`
-- גישת רשת ל-`TARGET:PORT` (בד"כ `3000`)
-- בשרת היעד: `pnpm dev:full` רץ, ו-`DEV_PUBLIC_HOST` ב-`.env.local` תואם ל-IP/DNS שהלקוחות משתמשים בו
+| תיקייה | תפקיד |
+|--------|--------|
+| [`apps/admin-panel/`](../../apps/admin-panel/) | ממשק Next.js + API של Blue Team |
+| [`services/innotech-gateway/`](../../services/innotech-gateway/) | פורטל HR + מלכודות |
+| [`services/logging-data-extraction/`](../../services/logging-data-extraction/) | טלמטריה + Socket.IO |
+| [`infra/`](../../infra/) | Docker Compose + Nginx — **העלאת השרת** |
+| `scripts/yaniv-test/` | סקריפטי `curl` לבדיקת מלכודות |
 
-## התקנה מהירה
+**Env:** [`apps/admin-panel/.env`](../../apps/admin-panel/.env) ← תבנית: [`.env.example`](../../apps/admin-panel/.env.example)
+
+---
+
+## העלאת השרת (Docker)
+
+**דרישות:** [Docker Desktop](https://www.docker.com/products/docker-desktop/) **רץ** (`docker ps` בלי שגיאה).
+
+```bash
+git clone <repo-url>
+cd Evation-cyber-platform
+
+cp apps/admin-panel/.env.example apps/admin-panel/.env
+# ערכו apps/admin-panel/.env — Mongo Atlas, JWT, socket token (בלי @HOST)
+
+cd infra
+docker compose up --build
+```
+
+| URL | מה זה |
+|-----|--------|
+| http://localhost:8080/gateway/ | פורטל HR + מלכודות |
+| http://localhost:8080/gateway/dashboard/ | Attack monitor (admin) |
+
+**עצירה:** `Ctrl+C` או `docker compose down` (מתוך `infra/`).
+
+**בדיקה:**
+```bash
+docker compose ps
+docker compose logs gateway --tail 5   # server_listening
+```
+
+### בעיות נפוצות
+
+| תסמין | פתרון |
+|--------|--------|
+| `Cannot connect to Docker daemon` | פתחו Docker Desktop |
+| `ENOTFOUND _mongodb._tcp.HOST` | URIs אמיתיים ב-`apps/admin-panel/.env` |
+| **502** על `/gateway/` | `docker compose logs gateway` → `docker compose up --build` |
+| `cp .env` בתוך `infra/` | לא צריך — רק `apps/admin-panel/.env` |
+
+---
+
+## yaniv-test (אחרי שהשרת רץ)
 
 ```bash
 cd scripts/yaniv-test
 cp config.example.env config.env
-# ערכו TARGET=כתובת_השרת
-chmod +x *.sh lib/common.sh
 ```
+
+`config.env`:
+```bash
+TARGET=localhost      # או IP של המחשב (192.168.x.x)
+PORT=8080
+SCHEME=http
+```
+
+```bash
+chmod +x *.sh lib/common.sh
+./run-all.sh
+```
+
+או מהשורש (אותו דבר): `pnpm trap:demo` / `pnpm trap:chain`
+
+---
+
+## דרישות
+
+- `bash`, `curl`
+- Docker stack רץ על המחשב היעד
+- גישה ל-`http://TARGET:8080`
+- מיגרציית HR (פעם אחת): `SAFEZONE_DB_URI=... node scripts/migrate-users-to-real-employees.js`
 
 ## משתני סביבה
 
 | משתנה | ברירת מחדל | תיאור |
 |--------|------------|--------|
-| `TARGET` / `HOST` | `localhost` | IP או DNS של שרת ה-admin-panel |
-| `PORT` | `3000` | פורט ה-UI |
-| `SCHEME` | `http` | `http` או `https` |
-| `GATEWAY_PATH` | `/gateway` | נתיב הפרוקסי ל-gateway |
-| `PAUSE` | `1.5` | השהיה בין שלבים (שניות) |
-| `KEEP_COOKIE` | `0` | `1` = לא למחוק קובץ עוגיות (למעקב traceId) |
+| `TARGET` | `localhost` | IP/DNS של מכונת Docker |
+| `PORT` | `8080` | פורט Nginx |
+| `SCHEME` | `http` | |
 
-אפשר גם בלי `config.env`:
+## סקריפטים
 
-```bash
-TARGET=10.0.0.5 ./01-scanner.sh
-TARGET=honey.lab.local PORT=3000 ./run-all.sh
-```
-
-## סקריפטים לפי סוג מלכודת
-
-| קובץ | מלכודת | צפוי ב-dashboard |
-|------|--------|------------------|
-| `01-scanner.sh` | Scanner UA (sqlmap) | `SCANNER` |
-| `02-recon.sh` | חשיפת `.env` / recon | `RECON` |
-| `03-sqli-login.sh` | SQLi בלוגין | `SQLI` |
-| `03b-sqli-database.sh` | שאילתה במסוף DB מזויף | `SQLI` |
-| `04-xss-probe.sh` | XSS probe (alert) | `XSS_PROBE` |
-| `05-xss-blocked.sh` | XSS חסום | `XSS_PROBE` (blocked) |
-| `06-path-traversal.sh` | LFI | `PATH_TRAVERSAL` |
-| `07-ssrf.sh` | SSRF metadata | `SSRF` |
-| `08-data-bomb.sh` | הורדת ZIP מזויף | `DATA_BOMB` |
-| `09-brute-force.sh` | 5× סיסמה שגויה | `BRUTE_FORCE` |
-| `10-honey-token.sh` | מפתח API + Bearer | `HONEY_TOKEN` |
-| `11-recon-console.sh` | מסוף אדמין מזויף | `RECON` |
-| `12-scanner-breadcrumbs.sh` | robots.txt / sitemap | `SCANNER` / `RECON` |
-
-## הרצה מרוכזת
+| קובץ | בדיקה |
+|------|--------|
+| `01-scanner.sh` | Scanner UA tarpit |
+| `02-recon.sh` | Recon URLs |
+| `03-sqli-login.sh` | SQLi login bypass |
+| `03b-sqli-database.sh` | SQLi database console |
+| `04-xss-probe.sh` | XSS probe tier |
+| `05-xss-blocked.sh` | XSS blocked tier |
+| `06-path-traversal.sh` | LFI |
+| `07-ssrf.sh` | SSRF |
+| `08-data-bomb.sh` | Data bomb ZIP |
+| `09-brute-force.sh` | Brute force handoff |
+| `10-honey-token.sh` | Honey token |
+| `11-recon-console.sh` | Fake admin console |
+| `12-scanner-breadcrumbs.sh` | robots.txt / sitemap |
 
 ```bash
-# כל המלכודות ברצף
 ./run-all.sh
-# או מהשורש: pnpm trap:demo
-
-# שרשרת הרג (מומלץ להדגמה — SQLi → XSS → bomb → brute → recon → token)
 ./run-kill-chain.sh
-# או: pnpm trap:chain
 ```
 
-אחרי הרצה: פתחו `http://TARGET:3000/gateway/dashboard/` (מצב Demo **כבוי**) ובדקו **Investigate** לפי `traceId` שמודפס בסוף.
+אחרי הרצה: dashboard → **Investigate** לפי `traceId`.
 
-## מסמכים נוספים
+## מסמכים
 
-- [ATTACK_DEMO_GUIDE.md](../../docs/ATTACK_DEMO_GUIDE.md) — פירוט מלא לכל מלכודת
-- [`../README.md`](../README.md) — מבנה `scripts/` (qa מול yaniv-test)
-- `../demo-traps-lite.sh` — קיצור דרך ל-`run-all.sh` עם `HOST`/`TARGET`
+- [README.md — Attack demo guide](../../README.md#attack-demo-guide)
+- [DEPLOYMENT.md](../../docs/DEPLOYMENT.md)
+- [ARCHITECTURE.md](../../docs/ARCHITECTURE.md)

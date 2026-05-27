@@ -5,11 +5,14 @@ const path = require('path');
 
 const dotenvQuiet = { quiet: true };
 require('dotenv').config(dotenvQuiet);
-const adminEnvPath = path.join(__dirname, '../../apps/admin-panel/.env.local');
+const adminEnvPath = path.join(__dirname, '../../apps/admin-panel/.env');
 if (fs.existsSync(adminEnvPath) && !process.env.SAFEZONE_DB_URI) {
     require('dotenv').config({ path: adminEnvPath, ...dotenvQuiet });
 }
-require('../../apps/admin-panel/scripts/applyDevPublicHost.cjs').applyDevPublicHost();
+const applyDevScript = path.join(__dirname, '../../apps/admin-panel/scripts/applyDevPublicHost.cjs');
+if (fs.existsSync(applyDevScript)) {
+    require(applyDevScript).applyDevPublicHost();
+}
 const { initLanEgressGeo } = require('../logging-data-extraction/services/geoService');
 initLanEgressGeo().catch((err) => {
     require('./utils/attackLog').warn('GATEWAY', 'lan_egress_geo_init_failed', {
@@ -182,6 +185,8 @@ async function startServer() {
     try {
         await mongoose.connect(dbURI);
         attackLogBoot.info('GATEWAY', 'safezone_database_connected', {});
+        const banService = require('./services/banService');
+        banService.startBanRefreshLoop();
     } catch (err) {
         attackLogBoot.error('GATEWAY', 'safezone_database_connection_failed', { error: err.message });
         process.exit(1);

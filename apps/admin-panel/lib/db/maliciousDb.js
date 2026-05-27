@@ -22,16 +22,16 @@ const connectMaliciousDB = () => {
     });
 
     maliciousConn.on('connected', () => {
-        console.log('🔗 [Phase 1] Isolated Telemetry DB connected successfully.');
+        console.log('Phase 1] Isolated Telemetry DB connected successfully.');
     });
 
     maliciousConn.on('error', (err) => {
-        console.error('❌ [Phase 1] Telemetry DB connection error:', err);
+        console.error('[Phase 1] Telemetry DB connection error:', err);
     });
 
     // Helpful in dev: surface timeouts faster (instead of silent buffering).
     maliciousConn.on('disconnected', () => {
-        console.warn('⚠️ [Phase 1] Telemetry DB disconnected.');
+        console.warn('[Phase 1] Telemetry DB disconnected.');
     });
 
     const schemas = require('@evation/db-schemas');

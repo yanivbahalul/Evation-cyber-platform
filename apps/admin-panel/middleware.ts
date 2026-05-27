@@ -15,8 +15,27 @@ function nextWithGatewayClientIp(req: NextRequest) {
   return NextResponse.next({ request: { headers } })
 }
 
+async function requireAttackMonitorAccess(req: NextRequest) {
+  const username = await resolvePortalUsernameEdge(req)
+  if (!username) {
+    return NextResponse.redirect(new URL('/gateway/login/', req.url))
+  }
+  const allowed = await canAccessAttackMonitorEdge(req)
+  if (!allowed) {
+    return NextResponse.redirect(new URL(PORTAL_HOME, req.url))
+  }
+  return null
+}
+
 export async function middleware(req: NextRequest) {
   const pathname = req.nextUrl.pathname
+
+  const isAdminAlias = pathname === '/admin/map' || pathname === '/admin/ban'
+  if (isAdminAlias && edgeSecretsConfigured()) {
+    const denied = await requireAttackMonitorAccess(req)
+    if (denied) return denied
+    return NextResponse.next()
+  }
 
   if (!pathname.startsWith('/gateway')) {
     return NextResponse.next()
@@ -26,15 +45,8 @@ export async function middleware(req: NextRequest) {
     pathname === '/gateway/dashboard' || pathname === '/gateway/dashboard/'
 
   if (isDashboard && edgeSecretsConfigured()) {
-    const username = await resolvePortalUsernameEdge(req)
-    if (!username) {
-      return NextResponse.redirect(new URL('/gateway/login/', req.url))
-    }
-
-    const allowed = await canAccessAttackMonitorEdge(req)
-    if (!allowed) {
-      return NextResponse.redirect(new URL(PORTAL_HOME, req.url))
-    }
+    const denied = await requireAttackMonitorAccess(req)
+    if (denied) return denied
   }
 
   // Inject X-Forwarded-For / X-Client-IP before next.config rewrites proxy to Express.
@@ -42,7 +54,7 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/gateway', '/gateway/:path*'],
+  matcher: ['/gateway', '/gateway/:path*', '/admin/map', '/admin/ban'],
   // Node runtime so we can read the TCP peer (LAN clients) before /gateway rewrites to Express.
   runtime: 'nodejs',
 }

@@ -1,30 +1,35 @@
-# InnoTech Honeypot — Attack Demo Guide
+# InnoTech Honeypot (Evation Cyber Platform)
 
-**Codebase map:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — where traps, telemetry, admin API, and shared packages live.
+Monorepo for the InnoTech HR honeypot: deceptive gateway traps, air-gapped telemetry, and the Blue Team admin dashboard.
 
-Use this checklist when presenting the project. In the browser use **only** `http://localhost:3000` — the HR portal lives at `/gateway/*` (proxied to the gateway service). Traps and employee flows use that UI. After login everyone lands on `/gateway/workspace/`; live attack telemetry is at `/gateway/dashboard/` (sidebar link only when DB `role` is `admin`).
+**Codebase map:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — traps, telemetry, admin API, shared packages.
 
-## Prerequisites
+## Start the server (Docker)
 
 ```bash
-cd /path/to/Evation-cyber-platform
-pnpm install
-pnpm dev:full
+cp apps/admin-panel/.env.example apps/admin-panel/.env
+# Edit apps/admin-panel/.env — Mongo URIs, JWT, ADMIN_SOCKET_TOKEN = NEXT_PUBLIC_ADMIN_SOCKET_TOKEN
+
+cd infra
+docker compose up --build
 ```
 
-| Service | URL | Role |
-|---------|-----|------|
-| **Everything (HR portal + traps)** | http://localhost:3000/gateway/ | Single browser port — gateway is proxied under `/gateway/*` |
-| Sign-in (Safe Zone UI) | http://localhost:3000/gateway/login | Employees and admins use the same HR login page |
-| Employee workspace (everyone after login) | http://localhost:3000/gateway/workspace/ | HR portal — default landing |
-| Attack monitor (`role=admin` only) | http://localhost:3000/gateway/dashboard/ | Linked from sidebar / quick links — not auto-redirect |
-| Telemetry (Socket.IO) | http://localhost:3002 | Behind the scenes |
+| URL | Role |
+|-----|------|
+| http://localhost:8080/gateway/ | HR portal + traps |
+| http://localhost:8080/gateway/login | Sign-in |
+| http://localhost:8080/gateway/workspace/ | Landing page after login |
+| http://localhost:8080/gateway/dashboard/ | Attack monitor (`role=admin`) |
 
-**Env:** `apps/admin-panel/.env.local` must define `SAFEZONE_DB_URI`, `MALICIOUS_DB_URI`, matching socket tokens (`ADMIN_SOCKET_TOKEN` = `NEXT_PUBLIC_ADMIN_SOCKET_TOKEN`), and **`DEV_PUBLIC_HOST`** (`localhost` or your LAN/Hamachi IP — see `.env.local.example`).
+**Verify:** Dashboard status **Live**. Logs: `docker compose logs -f gateway telemetry` (from `infra/`).
 
-**Verify socket:** Admin UI status should show **Live** (not Offline).
+Trap scripts: [scripts/yaniv-test/README.md](scripts/yaniv-test/README.md) · `pnpm trap:demo` / `pnpm trap:chain` (server must be running).
 
 ---
+
+# Attack demo guide
+
+Use this checklist when presenting. In the browser use **only** `http://localhost:8080` — HR portal at `/gateway/*`. After login → `/gateway/workspace/`; telemetry at `/gateway/dashboard/` (sidebar when `role` is `admin`).
 
 ## Quick reference
 
@@ -78,7 +83,7 @@ Full regex lives in `services/innotech-gateway/services/detectionService.js` (`p
 
 ### Entry point A — Employee login (main demo)
 
-**URL:** http://localhost:3000/gateway/login  
+**URL:** http://localhost:8080/gateway/login  
 
 | Technique | Username (password: anything 8+ chars) | Expected UI |
 |-----------|----------------------------------------|-------------|
@@ -100,7 +105,7 @@ Full regex lives in `services/innotech-gateway/services/detectionService.js` (`p
 
 ### Entry point B — Register (same detector)
 
-**URL:** http://localhost:3000/gateway/register  
+**URL:** http://localhost:8080/gateway/register  
 
 ```text
 Username: newuser' OR 1=1--
@@ -115,9 +120,9 @@ Same bypass → database console flow.
 
 | Where | Example URL or body |
 |-------|---------------------|
-| Contact query | http://localhost:3000/gateway/contact?search=1%20UNION%20SELECT%20null-- |
+| Contact query | http://localhost:8080/gateway/contact?search=1%20UNION%20SELECT%20null-- |
 | Contact message | POST message containing `SELECT * FROM users` |
-| Any query string | http://localhost:3000/gateway/?q=test'%20OR%201=1-- |
+| Any query string | http://localhost:8080/gateway/?q=test'%20OR%201=1-- |
 
 Usually redirects to **database console** (`/gateway/internal/services/database`). Run queries there as in entry A.
 
@@ -125,7 +130,7 @@ Usually redirects to **database console** (`/gateway/internal/services/database`
 
 ### Entry point D — Database console only
 
-**URL:** http://localhost:3000/gateway/internal/services/database  
+**URL:** http://localhost:8080/gateway/internal/services/database  
 
 Use after bypass, or when gatekeeper already flagged SQLi on the request.
 
@@ -156,7 +161,7 @@ Each **Execute query** POST is logged as SQLi and triggers dump **or** tarpit er
 **Direct export (no SQL typed):**
 
 ```
-http://localhost:3000/gateway/internal/services/database?export=credentials
+http://localhost:8080/gateway/internal/services/database?export=credentials
 ```
 
 Same rotation as Execute query.
@@ -169,14 +174,14 @@ Same rotation as Execute query.
 # Login bypass (auth SQLi)
 curl -s -o /dev/null -w "%{http_code} %{redirect_url}\n" \
   -X POST -d "username=admin'%20OR%201=1--&password=anything123" \
-  http://localhost:3000/gateway/login
+  http://localhost:8080/gateway/login
 
 # Contact UNION
-curl -sI "http://localhost:3000/gateway/contact?search=UNION%20SELECT%201,2,3--" | head -5
+curl -sI "http://localhost:8080/gateway/contact?search=UNION%20SELECT%201,2,3--" | head -5
 
 # Run query on database path
 curl -s -X POST -d "query=SELECT+*+FROM+users" \
-  http://localhost:3000/gateway/internal/services/database | head -30
+  http://localhost:8080/gateway/internal/services/database | head -30
 ```
 
 ---
@@ -218,7 +223,7 @@ Simple probes (`alert` with a number or short string, `onerror=alert(1)`, etc.) 
 
 ### Browser — probe (demo alert)
 
-1. http://localhost:3000/gateway/contact  
+1. http://localhost:8080/gateway/contact  
 2. **Subject:** `Test ticket`  
 3. **Message:** `<script>alert(1)</script>`  
 4. Submit → expect **alert dialog showing `1`**.
@@ -226,7 +231,7 @@ Simple probes (`alert` with a number or short string, `onerror=alert(1)`, etc.) 
 **Or** URL only:
 
 ```
-http://localhost:3000/gateway/contact?msg=%3Cscript%3Ealert(1)%3C%2Fscript%3E
+http://localhost:8080/gateway/contact?msg=%3Cscript%3Ealert(1)%3C%2Fscript%3E
 ```
 
 ### Browser — blocked (no alert)
@@ -243,10 +248,10 @@ Expect sanitized/quarantined UI only (no alert).
 
 ```bash
 # probe — HTML includes reflection (alert only visible in a real browser)
-curl "http://localhost:3000/gateway/contact?msg=%3Cscript%3Ealert(1)%3C%2Fscript%3E"
+curl "http://localhost:8080/gateway/contact?msg=%3Cscript%3Ealert(1)%3C%2Fscript%3E"
 
 # blocked — escaped preview only
-curl "http://localhost:3000/gateway/contact?msg=%3Cscript%3Ealert(document.cookie)%3C%2Fscript%3E"
+curl "http://localhost:8080/gateway/contact?msg=%3Cscript%3Ealert(document.cookie)%3C%2Fscript%3E"
 ```
 
 ### Test matrix
@@ -276,7 +281,7 @@ curl "http://localhost:3000/gateway/contact?msg=%3Cscript%3Ealert(document.cooki
 Employees never see a backup download button. Triggers when the request matches `download=backup.zip` (scanner, crafted link, or post-recon decoy UI):
 
 ```
-http://localhost:3000/gateway/documents?download=backup.zip
+http://localhost:8080/gateway/documents?download=backup.zip
 ```
 
 **Or** from the **legacy administrator console** (after brute-force handoff or recon trap): **Download full backup (ZIP)**.
@@ -285,7 +290,7 @@ http://localhost:3000/gateway/documents?download=backup.zip
 
 ```bash
 curl --max-time 5 -o /dev/null -w "%{http_code}\n" \
-  "http://localhost:3000/gateway/documents?download=backup.zip"
+  "http://localhost:8080/gateway/documents?download=backup.zip"
 ```
 
 ### Expected telemetry
@@ -301,10 +306,10 @@ curl --max-time 5 -o /dev/null -w "%{http_code}\n" \
 
 ### Browser
 
-1. http://localhost:3000/gateway/login  
+1. http://localhost:8080/gateway/login  
 2. Username `admin`, **wrong** password — submit **5 times**.  
 3. On the **5th** failed submit you should land on  
-   `http://localhost:3000/gateway/internal/console?breach=legacy`  
+   `http://localhost:8080/gateway/internal/console?breach=legacy`  
    with session active (cookie `legacy_admin_sess`).  
 4. Optional: open **Legacy sign-in** from the sidebar and keep wrong passwords there to demo lockout (10th attempt → 423) — separate from the brute “win” moment.
 
@@ -315,7 +320,7 @@ for i in $(seq 1 10); do
   curl -s -o /dev/null -w "attempt $i → %{http_code}\n" \
     -X POST -H "Content-Type: application/json" \
     -d '{"username":"admin","password":"wrong"}' \
-    http://localhost:3000/gateway/internal/auth/legacy
+    http://localhost:8080/gateway/internal/auth/legacy
 done
 ```
 
@@ -336,23 +341,23 @@ done
 Safe Zone home has **no** link to the legacy console. Use a scanner-style URL or direct decoy path after detection:
 
 ```
-http://localhost:3000/gateway/internal/console
+http://localhost:8080/gateway/internal/console
 ```
 
 **Or** scanner-style URL:
 
 ```
-http://localhost:3000/gateway/contact?path=/.env
+http://localhost:8080/gateway/contact?path=/.env
 ```
 
 ```
-http://localhost:3000/gateway/?q=wp-admin
+http://localhost:8080/gateway/?q=wp-admin
 ```
 
 ### Terminal
 
 ```bash
-curl -s "http://localhost:3000/gateway/internal/console" | head -20
+curl -s "http://localhost:8080/gateway/internal/console" | head -20
 ```
 
 ### Expected telemetry
@@ -369,20 +374,20 @@ curl -s "http://localhost:3000/gateway/internal/console" | head -20
 ### Browser — issue token
 
 1. Open fake admin → **API integration keys**, or  
-   http://localhost:3000/gateway/internal/integrations/keys  
+   http://localhost:8080/gateway/internal/integrations/keys  
 2. Copy the `apiKey` value.
 
 ### Browser — trigger usage
 
 - Install a header extension (e.g. ModHeader), set  
   `Authorization: Bearer <apiKey>`  
-- Visit http://localhost:3000/gateway/  
+- Visit http://localhost:8080/gateway/  
 
 **Or** terminal:
 
 ```bash
 KEY="<paste apiKey here>"
-curl -H "Authorization: Bearer $KEY" "http://localhost:3000/gateway/"
+curl -H "Authorization: Bearer $KEY" "http://localhost:8080/gateway/"
 ```
 
 ### Expected telemetry
@@ -397,13 +402,13 @@ curl -H "Authorization: Bearer $KEY" "http://localhost:3000/gateway/"
 ## 7. Path traversal (LFI) → Fake file viewer
 
 ```
-http://localhost:3000/gateway/contact?file=../../../etc/passwd
+http://localhost:8080/gateway/contact?file=../../../etc/passwd
 ```
 
 Or direct:
 
 ```
-http://localhost:3000/gateway/internal/services/files?file=../../../etc/passwd
+http://localhost:8080/gateway/internal/services/files?file=../../../etc/passwd
 ```
 
 **Expected:** `PATH_TRAVERSAL` event + fake `/etc/passwd` lines + kill-chain CTAs.
@@ -413,13 +418,13 @@ http://localhost:3000/gateway/internal/services/files?file=../../../etc/passwd
 ## 8. SSRF → Fake metadata bridge
 
 ```
-http://localhost:3000/gateway/contact?url=http://169.254.169.254/latest/meta-data/
+http://localhost:8080/gateway/contact?url=http://169.254.169.254/latest/meta-data/
 ```
 
 Or:
 
 ```
-http://localhost:3000/gateway/internal/services/fetch-status?url=http://169.254.169.254/latest/meta-data/
+http://localhost:8080/gateway/internal/services/fetch-status?url=http://169.254.169.254/latest/meta-data/
 ```
 
 **Expected:** `SSRF` event; JSON body with fake `instanceId` / IAM role when `Accept: application/json`.
@@ -429,7 +434,7 @@ http://localhost:3000/gateway/internal/services/fetch-status?url=http://169.254.
 ## 9. Scanner User-Agent → Tarpit
 
 ```bash
-curl -A "sqlmap/1.7" "http://localhost:3000/gateway/"
+curl -A "sqlmap/1.7" "http://localhost:8080/gateway/"
 ```
 
 **Expected:** `SCANNER` trap, delayed response, `wasted_time_ms` in telemetry.
@@ -479,8 +484,8 @@ Turn **Demo Mode OFF** on the dashboard so events come from the real malicious D
 Confirms Socket.IO + DB without attacking the gateway UI:
 
 ```bash
-cd services/logging-data-extraction
-TEST_SERVER_URL=http://localhost:3002 npm run mock-attack
+cd infra
+docker compose exec telemetry npm run mock-attack
 ```
 
 Expect five success lines and exit code `0`.
@@ -489,7 +494,7 @@ Expect five success lines and exit code `0`.
 
 ## Presentation flow (suggested order)
 
-1. Log in as `admin` → lands on workspace; open **Attack monitor** from the sidebar → http://localhost:3000/gateway/dashboard/ — Live + map.  
+1. Log in as `admin` → lands on workspace; open **Attack monitor** from the sidebar → http://localhost:8080/gateway/dashboard/ — Live + map.  
 2. **SQLi** — try `admin' OR 1=1--` on login → bypass → database console → **Execute query** twice (dump vs error).  
 3. **XSS** via contact form → sandbox page + alert.  
 4. **Data bomb** via `documents?download=backup.zip` (not on Safe Zone home).  
@@ -524,7 +529,7 @@ Logs use a single readable format (no emojis):
 [ATTACK] live_alert_broadcast_to_admin_ui | trap=SQLI ...
 ```
 
-Watch the **`[gateway]`** and **`[logging]`** panes when running `pnpm dev:full`.
+Watch logs: `docker compose logs -f gateway telemetry` (from `infra/`).
 
 ---
 
@@ -532,12 +537,13 @@ Watch the **`[gateway]`** and **`[logging]`** panes when running `pnpm dev:full`
 
 | Issue | Fix |
 |-------|-----|
-| 404 on `/login` | Sign in at **`http://localhost:3000/gateway/login`** (canonical) |
+| 404 on `/login` | Sign in at **`http://localhost:8080/gateway/login`** (canonical) |
 | Two different login pages | Old EJS login redirects here; attack dashboard is only at **`/`** for `admin` role |
 | Only “loading”, no tarpit text | Wait up to 2 minutes; or use `curl -N` |
-| Admin Offline | Restart `pnpm dev:full`; set `DEV_PUBLIC_HOST` to the host clients use (or `localhost`) |
-| No live alert from gateway | Ensure logging service is up; check gateway log for `Broadcasted liveAlert` |
-| Trap works but wrong DB | Check `SAFEZONE_DB_URI` / `MALICIOUS_DB_URI` in `.env.local` |
+| Admin Offline | `docker compose restart`; socket token match in `apps/admin-panel/.env` |
+| 502 on `/gateway/` | `docker compose logs gateway` — need `server_listening` |
+| No live alert from gateway | `docker compose ps` — telemetry + gateway Up; `docker compose logs telemetry` |
+| Trap works but wrong DB | Check `SAFEZONE_DB_URI` / `MALICIOUS_DB_URI` in `.env` |
 
 ---
 

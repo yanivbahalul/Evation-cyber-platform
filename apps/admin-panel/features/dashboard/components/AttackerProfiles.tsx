@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useSocket } from '@/features/dashboard/context/SocketContext'
 import { useInvestigation } from '@/features/investigation/context/InvestigationContext'
 import type { AttackerProfile } from '@/lib/types/telemetry'
@@ -16,14 +16,52 @@ export default function AttackerProfiles({ onNavigateInvestigate }: AttackerProf
   const { openInvestigation } = useInvestigation()
   const [selected, setSelected] = useState<AttackerProfile | null>(null)
   const [bannedIps, setBannedIps] = useState<Set<string>>(new Set())
+  const [banBusy, setBanBusy] = useState<string | null>(null)
 
-  const toggleBan = (ip: string) => {
-    setBannedIps(prev => {
-      const next = new Set(prev)
-      if (next.has(ip)) next.delete(ip)
-      else next.add(ip)
-      return next
-    })
+  const loadBans = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/ban', { credentials: 'include' })
+      const json = await res.json()
+      if (res.ok && json.success) {
+        setBannedIps(new Set((json.data ?? []).map((r: { ip: string }) => r.ip)))
+      }
+    } catch {
+      // ignore — profiles still show DB banned flag when synced via dashboard refresh
+    }
+  }, [])
+
+  useEffect(() => {
+    loadBans()
+  }, [loadBans])
+
+  const isBanned = (profile: AttackerProfile) => bannedIps.has(profile.ip) || Boolean(profile.banned)
+
+  const toggleBan = async (ip: string) => {
+    setBanBusy(ip)
+    try {
+      const currentlyBanned = bannedIps.has(ip)
+      const res = currentlyBanned
+        ? await fetch(`/api/admin/ban?ip=${encodeURIComponent(ip)}`, {
+            method: 'DELETE',
+            credentials: 'include',
+          })
+        : await fetch('/api/admin/ban', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ip }),
+          })
+      const json = await res.json()
+      if (!res.ok || !json.success) return
+      setBannedIps((prev) => {
+        const next = new Set(prev)
+        if (currentlyBanned) next.delete(ip)
+        else next.add(ip)
+        return next
+      })
+    } finally {
+      setBanBusy(null)
+    }
   }
 
   const investigate = (profile: AttackerProfile, traceId?: string) => {
@@ -31,13 +69,15 @@ export default function AttackerProfiles({ onNavigateInvestigate }: AttackerProf
     onNavigateInvestigate?.()
   }
 
+  const bannedCount = attackerProfiles.filter((p) => isBanned(p)).length
+
   return (
     <div className="flex flex-col gap-4 h-full">
       <div className="grid grid-cols-4 gap-3">
         <MiniStat label="Total Profiles" value={attackerProfiles.length} color="text-primary" />
         <MiniStat label="Bots Detected" value={attackerProfiles.filter(p => p.isBot).length} color="text-danger" />
         <MiniStat label="High Risk (≥80)" value={attackerProfiles.filter(p => p.riskScore >= 80).length} color="text-accent" />
-        <MiniStat label="Banned (UI)" value={bannedIps.size} color="text-muted-foreground" />
+        <MiniStat label="Banned" value={bannedCount} color="text-muted-foreground" />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 overflow-y-auto flex-1 min-h-0 content-start">
@@ -45,7 +85,8 @@ export default function AttackerProfiles({ onNavigateInvestigate }: AttackerProf
           <ProfileCard
             key={profile.ip}
             profile={profile}
-            banned={bannedIps.has(profile.ip)}
+            banned={isBanned(profile)}
+            banBusy={banBusy === profile.ip}
             isSelected={selected?.ip === profile.ip}
             onSelect={() => setSelected(s => (s?.ip === profile.ip ? null : profile))}
             onBan={() => toggleBan(profile.ip)}
@@ -109,6 +150,7 @@ export default function AttackerProfiles({ onNavigateInvestigate }: AttackerProf
 function ProfileCard({
   profile,
   banned,
+  banBusy,
   isSelected,
   onSelect,
   onBan,
@@ -116,6 +158,7 @@ function ProfileCard({
 }: {
   profile: AttackerProfile
   banned: boolean
+  banBusy: boolean
   isSelected: boolean
   onSelect: () => void
   onBan: () => void
@@ -198,18 +241,19 @@ function ProfileCard({
         </button>
         <button
           type="button"
+          disabled={banBusy}
           onClick={e => {
             e.stopPropagation()
             onBan()
           }}
-          className={`flex items-center gap-1.5 text-[10px] font-mono px-2.5 py-1 rounded-md border transition-colors ${
+          className={`flex items-center gap-1.5 text-[10px] font-mono px-2.5 py-1 rounded-md border transition-colors disabled:opacity-50 ${
             banned
               ? 'bg-success/10 border-success/30 text-success hover:bg-success/20'
               : 'bg-danger/10 border-danger/30 text-danger hover:bg-danger/20'
           }`}
         >
           <Ban className="w-3 h-3" />
-          {banned ? 'Unban' : 'Ban'}
+          {banBusy ? '…' : banned ? 'Unban' : 'Ban'}
         </button>
       </div>
     </div>

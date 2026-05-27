@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Sidebar, { type ActiveTab } from './Sidebar'
 import TopBar from './TopBar'
 import ThreatMap from './ThreatMap'
@@ -9,10 +10,23 @@ import AttackerProfiles from './AttackerProfiles'
 import AttackerWorkspace from '@/features/investigation/components/AttackerWorkspace'
 import HoneyTokenPanel from './HoneyTokenPanel'
 import AdminUsersPanel from './AdminUsersPanel'
+import BanManagementPanel from './BanManagementPanel'
 import { InvestigationProvider } from '@/features/investigation/context/InvestigationContext'
 
+const TAB_IDS: ActiveTab[] = ['map', 'events', 'profiles', 'investigate', 'tokens', 'adminUsers', 'bans']
+
+function tabFromQuery(raw: string | null): ActiveTab {
+  if (raw && TAB_IDS.includes(raw as ActiveTab)) return raw as ActiveTab
+  return 'map'
+}
+
 export default function Dashboard() {
-  const [activeTab, setActiveTab] = useState<ActiveTab>('map')
+  const searchParams = useSearchParams()
+  const [activeTab, setActiveTab] = useState<ActiveTab>(() => tabFromQuery(searchParams.get('tab')))
+
+  useEffect(() => {
+    setActiveTab(tabFromQuery(searchParams.get('tab')))
+  }, [searchParams])
 
   const goInvestigate = () => setActiveTab('investigate')
 
@@ -33,6 +47,7 @@ export default function Dashboard() {
             {activeTab === 'investigate' && <AttackerWorkspace />}
             {activeTab === 'tokens' && <HoneyTokenPanel />}
             {activeTab === 'adminUsers' && <AdminUsersPanel />}
+            {activeTab === 'bans' && <BanManagementPanel />}
           </div>
         </main>
       </div>

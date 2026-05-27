@@ -13,6 +13,7 @@ const TAB_TITLES: Record<ActiveTab, string> = {
   investigate: 'Attacker Investigation Workspace',
   tokens:   'Honey Token Status',
   adminUsers: 'Safe Zone Users',
+  bans: 'IP Ban Management',
 }
 
 interface TopBarProps {

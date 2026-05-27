@@ -5,11 +5,12 @@ import { fileURLToPath } from 'url'
 const require = createRequire(import.meta.url)
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-require('dotenv').config({ path: path.join(__dirname, '.env.local'), quiet: true })
+require('dotenv').config({ path: path.join(__dirname, '.env'), quiet: true })
 require('./scripts/applyDevPublicHost.cjs').applyDevPublicHost()
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone',
   trailingSlash: true,
   typescript: {
     ignoreBuildErrors: true,

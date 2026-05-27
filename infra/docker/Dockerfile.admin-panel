@@ -1,0 +1,33 @@
+FROM node:22-alpine AS deps
+WORKDIR /app
+RUN corepack enable
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages ./packages
+COPY apps/admin-panel ./apps/admin-panel
+
+RUN corepack prepare pnpm@11.0.8 --activate \
+  && pnpm install --frozen-lockfile --filter admin-panel...
+
+FROM deps AS builder
+WORKDIR /app/apps/admin-panel
+ENV NEXT_TELEMETRY_DISABLED=1
+# Next.js may omit public/ from the image context; standalone COPY expects it.
+RUN mkdir -p public
+RUN pnpm build
+
+FROM node:22-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
+
+RUN addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001
+
+COPY --from=builder /app/apps/admin-panel/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/apps/admin-panel/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/apps/admin-panel/.next/static ./apps/admin-panel/.next/static
+
+USER nextjs
+EXPOSE 3000
+CMD ["node", "apps/admin-panel/server.js"]

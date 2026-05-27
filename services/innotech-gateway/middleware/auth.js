@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const AdminUser = require('../models/AdminUser');
-const User = require('../models/User');
+const RealEmployee = require('../models/RealEmployee');
 
 let devEphemeralSecret = null;
 
@@ -48,7 +48,7 @@ async function operatorRoleForUsername(username) {
   if (!username) return false;
   const au = await AdminUser.findOne({ username, isActive: true }).select('role').lean();
   if (au) return au.role === 'admin';
-  const u = await User.findOne({ username, isActive: true }).select('role').lean();
+  const u = await RealEmployee.findOne({ username, isActive: true }).select('role').lean();
   if (u) return u.role === 'admin';
   return false;
 }

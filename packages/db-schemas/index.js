@@ -4,4 +4,5 @@ module.exports = {
   HoneyTokenSchema: require('./malicious/HoneyToken'),
   AdminUserSchema: require('./admin/AdminUser'),
   SafezoneUserSchema: require('./safezone/SafezoneUser'),
+  RealEmployeeSchema: require('./safezone/RealEmployee'),
 };

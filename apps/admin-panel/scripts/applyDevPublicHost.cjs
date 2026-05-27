@@ -1,7 +1,7 @@
 /**
  * Expand DEV_PUBLIC_HOST into UI / telemetry URLs (dev only).
- * Set DEV_PUBLIC_HOST=localhost | 192.168.x.x | Hamachi IP in apps/admin-panel/.env.local
- * Explicit NEXT_PUBLIC_* / ADMIN_* values in .env.local always win.
+ * Set DEV_PUBLIC_HOST=localhost | 192.168.x.x | Hamachi IP in apps/admin-panel/.env
+ * Explicit NEXT_PUBLIC_* / ADMIN_* values in .env always win.
  */
 function applyDevPublicHost() {
   const host = (process.env.DEV_PUBLIC_HOST || 'localhost').trim()

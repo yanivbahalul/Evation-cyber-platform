@@ -7,8 +7,8 @@
     "dev:ui": "pnpm --dir apps/admin-panel dev",
     "dev:gateway": "pnpm --dir services/innotech-gateway dev",
     "dev:logging": "pnpm --dir services/logging-data-extraction dev",
-    "dev:all": "dotenv -e apps/admin-panel/.env.local -- concurrently -n ui,gateway -c blue,green \"pnpm --dir apps/admin-panel dev\" \"BASE_PATH=/gateway PORT=4001 MONGODB_URI=$SAFEZONE_DB_URI pnpm --dir services/innotech-gateway dev\"",
-    "dev:full": "dotenv -e apps/admin-panel/.env.local -- concurrently -n ui,gateway,logging -c blue,green,magenta \"pnpm --dir apps/admin-panel exec next dev -H 0.0.0.0 -p 3000\" \"BASE_PATH=/gateway PORT=4001 MONGODB_URI=$SAFEZONE_DB_URI pnpm --dir services/innotech-gateway dev\" \"pnpm --dir services/logging-data-extraction dev\"",
+    "dev:all": "dotenv -e apps/admin-panel/.env -- concurrently -n ui,gateway -c blue,green \"pnpm --dir apps/admin-panel dev\" \"BASE_PATH=/gateway PORT=4001 MONGODB_URI=$SAFEZONE_DB_URI pnpm --dir services/innotech-gateway dev\"",
+    "dev:full": "dotenv -e apps/admin-panel/.env -- concurrently -n ui,gateway,logging -c blue,green,magenta \"pnpm --dir apps/admin-panel exec next dev -H 0.0.0.0 -p 3000\" \"BASE_PATH=/gateway PORT=4001 MONGODB_URI=$SAFEZONE_DB_URI pnpm --dir services/innotech-gateway dev\" \"pnpm --dir services/logging-data-extraction dev\"",
     "dev:full:clean": "pnpm --dir apps/admin-panel clean && pnpm dev:full",
     "trap:demo": "bash scripts/yaniv-test/run-all.sh",
     "trap:chain": "bash scripts/yaniv-test/run-kill-chain.sh"

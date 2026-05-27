@@ -51,5 +51,10 @@ export function mapAttackerProfileDoc(p: Record<string, unknown>) {
     firstSeen: (p.firstSeen instanceof Date ? p.firstSeen : new Date(String(p.firstSeen))).toISOString(),
     lastSeen: (p.lastSeen instanceof Date ? p.lastSeen : new Date(String(p.lastSeen))).toISOString(),
     traceIds: uniqueTraceIds(Array.isArray(p.traceIds) ? p.traceIds.map(String) : []),
+    banned: Boolean(p.banned),
+    bannedAt: p.bannedAt
+      ? (p.bannedAt instanceof Date ? p.bannedAt : new Date(String(p.bannedAt))).toISOString()
+      : undefined,
+    bannedBy: p.bannedBy != null ? String(p.bannedBy) : undefined,
   }
 }

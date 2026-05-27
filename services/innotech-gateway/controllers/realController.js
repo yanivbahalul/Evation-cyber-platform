@@ -1,4 +1,4 @@
-const User = require('../models/User'); 
+const RealEmployee = require('../models/RealEmployee'); 
 const AdminUser = require('../models/AdminUser');
 const bcrypt = require('bcryptjs'); // [cite: 22]
 const { signAuthToken } = require('../middleware/auth');
@@ -152,13 +152,13 @@ exports.createUser = async (req, res) => {
             return res.status(400).render('register', { user: null, error: 'Password must be 8-200 chars', username: cleanUsername });
         }
 
-        const existing = await User.findOne({ username: cleanUsername }).lean();
+        const existing = await RealEmployee.findOne({ username: cleanUsername }).lean();
         if (existing) return res.status(409).render('register', { user: null, error: 'Username already exists', username: cleanUsername });
 
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(cleanPassword, salt); // [cite: 22]
 
-        const newUser = new User({
+        const newUser = new RealEmployee({
             username: cleanUsername,
             passwordHash: hashedPassword,
             role: 'user',
@@ -193,7 +193,7 @@ exports.verifyRegistrationOtp = async (req, res) => {
 
         const otp = String(req.body?.otp || '').replace(/\s/g, '');
         if (!/^\d{6}$/.test(otp)) {
-            const user = await User.findById(userId).select('+totpSecret');
+            const user = await RealEmployee.findById(userId).select('+totpSecret');
             if (!user || !user.totpSecret) return res.status(401).render('register', { user: null, error: 'Invalid registration session. Please register again.', username: '' });
             const issuer = process.env.TOTP_ISSUER_NAME || 'InnoTech Safe Zone';
             const otpauth = generateURI({ strategy: 'totp', label: user.username, issuer, secret: user.totpSecret });
@@ -201,7 +201,7 @@ exports.verifyRegistrationOtp = async (req, res) => {
             return res.status(400).render('setup-2fa', { user: null, username: user.username, qrDataUrl, otpauth, error: 'OTP must be 6 digits' });
         }
 
-        const user = await User.findById(userId).select('+totpSecret');
+        const user = await RealEmployee.findById(userId).select('+totpSecret');
         if (!user || !user.totpSecret) {
             return res.status(401).render('register', { user: null, error: 'Invalid registration session. Please register again.', username: '' });
         }
@@ -276,7 +276,7 @@ exports.loginUser = async (req, res) => {
         }
 
         // 3) Regular Safe Zone user login (gateway users collection)
-        const user = await User.findOne({ username: cleanUsername, isActive: true }).select('+totpSecret');
+        const user = await RealEmployee.findOne({ username: cleanUsername, isActive: true }).select('+totpSecret');
         if (!user) return await failLogin(req, res, cleanUsername, 'Invalid credentials');
         if (!await bcrypt.compare(cleanPassword, user.passwordHash)) return await failLogin(req, res, cleanUsername, 'Invalid credentials');
         markLoginSuccess(req);
@@ -369,7 +369,7 @@ exports.verifyLoginOtp = async (req, res) => {
 
         // Regular Safe Zone OTP path
         if (mode !== 'login') return res.status(401).render('login', { user: null, error: 'Missing login session. Please sign in again.', username: '' });
-        const user = await User.findById(userId).select('+totpSecret');
+        const user = await RealEmployee.findById(userId).select('+totpSecret');
         if (!user || !user.isActive) return res.status(401).render('login', { user: null, error: 'Invalid login session. Please sign in again.', username: '' });
         if (!user.totpEnabled || !user.totpSecret) return res.status(401).render('login', { user: null, error: '2FA not enabled for this account.', username: user?.username || '' });
 

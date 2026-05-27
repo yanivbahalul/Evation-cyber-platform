@@ -65,6 +65,9 @@ export interface AttackerProfile {
   firstSeen: string
   lastSeen: string
   traceIds?: string[]
+  banned?: boolean
+  bannedAt?: string
+  bannedBy?: string
 }
 
 export interface AttackerTimeline {

@@ -30,6 +30,9 @@ const AttackerProfileSchema = new mongoose.Schema({
     type: [String],
     default: [],
   },
+  banned: { type: Boolean, default: false, index: true },
+  bannedAt: Date,
+  bannedBy: String,
 });
 
 module.exports = AttackerProfileSchema;

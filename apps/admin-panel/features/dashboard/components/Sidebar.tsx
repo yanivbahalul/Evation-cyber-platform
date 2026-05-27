@@ -1,10 +1,11 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import { Shield, Map, Activity, Users, Key, Ban, Wifi, WifiOff, LogOut, UserCog, Search } from 'lucide-react'
 import { useSocket } from '@/features/dashboard/context/SocketContext'
 import { useAuth } from '@/features/auth/context/AuthContext'
 
-export type ActiveTab = 'map' | 'events' | 'profiles' | 'investigate' | 'tokens' | 'adminUsers'
+export type ActiveTab = 'map' | 'events' | 'profiles' | 'investigate' | 'tokens' | 'adminUsers' | 'bans'
 
 interface SidebarProps {
   active: ActiveTab
@@ -21,6 +22,7 @@ const NAV_ITEMS: { id: ActiveTab; label: string; icon: React.ElementType }[] = [
 ]
 
 export default function Sidebar({ active, onSelect }: SidebarProps) {
+  const router = useRouter()
   const { connected, liveAlerts } = useSocket()
   const { logout } = useAuth()
 
@@ -84,7 +86,18 @@ export default function Sidebar({ active, onSelect }: SidebarProps) {
           <p className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-widest px-2 mb-2">
             Actions
           </p>
-          <button className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-danger hover:bg-danger/10 transition-all">
+          <button
+            type="button"
+            onClick={() => {
+              onSelect('bans')
+              router.push('/admin/ban')
+            }}
+            className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              active === 'bans'
+                ? 'bg-danger/15 text-danger border border-danger/30'
+                : 'text-muted-foreground hover:text-danger hover:bg-danger/10'
+            }`}
+          >
             <Ban className="w-4 h-4 shrink-0" />
             Manage Bans
           </button>

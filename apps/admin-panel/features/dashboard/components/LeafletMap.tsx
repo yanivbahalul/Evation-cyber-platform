@@ -12,7 +12,7 @@
  * accesses `window` and cannot be rendered server-side.
  */
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { MapContainer, TileLayer, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import { useSocket } from '@/features/dashboard/context/SocketContext'
@@ -58,8 +58,17 @@ function makeCircleIcon(color: string, size = 14, pulse = false) {
   })
 }
 
+interface MapPoint {
+  ip: string
+  lat: number
+  lng: number
+  city: string
+  riskScore: number
+  banned?: boolean
+}
+
 /** Draws/updates attacker nodes + edges on every new liveAlerts batch */
-function AttackLayer() {
+function AttackLayer({ historical }: { historical: MapPoint[] }) {
   const { liveAlerts } = useSocket()
   const map = useMap()
   const layerRef = useRef<L.LayerGroup | null>(null)
@@ -77,8 +86,19 @@ function AttackLayer() {
       .bindTooltip('HIT Honeypot Server', { permanent: false, direction: 'top' })
       .addTo(lg)
 
-    // Attacker nodes + edges — deduplicate by IP to avoid overlapping markers
     const seen = new Set<string>()
+
+    historical.forEach((point) => {
+      if (seen.has(point.ip) || !point.lat || !point.lng) return
+      seen.add(point.ip)
+      const color = point.banned ? '#64748b' : '#475569'
+      const icon = makeCircleIcon(color, 8, false)
+      L.marker([point.lat, point.lng], { icon })
+        .bindTooltip(`${point.ip} · ${point.city}`, { direction: 'top' })
+        .addTo(lg)
+    })
+
+    // Attacker nodes + edges — deduplicate by IP to avoid overlapping markers
     liveAlerts.slice(0, 20).forEach(alert => {
       if (seen.has(alert.attackerIp)) return
       seen.add(alert.attackerIp)
@@ -112,12 +132,23 @@ function AttackLayer() {
         }
       ).addTo(lg)
     })
-  }, [liveAlerts, map])
+  }, [liveAlerts, historical, map])
 
   return null
 }
 
 export default function LeafletMap() {
+  const [historical, setHistorical] = useState<MapPoint[]>([])
+
+  useEffect(() => {
+    fetch('/api/admin/map', { credentials: 'include' })
+      .then((res) => res.json())
+      .then((json) => {
+        if (json?.success && Array.isArray(json.data)) setHistorical(json.data)
+      })
+      .catch(() => {})
+  }, [])
+
   return (
     <MapContainer
       center={[30, 15]}
@@ -132,7 +163,7 @@ export default function LeafletMap() {
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://openstreetmap.org">OpenStreetMap</a>'
       />
-      <AttackLayer />
+      <AttackLayer historical={historical} />
     </MapContainer>
   )
 }

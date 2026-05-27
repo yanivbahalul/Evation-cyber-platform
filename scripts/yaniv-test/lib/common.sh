@@ -20,10 +20,11 @@ CURL_MAX_TIME="${CURL_MAX_TIME:-120}"
 
 # Strip trailing slashes
 GATEWAY_PATH="${GATEWAY_PATH%/}"
-BASE="${SCHEME}://${TARGET}:${PORT}${GATEWAY_PATH}"
+UI_BASE="${SCHEME}://${TARGET}:${PORT}"
+BASE="${UI_BASE}${GATEWAY_PATH}"
 COOKIE="${COOKIE_JAR:-${TMPDIR:-/tmp}/evation-remote-$$.cookie}"
 
-export TARGET PORT SCHEME GATEWAY_PATH PAUSE BASE COOKIE CURL_MAX_TIME
+export TARGET PORT SCHEME GATEWAY_PATH UI_BASE BASE COOKIE CURL_MAX_TIME
 
 _common_cleanup() {
   if [[ "${KEEP_COOKIE:-0}" != "1" ]]; then
@@ -59,7 +60,7 @@ print_trace() {
   if [[ -n "$trace" ]]; then
     echo "traceId: ${trace}"
   fi
-  echo "Dashboard: ${SCHEME}://${TARGET}:${PORT}${GATEWAY_PATH}/dashboard/"
+  echo "Dashboard: ${UI_BASE}${GATEWAY_PATH}/dashboard/"
 }
 
 require_target() {

@@ -6,7 +6,7 @@
 const TRAP_TYPES = require('@evation/shared-constants');
 const { isLegacySignInPath } = require('../config/deceptionPaths');
 
-const bannedIPs = new Set(['1.2.3.4', '5.6.7.8']);
+const banService = require('./banService');
 
 const patterns = {
     /** URLs, contact forms, query strings — broader heuristics. */
@@ -59,7 +59,7 @@ function matchContent(content, userAgent = '', { sqlPattern = patterns.SQLI } = 
     return uniqueOrdered(types);
 }
 
-exports.isBlacklisted = (ip) => bannedIPs.has(ip);
+exports.isBlacklisted = (ip) => banService.isBlacklisted(ip);
 
 exports.getThreatTypesFromCredentials = (body = {}, userAgent = '') => {
     const content = [body.username, body.password].filter(Boolean).join(' ');

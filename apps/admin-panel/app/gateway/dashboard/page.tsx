@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { AuthProvider } from '@/features/auth/context/AuthContext'
 import {
   SocketProvider,
@@ -108,7 +108,9 @@ export default function GatewayDashboardPage() {
   return (
     <AuthProvider>
       <SocketProvider bootstrap={bootstrap}>
-        <Dashboard />
+        <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center p-4 text-sm text-muted-foreground">Loading dashboard…</div>}>
+          <Dashboard />
+        </Suspense>
       </SocketProvider>
     </AuthProvider>
   )
