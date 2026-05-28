@@ -104,6 +104,7 @@ function AttackLayer({ historical }: { historical: MapPoint[] }) {
       seen.add(alert.attackerIp)
 
       const color = TRAP_COLORS[alert.trapType] ?? '#7a9bb5'
+      if (!alert.lat || !alert.lng) return
 
       // Attacker node
       const icon = makeCircleIcon(color, 12, false)

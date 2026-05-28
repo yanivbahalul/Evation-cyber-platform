@@ -35,6 +35,8 @@ function mapSocketLiveAlert(data: Record<string, unknown>): LiveAlert {
   const eventID = typeof data.eventID === 'string' ? data.eventID : randomEventId()
   const trapType = normalizeTrapType(String(data.trapType ?? 'DATA_BOMB'))
   const fingerprint = (data.fingerprint as LiveAlert['fingerprint']) ?? {}
+  const latRaw = typeof data.lat === 'number' || typeof data.lat === 'string' ? Number(data.lat) : NaN
+  const lngRaw = typeof data.lng === 'number' || typeof data.lng === 'string' ? Number(data.lng) : NaN
   const ts =
     typeof data.timestamp === 'string'
       ? data.timestamp
@@ -47,8 +49,8 @@ function mapSocketLiveAlert(data: Record<string, unknown>): LiveAlert {
     trapType,
     attackerIp: String(data.attackerIp ?? 'unknown'),
     city: String(data.city ?? 'Unknown'),
-    lat: Number.isFinite(data.lat) ? Number(data.lat) : 0,
-    lng: Number.isFinite(data.lng) ? Number(data.lng) : 0,
+    lat: Number.isFinite(latRaw) ? latRaw : 0,
+    lng: Number.isFinite(lngRaw) ? lngRaw : 0,
     os: String(fingerprint?.os ?? data.os ?? 'unknown'),
     browser: String(fingerprint?.browserVersion ?? fingerprint?.browser ?? data.browser ?? 'unknown'),
     riskScore: Number.isFinite(fingerprint?.riskScore) ? Number(fingerprint.riskScore) : undefined,
@@ -411,6 +413,9 @@ export function SocketProvider({
   const refreshInFlightRef = useRef(false)
   const refreshPendingRef = useRef(false)
   const refreshAfterAlertRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const syncingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const hasDashboardDataRef = useRef(false)
+  const lastRefreshAtRef = useRef(0)
   const timelinePrefetchRef = useRef<Set<string>>(new Set())
 
   const setDemoMode = useCallback((enabled: boolean) => {
@@ -428,20 +433,35 @@ export function SocketProvider({
     applySnapshot(payload, { setAttackEvents, setAttackerProfiles, setHoneyTokens })
     writeDashboardCache(payload)
     setHasDashboardData(true)
+    hasDashboardDataRef.current = true
     setDataStale(false)
     setLastRefreshError(null)
   }, [])
 
   const refresh = useCallback(async (signal?: AbortSignal) => {
     if (demoMode) return
+    // Avoid UI flicker + excessive refresh storms when live alerts stream in.
+    // We still allow refreshPendingRef to coalesce requests if one is in-flight.
+    const now = Date.now()
+    if (now - lastRefreshAtRef.current < 3_000 && !refreshInFlightRef.current) return
     if (refreshInFlightRef.current) {
       refreshPendingRef.current = true
       return
     }
+    lastRefreshAtRef.current = now
 
     const generation = refreshGenerationRef.current
     refreshInFlightRef.current = true
-    setIsSyncing(true)
+    // Don't flash "SYNC" for quick background refreshes once we already have data.
+    if (syncingTimerRef.current) clearTimeout(syncingTimerRef.current)
+    if (!hasDashboardDataRef.current) {
+      setIsSyncing(true)
+    } else {
+      syncingTimerRef.current = setTimeout(() => {
+        syncingTimerRef.current = null
+        if (refreshInFlightRef.current && generation === refreshGenerationRef.current) setIsSyncing(true)
+      }, 450)
+    }
 
     try {
       const res = await fetch('/api/admin/dashboard?limit=200', { method: 'GET', signal })
@@ -477,6 +497,10 @@ export function SocketProvider({
       setDataStale(true)
     } finally {
       refreshInFlightRef.current = false
+      if (syncingTimerRef.current) {
+        clearTimeout(syncingTimerRef.current)
+        syncingTimerRef.current = null
+      }
       if (generation === refreshGenerationRef.current) setIsSyncing(false)
       if (refreshPendingRef.current) {
         refreshPendingRef.current = false
@@ -619,7 +643,7 @@ export function SocketProvider({
       if (document.visibilityState === 'visible') {
         refresh(abort.signal).catch(() => {})
       }
-    }, 4_000)
+    }, 15_000)
 
     const onVisible = () => {
       if (document.visibilityState === 'visible') refresh(abort.signal).catch(() => {})
@@ -630,6 +654,7 @@ export function SocketProvider({
       abort.abort()
       document.removeEventListener('visibilitychange', onVisible)
       if (refreshAfterAlertRef.current) clearTimeout(refreshAfterAlertRef.current)
+      if (syncingTimerRef.current) clearTimeout(syncingTimerRef.current)
       refreshGenerationRef.current += 1
       if (intervalRef.current) clearInterval(intervalRef.current)
       if (pollRef.current) clearInterval(pollRef.current)
