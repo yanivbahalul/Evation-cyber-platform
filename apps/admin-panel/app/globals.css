@@ -15,6 +15,9 @@
   --foreground:        #e2f0f7;
   --muted-foreground:  #7a9bb5;
 
+  /* Bootstrap-compatible tokens (used by var(--bs-body-color)) */
+  --bs-body-color:     #cbd5e1; /* slate-300 */
+
   --primary:           #0d9488;   /* teal-600 */
   --primary-hover:     #0f766e;
   --primary-foreground:#ffffff;

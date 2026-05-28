@@ -20,6 +20,8 @@ services:
     build:
       context: ..
       dockerfile: infra/docker/Dockerfile.admin-panel
+      secrets:
+        - admin_panel_env
     env_file:
       - ../apps/admin-panel/.env
     environment:
@@ -51,3 +53,7 @@ services:
     expose:
       - "3002"
     restart: unless-stopped
+
+secrets:
+  admin_panel_env:
+    file: ../apps/admin-panel/.env

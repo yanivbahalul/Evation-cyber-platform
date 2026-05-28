@@ -7,8 +7,6 @@ Monorepo for the InnoTech HR honeypot: deceptive gateway traps, air-gapped telem
 ## Start the server (Docker)
 
 ```bash
-cp apps/admin-panel/.env.example apps/admin-panel/.env
-# Edit apps/admin-panel/.env — Mongo URIs, JWT, ADMIN_SOCKET_TOKEN = NEXT_PUBLIC_ADMIN_SOCKET_TOKEN
 
 cd infra
 docker compose up --build

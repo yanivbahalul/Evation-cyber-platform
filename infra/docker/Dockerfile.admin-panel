@@ -14,7 +14,9 @@ WORKDIR /app/apps/admin-panel
 ENV NEXT_TELEMETRY_DISABLED=1
 # Next.js may omit public/ from the image context; standalone COPY expects it.
 RUN mkdir -p public
-RUN pnpm build
+# Provide apps/admin-panel/.env at build-time without baking it into the image.
+# Requires BuildKit and a compose build secret named "admin_panel_env".
+RUN --mount=type=secret,id=admin_panel_env,target=/app/apps/admin-panel/.env,required=true pnpm build
 
 FROM node:22-alpine AS runner
 WORKDIR /app
