@@ -79,8 +79,52 @@ function parseTrustedProxyList() {
   if (!raw || !String(raw).trim()) return [];
   return String(raw)
     .split(',')
-    .map((part) => normalizeIp(part.trim()))
+    .map((part) => String(part || '').trim())
     .filter(Boolean);
+}
+
+function ipv4ToInt(ip) {
+  const n = normalizeIp(ip);
+  if (!n) return null;
+  const m = n.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (!m) return null;
+  const a = Number(m[1]);
+  const b = Number(m[2]);
+  const c = Number(m[3]);
+  const d = Number(m[4]);
+  if ([a, b, c, d].some((x) => !Number.isInteger(x) || x < 0 || x > 255)) return null;
+  // Use unsigned 32-bit arithmetic
+  return (((a << 24) >>> 0) + (b << 16) + (c << 8) + d) >>> 0;
+}
+
+function ipv4InCidr(ip, cidr) {
+  const [rawNet, rawBits] = String(cidr).split('/');
+  const bits = Number(rawBits);
+  if (!Number.isFinite(bits) || bits < 0 || bits > 32) return false;
+  const ipInt = ipv4ToInt(ip);
+  const netInt = ipv4ToInt(rawNet);
+  if (ipInt == null || netInt == null) return false;
+  const mask = bits === 0 ? 0 : ((0xffffffff << (32 - bits)) >>> 0);
+  return (ipInt & mask) === (netInt & mask);
+}
+
+function isTrustedProxyPeer(peer, entry) {
+  const p = normalizeIp(peer);
+  const e = String(entry || '').trim();
+  if (!p || !e) return false;
+
+  // CIDR support: 172.16.0.0/12, 10.0.0.0/8, etc.
+  if (e.includes('/')) {
+    return ipv4InCidr(p, e);
+  }
+
+  // Prefix support: "172." matches 172.16.0.1 etc.
+  if (e.endsWith('.')) {
+    return p.startsWith(e);
+  }
+
+  // Exact match
+  return p === normalizeIp(e);
 }
 
 /** True when the immediate TCP peer is a known reverse proxy (loopback or TRUSTED_PROXY_IPS). */
@@ -89,7 +133,7 @@ function isTrustedProxy(req) {
   const peer = normalizeIp(req?.socket?.remoteAddress) || normalizeIp(req?.ip);
   if (!peer) return false;
   const trusted = parseTrustedProxyList();
-  return trusted.some((t) => peer === t || (t.endsWith('.') && peer.startsWith(t)));
+  return trusted.some((t) => isTrustedProxyPeer(peer, t));
 }
 
 /**

@@ -33,8 +33,9 @@ const fingerprintMiddleware = (req, res, next) => {
     };
 
     if (req.threatInfo || req.path?.includes('/internal/') || req.path?.includes('trap')) {
+        const { getAttackerIp } = require('@evation/shared-utils');
         require('../utils/attackLog').info('TELEMETRY', 'attacker_fingerprint', {
-            ip: req.ip,
+            ip: getAttackerIp(req),
             os,
             platform,
             browser: `${browser} ${version}`.trim(),
