@@ -15,7 +15,16 @@ const fingerprintMiddleware = (req, res, next) => {
         return next();
     }
 
-    const { os, platform, browser, version, isMobile, isBot } = req.useragent;
+    const ua = String(req.headers?.['user-agent'] || '');
+    let { os, platform, browser, version, isMobile, isBot } = req.useragent;
+
+    // iOS User-Agents often contain "like Mac OS X" which can confuse UA parsers.
+    // Prefer explicit iPhone/iPad/iPod signals when present.
+    if (/\b(iPhone|iPad|iPod)\b/i.test(ua)) {
+        os = 'iOS';
+        platform = 'iOS';
+        isMobile = true;
+    }
 
     // Per-event base risk contribution (the running total lives on AttackerProfile via $inc).
     let riskScore = 0;

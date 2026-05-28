@@ -7,6 +7,7 @@ import React, {
   useRef,
   useState,
   useCallback,
+  useMemo,
 } from 'react'
 import { io, type Socket } from 'socket.io-client'
 import type {
@@ -15,7 +16,6 @@ import type {
   AttackerTimeline,
   HoneyToken,
   LiveAlert,
-  TrapType,
 } from '@/lib/types/telemetry'
 import { normalizeTrapType } from '@/lib/attackIntel'
 import {
@@ -96,6 +96,30 @@ interface SocketContextValue {
   attackEvents: AttackEvent[]
   attackerProfiles: AttackerProfile[]
   honeyTokens: HoneyToken[]
+  /**
+   * The canonical list used by BOTH the map and the bottom feed.
+   * - ordered newest → oldest
+   * - de-duped by eventID
+   * - liveAlerts first (realtime), then attackEvents (polled)
+   * - enriched with profile geo/os when coming from attackEvents
+   */
+  displayAlerts: Array<{
+    eventID: string
+    attackerIp: string
+    trapType: string
+    timestamp: string
+    city: string
+    lat: number
+    lng: number
+    os: string
+    riskScore?: number
+    wastedTimeMs: number
+    traceId?: string
+    path?: string
+    payload?: string
+  }>
+  /** Timestamp (ms) when the UI was last "cleared". */
+  clearedAtMs: number
   dataStale: boolean
   /** True while a background refresh is in flight (UI can show cached data meanwhile). */
   isSyncing: boolean
@@ -103,7 +127,8 @@ interface SocketContextValue {
   hasDashboardData: boolean
   lastRefreshError: string | null
   getTimelineForIp: (ip: string, traceId?: string) => AttackerTimeline | null
-  clearAlerts: () => void
+  /** Clears realtime alerts + hides older polled events from the UI. */
+  clearScreen: () => void
   refresh: () => Promise<void>
 }
 
@@ -401,6 +426,7 @@ export function SocketProvider({
   const [attackEvents, setAttackEvents] = useState<AttackEvent[]>([])
   const [attackerProfiles, setAttackerProfiles] = useState<AttackerProfile[]>([])
   const [honeyTokens, setHoneyTokens] = useState<HoneyToken[]>([])
+  const [clearedAtMs, setClearedAtMs] = useState(0)
   const [dataStale, setDataStale] = useState(false)
   const [isSyncing, setIsSyncing] = useState(true)
   const [hasDashboardData, setHasDashboardData] = useState(false)
@@ -687,7 +713,69 @@ export function SocketProvider({
     }
   }, [demoMode, hasDashboardData, attackerProfiles])
 
-  const clearAlerts = useCallback(() => setLiveAlerts([]), [])
+  const clearScreen = useCallback(() => {
+    setClearedAtMs(Date.now())
+    setLiveAlerts([])
+  }, [])
+
+  const displayAlerts = useMemo(() => {
+    const seen = new Set<string>()
+    const out: SocketContextValue['displayAlerts'] = []
+
+    const profileByIp = new Map(attackerProfiles.map(p => [p.ip, p]))
+
+    const accept = (timestamp: string) => {
+      const ts = new Date(timestamp).getTime()
+      return Number.isFinite(ts) ? ts >= clearedAtMs : true
+    }
+
+    for (const a of liveAlerts) {
+      if (!a?.eventID || seen.has(a.eventID)) continue
+      if (!accept(a.timestamp)) continue
+      seen.add(a.eventID)
+      out.push({
+        eventID: a.eventID,
+        attackerIp: a.attackerIp,
+        trapType: a.trapType,
+        timestamp: a.timestamp,
+        city: a.city,
+        lat: a.lat,
+        lng: a.lng,
+        os: a.os,
+        riskScore: a.riskScore,
+        wastedTimeMs: a.wastedTimeMs ?? a.wasted_time_ms ?? 0,
+        traceId: a.traceId,
+        path: a.path,
+        payload: a.payload,
+      })
+      if (out.length >= 50) return out
+    }
+
+    for (const e of attackEvents) {
+      if (!e?.eventID || seen.has(e.eventID)) continue
+      if (!accept(e.timestamp)) continue
+      seen.add(e.eventID)
+      const p = profileByIp.get(e.attackerIp)
+      out.push({
+        eventID: e.eventID,
+        attackerIp: e.attackerIp,
+        trapType: e.trapType,
+        timestamp: e.timestamp,
+        city: p?.city ?? 'Unknown',
+        lat: typeof p?.lat === 'number' ? p.lat : 0,
+        lng: typeof p?.lng === 'number' ? p.lng : 0,
+        os: p?.os ?? 'unknown',
+        riskScore: p?.riskScore,
+        wastedTimeMs: e.wasted_time_ms ?? 0,
+        traceId: e.traceId,
+        path: e.path,
+        payload: e.payload,
+      })
+      if (out.length >= 50) break
+    }
+
+    return out
+  }, [attackEvents, attackerProfiles, clearedAtMs, liveAlerts])
 
   return (
     <SocketContext.Provider
@@ -699,12 +787,14 @@ export function SocketProvider({
         attackEvents,
         attackerProfiles,
         honeyTokens,
+        displayAlerts,
+        clearedAtMs,
         dataStale,
         isSyncing,
         hasDashboardData,
         lastRefreshError,
         getTimelineForIp,
-        clearAlerts,
+        clearScreen,
         refresh: () => refresh(),
       }}
     >

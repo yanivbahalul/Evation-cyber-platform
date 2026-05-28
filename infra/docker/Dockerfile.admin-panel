@@ -13,6 +13,11 @@ FROM deps AS builder
 WORKDIR /app/apps/admin-panel
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+# NEXT_PUBLIC_* values must be present at build time to be embedded in the client bundle.
+ARG NEXT_PUBLIC_ADMIN_SOCKET_TOKEN
+ARG NEXT_PUBLIC_TELEMETRY_SOCKET_URL
+ENV NEXT_PUBLIC_ADMIN_SOCKET_TOKEN=${NEXT_PUBLIC_ADMIN_SOCKET_TOKEN}
+ENV NEXT_PUBLIC_TELEMETRY_SOCKET_URL=${NEXT_PUBLIC_TELEMETRY_SOCKET_URL}
 # Next.js may omit public/ from the image context; standalone COPY expects it.
 RUN mkdir -p public
 RUN touch .env

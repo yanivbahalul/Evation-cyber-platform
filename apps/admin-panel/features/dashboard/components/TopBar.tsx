@@ -21,12 +21,53 @@ interface TopBarProps {
 }
 
 export default function TopBar({ active }: TopBarProps) {
-  const { liveAlerts, demoMode, setDemoMode, clearAlerts, refresh, isSyncing, hasDashboardData } =
+  const {
+    liveAlerts,
+    attackEvents,
+    attackerProfiles,
+    clearedAtMs,
+    demoMode,
+    setDemoMode,
+    clearScreen,
+    isSyncing,
+    hasDashboardData,
+  } =
     useSocket()
   const [openNotifications, setOpenNotifications] = useState(false)
   const [portalReady, setPortalReady] = useState(false)
 
-  const latest = useMemo(() => liveAlerts.slice(0, 8), [liveAlerts])
+  const latest = useMemo(() => {
+    if (liveAlerts.length > 0) return liveAlerts.slice(0, 8)
+
+    const profileByIp = new Map(attackerProfiles.map(p => [p.ip, p]))
+    return attackEvents
+      .filter((e) => {
+        const ts = new Date(e.timestamp).getTime()
+        return Number.isFinite(ts) ? ts >= clearedAtMs : true
+      })
+      .slice(0, 8)
+      .map((e) => {
+        const p = profileByIp.get(e.attackerIp)
+        return {
+          eventID: e.eventID,
+          attackerIp: e.attackerIp,
+          trapType: e.trapType,
+          city: p?.city ?? '—',
+          timestamp: e.timestamp,
+          payload: e.payload,
+          traceId: e.traceId,
+          path: e.path,
+        } as const
+      })
+  }, [attackEvents, attackerProfiles, clearedAtMs, liveAlerts])
+
+  const notificationCount = useMemo(() => {
+    if (liveAlerts.length > 0) return liveAlerts.length
+    return attackEvents.filter((e) => {
+      const ts = new Date(e.timestamp).getTime()
+      return Number.isFinite(ts) ? ts >= clearedAtMs : true
+    }).length
+  }, [attackEvents, clearedAtMs, liveAlerts.length])
   const [now, setNow] = useState('')
 
   useEffect(() => {
@@ -97,9 +138,9 @@ export default function TopBar({ active }: TopBarProps) {
             title="Notifications"
           >
             <Bell className="w-4 h-4 text-muted-foreground" />
-            {liveAlerts.length > 0 && (
+            {notificationCount > 0 && (
               <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-accent text-[9px] font-bold text-white flex items-center justify-center pulse-orange">
-                {liveAlerts.length > 9 ? '9+' : liveAlerts.length}
+                {notificationCount > 9 ? '9+' : notificationCount}
               </span>
             )}
           </button>
@@ -135,10 +176,10 @@ export default function TopBar({ active }: TopBarProps) {
                       </div>
                       <div className="mt-1 text-[11px] text-muted-foreground/80 font-mono truncate">
                         {a.city} · {new Date(a.timestamp).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
-                        {a.traceId ? ` · trace ${a.traceId.slice(0, 8)}…` : ''}
-                        {a.path ? ` · ${a.path}` : ''}
+                        {'traceId' in a && a.traceId ? ` · trace ${a.traceId.slice(0, 8)}…` : ''}
+                        {'path' in a && a.path ? ` · ${a.path}` : ''}
                       </div>
-                      {a.payload && (
+                      {'payload' in a && a.payload && (
                         <div className="mt-1 text-[11px] font-mono text-muted-foreground truncate">
                           payload: <span className="text-accent/80">{a.payload}</span>
                         </div>
@@ -155,14 +196,12 @@ export default function TopBar({ active }: TopBarProps) {
         {/* Refresh */}
         <button
           onClick={() => {
-            // "Refresh threats": clear current notifications and (in real mode)
-            // re-fetch latest telemetry from the server.
-            clearAlerts()
-            refresh().catch(() => {})
+            // Clear the map/feed/notifications view (doesn't re-fetch).
+            clearScreen()
           }}
           className="p-2 rounded-lg hover:bg-surface-elevated transition-colors"
-          aria-label="Refresh threats"
-          title="Refresh threats"
+          aria-label="Clear screen"
+          title="Clear screen"
         >
           <RefreshCw className="w-4 h-4 text-muted-foreground" />
         </button>

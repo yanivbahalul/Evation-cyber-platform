@@ -35,6 +35,9 @@ services:
     build:
       context: ..
       dockerfile: infra/docker/Dockerfile.admin-panel
+      args:
+        NEXT_PUBLIC_ADMIN_SOCKET_TOKEN: ${NEXT_PUBLIC_ADMIN_SOCKET_TOKEN:-admin-secret}
+        NEXT_PUBLIC_TELEMETRY_SOCKET_URL: ${NEXT_PUBLIC_TELEMETRY_SOCKET_URL:-}
     env_file:
       - ./.env
     environment:

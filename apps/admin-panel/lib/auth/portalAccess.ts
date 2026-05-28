@@ -22,7 +22,7 @@ export async function dbRoleForUsername(username: string): Promise<PortalRole> {
 }
 
 /** Post-login landing for every operator (HR workspace). */
-export function portalHomePath(_role?: PortalRole): string {
+export function portalHomePath(): string {
   return '/gateway/workspace/'
 }
 
