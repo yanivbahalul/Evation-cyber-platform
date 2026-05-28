@@ -256,6 +256,9 @@ async function resolveIpGeo(rawIp) {
 async function initLanEgressGeo() {
   const log = require('../utils/attackLog');
 
+  /** @type {Error|null} */
+  let ipWhoErr = null;
+
   try {
     const data = await fetchIpWho('');
     const geo = fromIpWhoPayload(data);
@@ -270,10 +273,12 @@ async function initLanEgressGeo() {
       return;
     }
   } catch (err) {
-    log.warn('TELEMETRY', 'lan_egress_geo_ipwho_failed', {
-      error: err?.message || String(err),
-    });
+    ipWhoErr = err;
   }
+
+  // If the primary provider is blocked/rate-limited, wait briefly then fall back.
+  // This prevents noisy "failed" logs when the fallback succeeds immediately after.
+  await new Promise((r) => setTimeout(r, 500));
 
   try {
     const data = await fetchIpApi('');
@@ -289,6 +294,11 @@ async function initLanEgressGeo() {
       return;
     }
   } catch (err) {
+    if (ipWhoErr) {
+      log.warn('TELEMETRY', 'lan_egress_geo_ipwho_failed', {
+        error: ipWhoErr?.message || String(ipWhoErr),
+      });
+    }
     log.warn('TELEMETRY', 'lan_egress_geo_ipapi_failed', {
       error: err?.message || String(err),
     });

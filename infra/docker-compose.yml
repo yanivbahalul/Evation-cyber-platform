@@ -1,10 +1,9 @@
-# Local / staging stack: Nginx edge + three app services.
-# Uses apps/admin-panel/.env (same file as pnpm dev:full).
 services:
   nginx:
     image: nginx:1.27-alpine
+    # Single public entrypoint (gateway-first).
     ports:
-      - "8080:80"
+      - "0.0.0.0:3000:80"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
@@ -16,30 +15,45 @@ services:
         condition: service_started
     restart: unless-stopped
 
+  # Public URL via Cloudflare Quick Tunnel (prints a trycloudflare.com link in logs).
+  cloudflared:
+    build:
+      context: ..
+      dockerfile: infra/docker/Dockerfile.cloudflared
+    # Prints the trycloudflare URL once. If it can't get one, prints a single error line.
+    command: ["http://nginx:80"]
+    depends_on:
+      nginx:
+        condition: service_started
+    restart: unless-stopped
+
   admin-panel:
     build:
       context: ..
       dockerfile: infra/docker/Dockerfile.admin-panel
-      secrets:
-        - admin_panel_env
     env_file:
-      - ../apps/admin-panel/.env
+      - ../.env
     environment:
       GATEWAY_ORIGIN: http://gateway:4001
-      NEXT_PUBLIC_TELEMETRY_SOCKET_URL: http://localhost:8080
+      PUBLIC_HOST: ${PUBLIC_HOST?Set PUBLIC_HOST to your LAN IP (e.g. 192.168.0.89)}
+      DEV_PUBLIC_HOST: ${PUBLIC_HOST?Set PUBLIC_HOST to your LAN IP (e.g. 192.168.0.89)}
+      UI_PORT: "3000"
     expose:
       - "3000"
+    restart: unless-stopped
 
   gateway:
     build:
       context: ..
       dockerfile: infra/docker/Dockerfile.gateway
     env_file:
-      - ../apps/admin-panel/.env
+      - ../.env
     environment:
       PORT: 4001
       BASE_PATH: /gateway
       MONGODB_URI: ${SAFEZONE_DB_URI}
+      PUBLIC_HOST: ${PUBLIC_HOST?Set PUBLIC_HOST to your LAN IP (e.g. 192.168.0.89)}
+      PUBLIC_PORT: "3000"
     expose:
       - "4001"
     restart: unless-stopped
@@ -49,11 +63,7 @@ services:
       context: ..
       dockerfile: infra/docker/Dockerfile.telemetry
     env_file:
-      - ../apps/admin-panel/.env
+      - ../.env 
     expose:
       - "3002"
     restart: unless-stopped
-
-secrets:
-  admin_panel_env:
-    file: ../apps/admin-panel/.env

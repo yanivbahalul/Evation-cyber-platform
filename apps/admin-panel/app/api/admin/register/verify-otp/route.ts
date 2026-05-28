@@ -12,6 +12,13 @@ function jsonError(message: string, status = 400) {
   return NextResponse.json({ success: false, error: message }, { status })
 }
 
+function totpWindow() {
+  const raw = process.env.TOTP_WINDOW
+  const n = raw ? Number(raw) : 2
+  if (!Number.isFinite(n)) return 2
+  return Math.max(0, Math.min(10, Math.floor(n)))
+}
+
 export async function POST(req: NextRequest) {
   const token = req.cookies.get('pre_reg')?.value
   if (!token) return jsonError('Missing registration session', 401)
@@ -47,7 +54,14 @@ export async function POST(req: NextRequest) {
     tagB64: payload.totp.tagB64,
   })
 
-  const result = await verify({ strategy: 'totp', token: otp, secret, window: 1, crypto, base32 })
+  const result = await verify({
+    strategy: 'totp',
+    token: otp,
+    secret,
+    window: totpWindow(),
+    crypto,
+    base32,
+  })
   if (result.valid !== true) return jsonError('Invalid OTP', 401)
 
   const { AdminUser } = await getAdminModels()

@@ -61,7 +61,7 @@ function safeNext(next) {
 }
 
 /** Issue gateway + Blue Team cookies and redirect to Next /api/admin/exchange → /ops */
-function finishBlueTeamOperatorLogin(res, { username, gatewaySub, gatewayRole = 'admin' }) {
+function finishBlueTeamOperatorLogin(req, res, { username, gatewaySub, gatewayRole = 'admin' }) {
     const jwtSecret = process.env.JWT_SECRET;
     if (!jwtSecret) return { error: 'Server misconfiguration. Please contact IT.' };
 
@@ -82,10 +82,10 @@ function finishBlueTeamOperatorLogin(res, { username, gatewaySub, gatewayRole = 
         path: '/',
         maxAge: 1000 * 60 * 60 * 8,
     });
-    const adminOrigin = process.env.ADMIN_PANEL_URL || 'http://localhost:3000';
     const homePath = '/gateway/workspace/';
     return {
-        redirect: `${adminOrigin}/api/admin/exchange?token=${encodeURIComponent(exchange)}&next=${encodeURIComponent(homePath)}`,
+        // Use a relative redirect so we stay on the current origin (works behind nginx, LAN IPs, and Cloudflare Tunnel).
+        redirect: `/api/admin/exchange?token=${encodeURIComponent(exchange)}&next=${encodeURIComponent(homePath)}`,
     };
 }
 
@@ -114,11 +114,15 @@ async function safeVerifyTotp(token, secret) {
     try {
         const s = String(secret || '').trim();
         if (!s) return false;
+        const envWindow = process.env.TOTP_WINDOW;
+        const window = Number.isFinite(Number(envWindow))
+            ? Math.max(0, Math.min(10, Math.floor(Number(envWindow))))
+            : 2;
         const result = await verify({
             strategy: 'totp',
             token,
             secret: s,
-            window: 1,
+            window,
             crypto: cryptoPlugin,
             base32: base32Plugin,
         });
@@ -330,7 +334,7 @@ exports.verifyLoginOtp = async (req, res) => {
             if (!ok) return res.status(401).render('login-otp', { user: null, username: admin.username, next, error: 'Invalid OTP. Check your authenticator time sync and retry.' });
 
             setPreAuthCookie(res, '', 0);
-            const out = finishBlueTeamOperatorLogin(res, {
+            const out = finishBlueTeamOperatorLogin(req, res, {
                 username: admin.username,
                 gatewaySub: admin._id,
                 gatewayRole: 'admin',
@@ -379,7 +383,7 @@ exports.verifyLoginOtp = async (req, res) => {
         setPreAuthCookie(res, '', 0);
         // Operator stored in Safe Zone `users` with role=admin → Blue Team /ops (not employee dashboard only)
         if (user.role === 'admin') {
-            const out = finishBlueTeamOperatorLogin(res, {
+            const out = finishBlueTeamOperatorLogin(req, res, {
                 username: user.username,
                 gatewaySub: user._id,
                 gatewayRole: 'admin',

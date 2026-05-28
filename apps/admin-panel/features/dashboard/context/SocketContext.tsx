@@ -572,7 +572,7 @@ export function SocketProvider({
     setConnected(false)
 
     const socketUrl =
-      process.env.NEXT_PUBLIC_TELEMETRY_SOCKET_URL || 'http://localhost:3002'
+      process.env.NEXT_PUBLIC_TELEMETRY_SOCKET_URL || window.location.origin
     const envToken = process.env.NEXT_PUBLIC_ADMIN_SOCKET_TOKEN
     const isProd = process.env.NODE_ENV === 'production'
     const token = envToken || (isProd ? '' : 'admin-secret')

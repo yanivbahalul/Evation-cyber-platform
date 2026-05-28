@@ -75,7 +75,7 @@ router.use((req, res, next) => {
 router.use(authOptional);
 router.use((req, res, next) => {
     res.locals.user = req.user || null;
-    res.locals.adminPanelUrl = process.env.ADMIN_PANEL_URL || 'http://localhost:3000';
+    res.locals.adminPanelUrl = process.env.ADMIN_PANEL_URL || '';
     next();
 });
 router.use(gatekeeper);
@@ -216,8 +216,9 @@ async function startServer() {
         process.exit(1);
     }
 
-    const server = app.listen(PORT, () => {
-        const base = BASE_PATH ? `http://localhost:${PORT}${BASE_PATH}` : `http://localhost:${PORT}`;
+    // Bind to all interfaces so nginx (other container) can reach us.
+    const server = app.listen(PORT, '0.0.0.0', () => {
+        const base = BASE_PATH ? `http://0.0.0.0:${PORT}${BASE_PATH}` : `http://0.0.0.0:${PORT}`;
         attackLogBoot.info('GATEWAY', 'server_listening', { url: base });
     });
 

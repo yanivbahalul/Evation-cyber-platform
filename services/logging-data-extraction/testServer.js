@@ -145,9 +145,10 @@ async function startServer() {
     process.exit(1);
   }
 
-  http.listen(PORT, () => {
+  // Bind to all interfaces so nginx (other container) can reach us.
+  http.listen(PORT, '0.0.0.0', () => {
     attackLog.info('TELEMETRY', 'server_listening', {
-      url: `http://localhost:${PORT}`,
+      url: `http://0.0.0.0:${PORT}`,
       test_trap: `${PORT}/test-trap`,
     });
   });

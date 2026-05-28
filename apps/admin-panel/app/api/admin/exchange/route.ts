@@ -39,7 +39,10 @@ export async function GET(req: NextRequest) {
     nextPath.startsWith('/gateway/') && !nextPath.startsWith('/gateway/dashboard')
       ? nextPath
       : '/gateway/workspace/'
-  const res = NextResponse.redirect(new URL(safeNext, req.url))
+  // Use a relative redirect so the browser stays on the current origin
+  // (important behind reverse proxies / Cloudflare Tunnel where the upstream host differs).
+  const res = NextResponse.redirect(req.nextUrl)
+  res.headers.set('Location', safeNext)
   res.cookies.set({
     name: 'admin_auth',
     value: auth,

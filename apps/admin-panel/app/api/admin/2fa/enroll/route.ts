@@ -44,8 +44,9 @@ export async function GET(req: NextRequest) {
     }
   } else {
     // Generate & store encrypted secret
-    secret = generateSecret({ crypto, base32 })
-    const enc = encryptTotpSecret(secret)
+    const newSecret = generateSecret({ crypto, base32 })
+    secret = newSecret
+    const enc = await encryptTotpSecret(newSecret)
     user.totpSecretEnc = enc.ctB64
     user.totpSecretIv = enc.ivB64
     user.totpSecretTag = enc.tagB64
@@ -53,8 +54,9 @@ export async function GET(req: NextRequest) {
   }
 
   if (!secret) {
-    secret = generateSecret({ crypto, base32 })
-    const enc = await encryptTotpSecret(secret)
+    const newSecret = generateSecret({ crypto, base32 })
+    secret = newSecret
+    const enc = await encryptTotpSecret(newSecret)
     user.totpSecretEnc = enc.ctB64
     user.totpSecretIv = enc.ivB64
     user.totpSecretTag = enc.tagB64

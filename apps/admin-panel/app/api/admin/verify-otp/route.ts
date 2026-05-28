@@ -15,6 +15,13 @@ function jsonError(message: string, status = 400) {
   return NextResponse.json({ success: false, error: message }, { status })
 }
 
+function totpWindow() {
+  const raw = process.env.TOTP_WINDOW
+  const n = raw ? Number(raw) : 2
+  if (!Number.isFinite(n)) return 2
+  return Math.max(0, Math.min(10, Math.floor(n)))
+}
+
 export async function POST(req: NextRequest) {
   const preToken = req.cookies.get('pre_2fa')?.value
   if (!preToken) return jsonError('Missing pre-2FA session', 401)
@@ -37,6 +44,7 @@ export async function POST(req: NextRequest) {
   if (!/^\d{6}$/.test(otp)) return jsonError('OTP must be 6 digits')
 
   const kind = payload.kind || 'admin'
+  const window = totpWindow()
 
   // Admin OTP verification → issues admin-panel auth cookie and redirects to '/'
   if (kind === 'admin') {
@@ -77,7 +85,7 @@ export async function POST(req: NextRequest) {
       return jsonError('2FA secret cannot be decrypted (encryption key changed). Re-enroll 2FA.', 409)
     }
 
-    const result = await verify({ strategy: 'totp', token: otp, secret, window: 1, crypto, base32 })
+    const result = await verify({ strategy: 'totp', token: otp, secret, window, crypto, base32 })
     const ok = result.valid === true
     if (!ok) return jsonError('Invalid OTP', 401)
 
@@ -148,7 +156,7 @@ export async function POST(req: NextRequest) {
         ivB64: u.totpSecretIv,
         tagB64: u.totpSecretTag,
       })
-      const result = await verify({ strategy: 'totp', token: otp, secret, window: 1, crypto, base32 })
+      const result = await verify({ strategy: 'totp', token: otp, secret, window, crypto, base32 })
       verified = result.valid === true
     }
   } catch {
@@ -162,7 +170,7 @@ export async function POST(req: NextRequest) {
     if (!user.totpEnabled) return jsonError('2FA not enabled for this user', 401)
     const secret = (user as any).totpSecret as string | undefined
     if (!secret) return jsonError('2FA not enrolled', 401)
-    const result = await verify({ strategy: 'totp', token: otp, secret, window: 1, crypto, base32 })
+    const result = await verify({ strategy: 'totp', token: otp, secret, window, crypto, base32 })
     verified = result.valid === true
     if (!verified) return jsonError('Invalid OTP', 401)
     gatewaySub = String((user as any)._id)

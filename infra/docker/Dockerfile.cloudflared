@@ -1,0 +1,14 @@
+FROM alpine:3.21
+
+RUN apk add --no-cache ca-certificates curl gawk && update-ca-certificates
+
+# Download cloudflared binary (linux arm64; works on Apple Silicon Docker).
+RUN curl -fsSL -o /usr/local/bin/cloudflared \
+    https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-arm64 \
+  && chmod +x /usr/local/bin/cloudflared
+
+COPY infra/docker/start-cloudflared.sh /start-cloudflared.sh
+RUN chmod +x /start-cloudflared.sh
+
+ENTRYPOINT ["/start-cloudflared.sh"]
+

@@ -18,4 +18,6 @@ ENV NODE_ENV=production
 ENV PORT=4001
 ENV BASE_PATH=/gateway
 EXPOSE 4001
-CMD ["node", "app.js"]
+COPY infra/docker/start-gateway.sh /start-gateway.sh
+RUN chmod +x /start-gateway.sh
+CMD ["/start-gateway.sh"]
