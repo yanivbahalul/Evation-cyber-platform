@@ -90,7 +90,9 @@ export default function Sidebar({ active, onSelect }: SidebarProps) {
             type="button"
             onClick={() => {
               onSelect('bans')
-              router.push('/admin/ban')
+              // Keep users on the dashboard route; /admin/ban is an alias and
+              // may be blocked/rewritten by reverse-proxies.
+              router.push('/gateway/dashboard/?tab=bans')
             }}
             className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
               active === 'bans'
