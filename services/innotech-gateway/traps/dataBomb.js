@@ -9,7 +9,7 @@
 
 const { Readable } = require('stream');
 const TRAP_TYPES   = require('@evation/shared-constants');
-const attackLog    = require('../utils/attackLog');
+const { attackLog } = require('@evation/shared-utils');
 
 const CHUNK_SIZE  = 64 * 1024;                 // 64 KB per push
 const TOTAL_BYTES = 100 * 1024 * 1024 * 1024;  // 100 GB cap

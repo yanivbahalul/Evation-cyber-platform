@@ -7,9 +7,13 @@ const AttackerProfileSchema = new mongoose.Schema({
     unique: true,
   },
   city: String,
+  country: String,
+  countryCode: String,
   lat: Number,
   lng: Number,
   isp: String,                 // ISP / ASN org from geo lookup (Requirements §Attacker Fingerprint)
+  geoSource: String,           // e.g. geoip-lite, ip-api.com, lan-egress
+  geoPrecision: String,        // city | country | lan | none
   os: String,
   platform: String,
   browser: String,
@@ -36,5 +40,8 @@ const AttackerProfileSchema = new mongoose.Schema({
   bannedAt: Date,
   bannedBy: String,
 });
+
+AttackerProfileSchema.index({ riskScore: -1 });
+AttackerProfileSchema.index({ lastSeen: -1 });
 
 module.exports = AttackerProfileSchema;

@@ -20,7 +20,7 @@
  */
 
 const TRAP_TYPES = require('@evation/shared-constants');
-const attackLog = require('../utils/attackLog');
+const { attackLog } = require('@evation/shared-utils');
 
 const TRICKLE_INTERVAL_MS = 10_000;
 const MAX_BYTES           = 600;

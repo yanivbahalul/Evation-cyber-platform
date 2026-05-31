@@ -17,76 +17,21 @@ import type {
   HoneyToken,
   LiveAlert,
 } from '@/lib/types/telemetry'
-import { normalizeTrapType } from '@/lib/attackIntel'
 import {
   readDashboardCache,
   writeDashboardCache,
+  type DashboardSnapshot,
 } from '@/lib/dashboardCache'
+import { randomEventId, mapSocketLiveAlert } from './liveAlertMapper'
+import { mergeEventGeo } from '@/lib/geoDisplay'
+import {
+  MOCK_PROFILES,
+  MOCK_EVENTS,
+  MOCK_TOKENS,
+  LIVE_TEMPLATES,
+} from './demoFixtures'
 
 export type { AttackEvent, AttackerProfile, HoneyToken, LiveAlert, TrapType } from '@/lib/types/telemetry'
-
-function randomEventId(): string {
-  const c = globalThis.crypto
-  if (c && typeof c.randomUUID === 'function') return c.randomUUID()
-  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 11)}`
-}
-
-function mapSocketLiveAlert(data: Record<string, unknown>): LiveAlert {
-  const eventID = typeof data.eventID === 'string' ? data.eventID : randomEventId()
-  const trapType = normalizeTrapType(String(data.trapType ?? 'DATA_BOMB'))
-  const fingerprint = (data.fingerprint as LiveAlert['fingerprint']) ?? {}
-  const latRaw = typeof data.lat === 'number' || typeof data.lat === 'string' ? Number(data.lat) : NaN
-  const lngRaw = typeof data.lng === 'number' || typeof data.lng === 'string' ? Number(data.lng) : NaN
-  const ts =
-    typeof data.timestamp === 'string'
-      ? data.timestamp
-      : typeof data.timestamp === 'number'
-        ? new Date(data.timestamp).toISOString()
-        : new Date().toISOString()
-
-  return {
-    eventID,
-    trapType,
-    attackerIp: String(data.attackerIp ?? 'unknown'),
-    city: String(data.city ?? 'Unknown'),
-    lat: Number.isFinite(latRaw) ? latRaw : 0,
-    lng: Number.isFinite(lngRaw) ? lngRaw : 0,
-    os: String(fingerprint?.os ?? data.os ?? 'unknown'),
-    browser: String(fingerprint?.browserVersion ?? fingerprint?.browser ?? data.browser ?? 'unknown'),
-    riskScore: Number.isFinite(fingerprint?.riskScore) ? Number(fingerprint.riskScore) : undefined,
-    wastedTimeMs: Number.isFinite(data.wasted_time_ms)
-      ? Number(data.wasted_time_ms)
-      : Number.isFinite(data.wastedTimeMs)
-        ? Number(data.wastedTimeMs)
-        : 0,
-    wasted_time_ms: Number.isFinite(data.wasted_time_ms)
-      ? Number(data.wasted_time_ms)
-      : Number.isFinite(data.wastedTimeMs)
-        ? Number(data.wastedTimeMs)
-        : 0,
-    bytesSent: Number.isFinite(data.bytes_sent)
-      ? Number(data.bytes_sent)
-      : Number.isFinite(data.bytesSent)
-        ? Number(data.bytesSent)
-        : undefined,
-    bytes_sent: Number.isFinite(data.bytes_sent)
-      ? Number(data.bytes_sent)
-      : Number.isFinite(data.bytesSent)
-        ? Number(data.bytesSent)
-        : 0,
-    timestamp: ts,
-    payload: typeof data.payload === 'string' ? data.payload : undefined,
-    traceId: typeof data.traceId === 'string' ? data.traceId : undefined,
-    method: typeof data.method === 'string' ? data.method : undefined,
-    path: typeof data.path === 'string' ? data.path : undefined,
-    userAgent: typeof data.userAgent === 'string' ? data.userAgent : undefined,
-    referer: typeof data.referer === 'string' ? data.referer : undefined,
-    fingerprint: Object.keys(fingerprint).length ? fingerprint : undefined,
-    handoffFrom: typeof data.handoffFrom === 'string' ? data.handoffFrom : undefined,
-    xssTier: typeof data.xssTier === 'string' ? data.xssTier : undefined,
-    secondaryTraps: Array.isArray(data.secondaryTraps) ? data.secondaryTraps.map(String) : undefined,
-  }
-}
 
 interface SocketContextValue {
   connected: boolean
@@ -109,8 +54,10 @@ interface SocketContextValue {
     trapType: string
     timestamp: string
     city: string
+    country?: string
     lat: number
     lng: number
+    geoPrecision?: string
     os: string
     riskScore?: number
     wastedTimeMs: number
@@ -135,270 +82,6 @@ interface SocketContextValue {
 export type DashboardBootstrap = Omit<DashboardSnapshot, 'savedAt'>
 
 const SocketContext = createContext<SocketContextValue | null>(null)
-
-const MOCK_TRACE = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
-
-const MOCK_PROFILES: AttackerProfile[] = [
-  {
-    ip: '45.155.205.10',
-    city: 'Moscow',
-    lat: 55.7558,
-    lng: 37.6173,
-    os: 'Linux',
-    platform: 'x86_64',
-    browser: 'curl/7.85',
-    deviceType: 'server',
-    isBot: true,
-    riskScore: 92,
-    firstSeen: '2024-05-01T10:22:00Z',
-    lastSeen: '2024-05-07T18:44:00Z',
-    traceIds: [MOCK_TRACE],
-  },
-  {
-    ip: '103.27.108.40',
-    city: 'Beijing',
-    lat: 39.9042,
-    lng: 116.4074,
-    os: 'Windows 11',
-    platform: 'Win32',
-    browser: 'Chrome/124',
-    deviceType: 'desktop',
-    isBot: false,
-    riskScore: 78,
-    firstSeen: '2024-05-03T08:10:00Z',
-    lastSeen: '2024-05-07T20:01:00Z',
-    traceIds: [],
-  },
-  {
-    ip: '185.220.101.5',
-    city: 'Frankfurt',
-    lat: 50.1109,
-    lng: 8.6821,
-    os: 'Kali Linux',
-    platform: 'x86_64',
-    browser: 'Nmap',
-    deviceType: 'server',
-    isBot: true,
-    riskScore: 99,
-    firstSeen: '2024-05-05T02:30:00Z',
-    lastSeen: '2024-05-07T22:15:00Z',
-    traceIds: [MOCK_TRACE, 'trace-sql-chain-02'],
-  },
-  {
-    ip: '1.2.3.4',
-    city: 'Tel Aviv',
-    lat: 32.0853,
-    lng: 34.7818,
-    os: 'Windows 11',
-    platform: 'Win32',
-    browser: 'Firefox/125',
-    deviceType: 'desktop',
-    isBot: false,
-    riskScore: 65,
-    firstSeen: '2024-05-06T14:00:00Z',
-    lastSeen: '2024-05-07T23:55:00Z',
-    traceIds: [],
-  },
-]
-
-const MOCK_EVENTS: AttackEvent[] = [
-  {
-    eventID: 'e1a2b3c4',
-    attackerIp: '185.220.101.5',
-    trapType: 'SQL_INJECTION',
-    payload: JSON.stringify({ handoff: 'sqli_bypass_illusion', username: 'admin' }),
-    wasted_time_ms: 3200,
-    bytes_sent: 412,
-    timestamp: '2024-05-07T22:15:03Z',
-    traceId: MOCK_TRACE,
-    method: 'POST',
-    path: '/gateway/login',
-    userAgent: 'sqlmap/1.7',
-    fingerprint: { os: 'Linux', isBot: true, riskScore: 50 },
-    handoffFrom: 'employee_login',
-  },
-  {
-    eventID: 'e2b3c4d5',
-    attackerIp: '45.155.205.10',
-    trapType: 'BRUTE_FORCE',
-    payload: JSON.stringify({ handoff: 'breach_illusion', username: 'admin' }),
-    wasted_time_ms: 15000,
-    bytes_sent: 1024,
-    timestamp: '2024-05-07T20:44:10Z',
-    traceId: MOCK_TRACE,
-    method: 'POST',
-    path: '/gateway/login',
-    handoffFrom: 'employee_login',
-  },
-  {
-    eventID: 'e3c4d5e6',
-    attackerIp: '103.27.108.40',
-    trapType: 'DATA_BOMB',
-    payload: '/internal/exports/archive?download=backup.zip',
-    wasted_time_ms: 12500,
-    bytes_sent: 8192,
-    timestamp: '2024-05-07T20:01:22Z',
-    path: '/internal/exports/archive',
-  },
-  {
-    eventID: 'e4d5e6f7',
-    attackerIp: '1.2.3.4',
-    trapType: 'HONEY_TOKEN',
-    payload: 'fake_admin:s3cr3t',
-    wasted_time_ms: 2100,
-    bytes_sent: 256,
-    timestamp: '2024-05-07T23:55:01Z',
-  },
-  {
-    eventID: 'e5e6f7a8',
-    attackerIp: '185.220.101.5',
-    trapType: 'PATH_TRAVERSAL',
-    payload: JSON.stringify({ file: '../../../etc/shadow' }),
-    wasted_time_ms: 900,
-    bytes_sent: 128,
-    timestamp: '2024-05-07T22:20:44Z',
-    traceId: 'trace-sql-chain-02',
-    path: '/internal/services/files',
-  },
-  {
-    eventID: 'e6f7a8b9',
-    attackerIp: '45.155.205.10',
-    trapType: 'XSS_PROBE',
-    payload: '<script>alert(1)</script>',
-    wasted_time_ms: 500,
-    bytes_sent: 64,
-    timestamp: '2024-05-07T18:44:55Z',
-    xssTier: 'probe',
-  },
-]
-
-const MOCK_TOKENS: HoneyToken[] = [
-  {
-    _id: 'ht1',
-    fakeUsername: 'fake_admin',
-    fakePassword: 's3cr3t_bait',
-    isTriggered: true,
-    triggeredLogs: [
-      { attackerIp: '1.2.3.4', timestamp: '2024-05-07T23:55:01Z', networkContext: 'HTTP' },
-      { attackerIp: '45.155.205.10', timestamp: '2024-05-07T18:30:00Z', networkContext: 'SSH' },
-    ],
-  },
-  {
-    _id: 'ht2',
-    fakeUsername: 'db_backup_user',
-    fakePassword: 'backup_2024!',
-    isTriggered: false,
-    triggeredLogs: [],
-  },
-  {
-    _id: 'ht3',
-    fakeUsername: 'svc_monitor',
-    fakePassword: 'monitor_pass',
-    isTriggered: true,
-    triggeredLogs: [
-      { attackerIp: '185.220.101.5', timestamp: '2024-05-07T22:05:00Z', networkContext: 'SMTP' },
-    ],
-  },
-]
-
-const LIVE_TEMPLATES: Omit<LiveAlert, 'eventID' | 'timestamp'>[] = [
-  {
-    trapType: 'DATA_BOMB',
-    attackerIp: '1.2.3.4',
-    city: 'Tel Aviv',
-    lat: 32.0853,
-    lng: 34.7818,
-    os: 'Windows 11',
-    browser: 'Firefox/125',
-    riskScore: 65,
-    wastedTimeMs: 12500,
-    wasted_time_ms: 12500,
-    bytesSent: 8192,
-    bytes_sent: 8192,
-    path: '/internal/exports/archive',
-    traceId: MOCK_TRACE,
-  },
-  {
-    trapType: 'SQL_INJECTION',
-    attackerIp: '185.220.101.5',
-    city: 'Frankfurt',
-    lat: 50.1109,
-    lng: 8.6821,
-    os: 'Kali Linux',
-    browser: 'Nmap',
-    riskScore: 99,
-    wastedTimeMs: 3200,
-    wasted_time_ms: 3200,
-    bytesSent: 412,
-    bytes_sent: 412,
-    payload: "' OR 1=1 --",
-    path: '/gateway/login',
-    traceId: MOCK_TRACE,
-  },
-  {
-    trapType: 'BRUTE_FORCE',
-    attackerIp: '45.155.205.10',
-    city: 'Moscow',
-    lat: 55.7558,
-    lng: 37.6173,
-    os: 'Linux',
-    browser: 'curl/7.85',
-    riskScore: 92,
-    wastedTimeMs: 15000,
-    wasted_time_ms: 15000,
-    bytesSent: 1024,
-    bytes_sent: 1024,
-    handoffFrom: 'employee_login',
-    traceId: MOCK_TRACE,
-  },
-  {
-    trapType: 'HONEY_TOKEN',
-    attackerIp: '103.27.108.40',
-    city: 'Beijing',
-    lat: 39.9042,
-    lng: 116.4074,
-    os: 'Windows 11',
-    browser: 'Chrome/124',
-    riskScore: 78,
-    wastedTimeMs: 2100,
-    wasted_time_ms: 2100,
-    bytesSent: 256,
-    bytes_sent: 256,
-  },
-  {
-    trapType: 'PATH_TRAVERSAL',
-    attackerIp: '91.108.56.200',
-    city: 'Bucharest',
-    lat: 44.4268,
-    lng: 26.1025,
-    os: 'Ubuntu 22',
-    browser: 'Wget/1.21',
-    riskScore: 85,
-    wastedTimeMs: 900,
-    wasted_time_ms: 900,
-    bytesSent: 128,
-    bytes_sent: 128,
-    payload: '../../../etc/shadow',
-    path: '/internal/services/files',
-  },
-  {
-    trapType: 'XSS_PROBE',
-    attackerIp: '77.88.5.5',
-    city: 'St. Petersburg',
-    lat: 59.9343,
-    lng: 30.3351,
-    os: 'Windows 10',
-    browser: 'Edge/124',
-    riskScore: 55,
-    wastedTimeMs: 500,
-    wasted_time_ms: 500,
-    bytesSent: 64,
-    bytes_sent: 64,
-    payload: '<script>alert(1)</script>',
-    path: '/gateway/contact',
-    xssTier: 'probe',
-  },
-]
 
 function applySnapshot(
   snapshot: DashboardBootstrap,
@@ -442,7 +125,6 @@ export function SocketProvider({
   const syncingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const hasDashboardDataRef = useRef(false)
   const lastRefreshAtRef = useRef(0)
-  const timelinePrefetchRef = useRef<Set<string>>(new Set())
 
   const setDemoMode = useCallback((enabled: boolean) => {
     refreshGenerationRef.current += 1
@@ -697,22 +379,6 @@ export function SocketProvider({
     }
   }, [demoMode, refresh])
 
-  useEffect(() => {
-    if (demoMode || !hasDashboardData || attackerProfiles.length === 0) return
-
-    const top = [...attackerProfiles]
-      .sort((a, b) => b.riskScore - a.riskScore)
-      .slice(0, 4)
-
-    for (const p of top) {
-      if (timelinePrefetchRef.current.has(p.ip)) continue
-      timelinePrefetchRef.current.add(p.ip)
-      fetch(`/api/admin/attackers/${encodeURIComponent(p.ip)}/timeline?limit=200`, {
-        method: 'GET',
-      }).catch(() => {})
-    }
-  }, [demoMode, hasDashboardData, attackerProfiles])
-
   const clearScreen = useCallback(() => {
     setClearedAtMs(Date.now())
     setLiveAlerts([])
@@ -733,16 +399,20 @@ export function SocketProvider({
       if (!a?.eventID || seen.has(a.eventID)) continue
       if (!accept(a.timestamp)) continue
       seen.add(a.eventID)
+      const p = profileByIp.get(a.attackerIp)
+      const geo = mergeEventGeo(a, p)
       out.push({
         eventID: a.eventID,
         attackerIp: a.attackerIp,
         trapType: a.trapType,
         timestamp: a.timestamp,
-        city: a.city,
-        lat: a.lat,
-        lng: a.lng,
+        city: geo.city,
+        country: geo.country,
+        lat: geo.lat,
+        lng: geo.lng,
+        geoPrecision: geo.geoPrecision,
         os: a.os,
-        riskScore: a.riskScore,
+        riskScore: a.riskScore ?? p?.riskScore,
         wastedTimeMs: a.wastedTimeMs ?? a.wasted_time_ms ?? 0,
         traceId: a.traceId,
         path: a.path,
@@ -756,14 +426,17 @@ export function SocketProvider({
       if (!accept(e.timestamp)) continue
       seen.add(e.eventID)
       const p = profileByIp.get(e.attackerIp)
+      const geo = mergeEventGeo({}, p)
       out.push({
         eventID: e.eventID,
         attackerIp: e.attackerIp,
         trapType: e.trapType,
         timestamp: e.timestamp,
-        city: p?.city ?? 'Unknown',
-        lat: typeof p?.lat === 'number' ? p.lat : 0,
-        lng: typeof p?.lng === 'number' ? p.lng : 0,
+        city: geo.city,
+        country: geo.country,
+        lat: geo.lat,
+        lng: geo.lng,
+        geoPrecision: geo.geoPrecision,
         os: p?.os ?? 'unknown',
         riskScore: p?.riskScore,
         wastedTimeMs: e.wasted_time_ms ?? 0,

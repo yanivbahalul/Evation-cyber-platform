@@ -1,6 +1,8 @@
-const RealEmployee = require('../models/RealEmployee'); 
+const fs = require('fs');
+const RealEmployee = require('../models/RealEmployee');
+const { listPortalDocuments, resolvePortalDocument } = require('../config/portalDocuments');
 const AdminUser = require('../models/AdminUser');
-const bcrypt = require('bcryptjs'); // [cite: 22]
+const bcrypt = require('bcryptjs');
 const { signAuthToken } = require('../middleware/auth');
 const { authCookieOptions, clearAllAuthCookies } = require('../utils/authCookies');
 const { TOTP, generateURI, verify, NobleCryptoPlugin, ScureBase32Plugin } = require('otplib');
@@ -8,7 +10,7 @@ const QRCode = require('qrcode');
 const jwt = require('jsonwebtoken');
 const { decryptTotpSecret } = require('../utils/adminTotpCrypto');
 const loginBruteTrap = require('../utils/loginBruteTrap');
-const attackLog = require('../utils/attackLog');
+const { attackLog } = require('@evation/shared-utils');
 const { PATHS: DP } = require('../config/deceptionPaths');
 const legacyBreachSession = require('../utils/legacyBreachSession');
 const TRAP_TYPES = require('@evation/shared-constants');
@@ -129,7 +131,7 @@ async function safeVerifyTotp(token, secret) {
 
 // 1. Landing Page logic
 exports.renderLandingPage = (req, res) => {
-    res.render('index', { user: req.user || null, adminPanelUrl: process.env.ADMIN_PANEL_URL || 'http://localhost:3000' }); // [cite: 20]
+    res.render('index', { user: req.user || null, adminPanelUrl: process.env.ADMIN_PANEL_URL || 'http://localhost:3000' });
 };
 
 // 2. Registration Page logic
@@ -155,7 +157,7 @@ exports.createUser = async (req, res) => {
         if (existing) return res.status(409).render('register', { user: null, error: 'Username already exists', username: cleanUsername });
 
         const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(cleanPassword, salt); // [cite: 22]
+        const hashedPassword = await bcrypt.hash(cleanPassword, salt);
 
         const newUser = new RealEmployee({
             username: cleanUsername,
@@ -419,12 +421,7 @@ exports.renderDashboardPage = (req, res) => {
         { title: 'Confirm home address for payroll', status: 'Done' },
     ];
 
-    const documents = [
-        { name: 'Employee Handbook (2026).pdf', type: 'PDF', updated: '2026-04-18' },
-        { name: 'Remote Work Policy.pdf', type: 'PDF', updated: '2026-03-02' },
-        { name: 'IT Onboarding Checklist.docx', type: 'DOCX', updated: '2026-02-11' },
-        { name: 'Travel Expenses Form.xlsx', type: 'XLSX', updated: '2026-01-29' },
-    ];
+    const documents = listPortalDocuments();
 
     res.render('dashboard', {
         user: req.user || null,
@@ -453,19 +450,21 @@ exports.renderProfilePage = (req, res) => {
 };
 
 exports.renderDocumentsPage = (req, res) => {
-    const documents = [
-        { name: 'Employee Handbook (2026).pdf', type: 'PDF', updated: '2026-04-18' },
-        { name: 'Remote Work Policy.pdf', type: 'PDF', updated: '2026-03-02' },
-        { name: 'IT Onboarding Checklist.docx', type: 'DOCX', updated: '2026-02-11' },
-        { name: 'Travel Expenses Form.xlsx', type: 'XLSX', updated: '2026-01-29' },
-        { name: 'Corporate VPN Client — Install Guide.pdf', type: 'PDF', updated: '2025-12-07' },
-    ];
-
     res.render('documents', {
         user: req.user || null,
         adminPanelUrl: process.env.ADMIN_PANEL_URL || 'http://localhost:3000',
-        documents,
+        documents: listPortalDocuments(),
     });
+};
+
+exports.serveDocument = (req, res) => {
+    const doc = resolvePortalDocument(req.params.filename);
+    if (!doc || !fs.existsSync(doc.filePath)) {
+        return res.status(404).send('Document not found');
+    }
+    res.type(doc.mime);
+    res.setHeader('Content-Disposition', `inline; filename="${doc.name.replace(/"/g, '')}"`);
+    return res.sendFile(doc.filePath);
 };
 
 exports.renderContactPage = (req, res) => {

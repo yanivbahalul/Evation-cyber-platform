@@ -13,8 +13,7 @@
  */
 
 const TRAP_TYPES = require('@evation/shared-constants');
-const { getAttackerIp } = require('@evation/shared-utils');
-const attackLog = require('../utils/attackLog');
+const { getAttackerIp, attackLog } = require('@evation/shared-utils');
 const legacyBreachSession = require('../utils/legacyBreachSession');
 const { PATHS: DP } = require('../config/deceptionPaths');
 

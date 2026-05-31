@@ -66,6 +66,8 @@ services:
       PORT: 4001
       BASE_PATH: /gateway
       MONGODB_URI: ${SAFEZONE_DB_URI}
+      # Server-side trap reports (NOT the browser socket URL on :3000).
+      TELEMETRY_URL: http://telemetry:3002
       # Optional (used only for printing LAN Access URL in logs)
       PUBLIC_HOST: ${PUBLIC_HOST:-}
       PUBLIC_PORT: "3000"

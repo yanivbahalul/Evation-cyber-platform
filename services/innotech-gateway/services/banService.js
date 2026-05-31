@@ -1,48 +1,20 @@
 /**
- * Read-only Malicious DB connection for IP ban enforcement at the gateway.
+ * IP ban enforcement at the gateway. The banned-IP set is owned by the telemetry
+ * service (which owns the malicious DB); the gateway polls it and caches locally.
  */
-const mongoose = require('mongoose');
-const { AttackerProfileSchema } = require('@evation/db-schemas');
+const { attackLog } = require('@evation/shared-utils');
+const { fetchBannedIps } = require('../utils/telemetryClient');
 
 const REFRESH_MS = 15_000;
-let conn = null;
-let AttackerProfile = null;
 let bannedSet = new Set();
 let refreshTimer = null;
 
-function getMaliciousUri() {
-  return process.env.MALICIOUS_DB_URI || '';
-}
-
-async function ensureConnection() {
-  const uri = getMaliciousUri();
-  if (!uri) return false;
-
-  if (conn && conn.readyState === 1) return true;
-
-  if (!conn) {
-    conn = mongoose.createConnection(uri, {
-      serverSelectionTimeoutMS: 8000,
-      connectTimeoutMS: 8000,
-      bufferCommands: false,
-    });
-    AttackerProfile = conn.model('AttackerProfile', AttackerProfileSchema);
-  }
-
-  if (conn.readyState !== 1) {
-    await conn.asPromise();
-  }
-  return true;
-}
-
 async function refreshBannedSet() {
   try {
-    const ok = await ensureConnection();
-    if (!ok) return;
-    const rows = await AttackerProfile.find({ banned: true }).select('ip').lean();
-    bannedSet = new Set(rows.map((r) => String(r.ip)));
+    const ips = await fetchBannedIps();
+    bannedSet = new Set(ips.map((ip) => String(ip)));
   } catch (err) {
-    console.error('[banService] refresh failed', err.message);
+    attackLog.warn('GATEWAY', 'ban_refresh_failed', { error: err.message });
   }
 }
 
@@ -59,4 +31,3 @@ exports.isBlacklisted = (ip) => {
 };
 
 exports.startBanRefreshLoop = startBanRefreshLoop;
-exports.refreshBannedSet = refreshBannedSet;

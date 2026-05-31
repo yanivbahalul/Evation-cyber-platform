@@ -1,7 +1,6 @@
 'use strict';
 
-const { getAttackerIp } = require('@evation/shared-utils');
-const attackLog = require('./attackLog');
+const { getAttackerIp, attackLog } = require('@evation/shared-utils');
 
 const COUNTER_TTL_MS = 60 * 60_000;
 const MIN_TRIGGER_AFTER = 5;

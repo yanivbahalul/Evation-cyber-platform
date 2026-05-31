@@ -1,8 +1,4 @@
-/**
- * detectionService.js
- * Domain: Threat Intelligence & Logic [cite: 3]
- */
-
+// Regex threat classification (SQLi / XSS / SSRF / path traversal / scanner / etc.).
 const TRAP_TYPES = require('@evation/shared-constants');
 const { isLegacySignInPath } = require('../config/deceptionPaths');
 
@@ -69,18 +65,6 @@ exports.getThreatTypesFromCredentials = (body = {}, userAgent = '') => {
 exports.getThreatTypes = (data = {}, userAgent = '') => {
     const content = Object.values(data).join(' ');
     return matchContent(content, userAgent);
-};
-
-/** @deprecated use getThreatTypes — first match only */
-exports.getThreatTypeFromCredentials = (body = {}, userAgent = '') => {
-    const types = exports.getThreatTypesFromCredentials(body, userAgent);
-    return types[0] || null;
-};
-
-/** @deprecated use getThreatTypes — first match only */
-exports.getThreatType = (data = {}, userAgent = '') => {
-    const types = exports.getThreatTypes(data, userAgent);
-    return types[0] || null;
 };
 
 exports.isAuthFormPath = (path = '') => {

@@ -1,5 +1,5 @@
 const { Server } = require('socket.io');
-const attackLog = require('../utils/attackLog');
+const { attackLog } = require('@evation/shared-utils');
 
 let io;
 

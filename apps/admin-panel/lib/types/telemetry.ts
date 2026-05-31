@@ -43,8 +43,12 @@ export interface AttackEvent {
 
 export interface LiveAlert extends AttackEvent {
   city: string
+  country?: string
+  countryCode?: string
   lat: number
   lng: number
+  geoSource?: string
+  geoPrecision?: string
   os: string
   browser?: string
   riskScore?: number
@@ -55,9 +59,13 @@ export interface LiveAlert extends AttackEvent {
 export interface AttackerProfile {
   ip: string
   city: string
+  country?: string
+  countryCode?: string
   lat: number
   lng: number
   isp?: string
+  geoSource?: string
+  geoPrecision?: string
   os: string
   platform?: string
   browser: string

@@ -25,9 +25,9 @@ Quick navigation for developers. For attack demos and trap walkthroughs, see [RE
 | Decoy EJS pages | [`services/innotech-gateway/views/decoy/`](../services/innotech-gateway/views/decoy/) |
 | HR portal (real employee UI) | [`services/innotech-gateway/views/`](../services/innotech-gateway/views/) (non-decoy) |
 | Route to trap after detection | [`services/innotech-gateway/middleware/decoyReroute.js`](../services/innotech-gateway/middleware/decoyReroute.js) |
-| Persist attack + live alert | [`services/logging-data-extraction/middlewares/telemetryTracker.js`](../services/logging-data-extraction/middlewares/telemetryTracker.js) |
+| Persist attack + live alert | [`services/logging-data-extraction/routes/internal.js`](../services/logging-data-extraction/routes/internal.js) (`POST /internal/attack`) |
 | Socket.IO broadcast | [`services/logging-data-extraction/services/SocketService.js`](../services/logging-data-extraction/services/SocketService.js) |
-| Malicious DB connection | [`services/logging-data-extraction/config/maliciousDb.js`](../services/logging-data-extraction/config/maliciousDb.js) |
+| Malicious DB connection (telemetry-only) | [`services/logging-data-extraction/config/maliciousDb.js`](../services/logging-data-extraction/config/maliciousDb.js) via [`packages/db-schemas/connect.js`](../packages/db-schemas/connect.js) |
 | Blue Team dashboard UI | [`apps/admin-panel/features/dashboard/`](../apps/admin-panel/features/dashboard/) |
 | Investigation / timeline UI | [`apps/admin-panel/features/investigation/`](../apps/admin-panel/features/investigation/) |
 | Admin REST API | [`apps/admin-panel/app/api/admin/`](../apps/admin-panel/app/api/admin/) |
@@ -55,8 +55,8 @@ Legacy `users` collection: migrate with [`scripts/migrate-users-to-real-employee
 flowchart LR
   Browser --> AdminPanel["admin-panel :3000"]
   AdminPanel -->|rewrite /gateway| Gateway["innotech-gateway :4001"]
-  Gateway -->|report + HTTP live-alert| Telemetry["logging-data-extraction :3002"]
-  Telemetry --> MaliciousDB[(Malicious MongoDB)]
+  Gateway -->|report via HTTP POST /internal/attack| Telemetry["logging-data-extraction :3002"]
+  Telemetry -->|writes events + profiles| MaliciousDB[(Malicious MongoDB)]
   Telemetry -->|Socket.IO liveAlert| AdminPanel
   Gateway --> SafezoneDB[(Safezone MongoDB)]
 ```

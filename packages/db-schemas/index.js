@@ -5,4 +5,7 @@ module.exports = {
   AdminUserSchema: require('./admin/AdminUser'),
   SafezoneUserSchema: require('./safezone/SafezoneUser'),
   RealEmployeeSchema: require('./safezone/RealEmployee'),
+  get createMaliciousConnection() {
+    return require('./connect').createMaliciousConnection;
+  },
 };
