@@ -11,7 +11,7 @@ if [[ -f "${_SCRIPT_DIR}/config.env" ]]; then
 fi
 
 # Base site URL/IP (recommended). Examples:
-#   BASE_URL=https://xxxx.trycloudflare.com
+#   BASE_URL=https://xxxx.ngrok-free.dev
 #   BASE_URL=http://192.168.0.89:3000
 #   BASE_URL=192.168.0.89:3000
 # If BASE_URL includes a path, we use it to infer GATEWAY_PATH when possible.
@@ -22,7 +22,7 @@ BASE_URL="${BASE_URL:-}"
 TARGET="${TARGET:-${HOST:-}}"
 
 # Default port: stack is exposed via nginx on 3000 (not 8080).
-# If you use BASE_URL with https (trycloudflare.com), omit the port.
+# If you use BASE_URL with https (e.g. ngrok), omit the port.
 PORT="${PORT:-3000}"
 SCHEME="${SCHEME:-http}"
 GATEWAY_PATH="${GATEWAY_PATH:-/gateway}"
@@ -90,7 +90,7 @@ _prompt_base_url_if_needed() {
   fi
 
   if [[ -t 0 ]]; then
-    echo "Enter site URL or IP (examples: https://xxxx.trycloudflare.com  |  http://192.168.0.89:3000):"
+    echo "Enter site URL or IP (examples: https://xxxx.ngrok-free.dev  |  http://192.168.0.89:3000):"
     read -r BASE_URL
     if [[ -n "${BASE_URL}" ]]; then
       _parse_base_url "${BASE_URL}"
@@ -154,7 +154,7 @@ print_trace() {
 require_target() {
   if [[ -z "${TARGET}" || "${TARGET}" == "CHANGE_ME" ]]; then
     echo "Set BASE_URL or TARGET, e.g.:" >&2
-    echo "  BASE_URL=https://xxxx.trycloudflare.com ./run-all.sh" >&2
+    echo "  BASE_URL=https://xxxx.ngrok-free.dev ./run-all.sh" >&2
     echo "  TARGET=192.168.0.89 PORT=3000 ./run-all.sh" >&2
     exit 1
   fi

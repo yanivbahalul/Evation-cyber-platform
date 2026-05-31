@@ -81,7 +81,7 @@ function finishBlueTeamOperatorLogin(req, res, { username, gatewaySub, gatewayRo
     res.cookie('auth', gatewayAuth, authCookieOptions('lax'));
     const homePath = '/gateway/workspace/';
     return {
-        // Use a relative redirect so we stay on the current origin (works behind nginx, LAN IPs, and Cloudflare Tunnel).
+        // Use a relative redirect so we stay on the current origin (works behind nginx, LAN IPs, and ngrok).
         redirect: `/api/admin/exchange?token=${encodeURIComponent(exchange)}&next=${encodeURIComponent(homePath)}`,
     };
 }

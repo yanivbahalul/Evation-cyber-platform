@@ -66,8 +66,8 @@ cp config.example.env config.env
 
 `config.env`:
 ```bash
-# מומלץ: כתובת בסיס אחת (תומך גם ב-Cloudflare Tunnel)
-BASE_URL=https://xxxx.trycloudflare.com
+# מומלץ: כתובת בסיס אחת (LAN או ngrok)
+BASE_URL=https://xxxx.ngrok-free.dev
 # או:
 # BASE_URL=http://192.168.0.89:3000
 

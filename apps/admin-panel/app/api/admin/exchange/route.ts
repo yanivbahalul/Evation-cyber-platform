@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
       ? nextPath
       : '/gateway/workspace/'
   // Use a relative redirect so the browser stays on the current origin
-  // (important behind reverse proxies / Cloudflare Tunnel where the upstream host differs).
+  // (important behind reverse proxies / ngrok where the upstream host differs).
   const res = NextResponse.redirect(req.nextUrl)
   res.headers.set('Location', safeNext)
   res.cookies.set(
