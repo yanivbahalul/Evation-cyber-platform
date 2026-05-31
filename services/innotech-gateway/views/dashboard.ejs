@@ -78,13 +78,8 @@
             <div class="card-inner">
               <h3 style="margin: 0 0 10px;">Quick Links</h3>
               <div class="btn-row">
-                <a class="btn primary" href="<%= withBase('/documents') %>">Payslips (PDF)</a>
-                <a class="btn" href="<%= withBase('/documents') %>">Employee letter</a>
+                <a class="btn primary" href="<%= withBase('/documents') %>">Company documents</a>
                 <a class="btn" href="<%= withBase('/contact') %>">Open IT ticket</a>
-                <a class="btn" href="<%= withBase('/documents') %>">VPN client</a>
-                <% if (user && user.role === 'admin' && canAccessOps === true) { %>
-                  <a class="btn" href="/gateway/dashboard/">Attack monitor</a>
-                <% } %>
               </div>
             </div>
           </section>

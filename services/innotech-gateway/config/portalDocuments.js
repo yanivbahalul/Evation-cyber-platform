@@ -1,61 +1,83 @@
 'use strict';
 
+const fs = require('fs');
 const path = require('path');
 
-const DOCUMENTS_DIR = path.join(__dirname, '../assets/documents');
+/** Drop PDF / DOCX / XLSX files here — they appear automatically in the portal. */
+const DOCUMENTS_DIR = path.join(__dirname, '../portal-documents');
 
-/** Internal HR / IT files shown in the portal and served at GET /documents/:name */
-const PORTAL_DOCUMENTS = [
-    {
-        name: 'Employee Handbook (2026).pdf',
-        type: 'PDF',
-        updated: '2026-04-18',
-        mime: 'application/pdf',
-    },
-    {
-        name: 'Remote Work Policy.pdf',
-        type: 'PDF',
-        updated: '2026-03-02',
-        mime: 'application/pdf',
-    },
-    {
-        name: 'IT Onboarding Checklist.docx',
-        type: 'DOCX',
-        updated: '2026-02-11',
-        mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    },
-    {
-        name: 'Travel Expenses Form.xlsx',
-        type: 'XLSX',
-        updated: '2026-01-29',
-        mime: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    },
-    {
-        name: 'Corporate VPN Client — Install Guide.pdf',
-        type: 'PDF',
-        updated: '2025-12-07',
-        mime: 'application/pdf',
-    },
-];
+const MIME_BY_EXT = {
+    '.pdf': 'application/pdf',
+    '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    '.doc': 'application/msword',
+    '.xls': 'application/vnd.ms-excel',
+    '.txt': 'text/plain',
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+};
 
-const byName = new Map(PORTAL_DOCUMENTS.map((doc) => [doc.name, doc]));
+function formatUpdated(mtimeMs) {
+    return new Date(mtimeMs).toISOString().slice(0, 10);
+}
+
+function isAllowedFile(name) {
+    if (!name || name.startsWith('.')) return false;
+    const ext = path.extname(name).toLowerCase();
+    return ext in MIME_BY_EXT;
+}
+
+function safeFilePath(filename) {
+    const base = path.basename(decodeURIComponent(String(filename || '').trim()));
+    if (!isAllowedFile(base)) return null;
+    const filePath = path.resolve(DOCUMENTS_DIR, base);
+    const root = path.resolve(DOCUMENTS_DIR);
+    if (!filePath.startsWith(root + path.sep) && filePath !== root) return null;
+    return filePath;
+}
+
+function readDocumentEntry(name, filePath) {
+    const ext = path.extname(name).toLowerCase();
+    const stat = fs.statSync(filePath);
+    if (!stat.isFile()) return null;
+    return {
+        name,
+        type: ext.slice(1).toUpperCase(),
+        updated: formatUpdated(stat.mtimeMs),
+        mime: MIME_BY_EXT[ext],
+        filePath,
+    };
+}
 
 function listPortalDocuments() {
-    return PORTAL_DOCUMENTS.map(({ name, type, updated }) => ({ name, type, updated }));
+    if (!fs.existsSync(DOCUMENTS_DIR)) return [];
+    return fs
+        .readdirSync(DOCUMENTS_DIR)
+        .filter(isAllowedFile)
+        .map((name) => {
+            try {
+                return readDocumentEntry(name, path.join(DOCUMENTS_DIR, name));
+            } catch {
+                return null;
+            }
+        })
+        .filter(Boolean)
+        .sort((a, b) => b.updated.localeCompare(a.updated) || a.name.localeCompare(b.name));
 }
 
 function resolvePortalDocument(filename) {
-    const decoded = decodeURIComponent(String(filename || '').trim());
-    const doc = byName.get(decoded);
-    if (!doc) return null;
-    const filePath = path.join(DOCUMENTS_DIR, doc.name);
-    if (!filePath.startsWith(DOCUMENTS_DIR)) return null;
-    return { ...doc, filePath };
+    const filePath = safeFilePath(filename);
+    if (!filePath || !fs.existsSync(filePath)) return null;
+    try {
+        return readDocumentEntry(path.basename(filePath), filePath);
+    } catch {
+        return null;
+    }
 }
 
 module.exports = {
     DOCUMENTS_DIR,
-    PORTAL_DOCUMENTS,
     listPortalDocuments,
     resolvePortalDocument,
 };

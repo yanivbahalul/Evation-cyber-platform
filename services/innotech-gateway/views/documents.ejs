@@ -20,17 +20,18 @@
             <tr><th>Name</th><th>Type</th><th>Updated</th><th>Access</th></tr>
           </thead>
           <tbody>
+            <% if (!documents.length) { %>
+              <tr>
+                <td colspan="4" class="muted2">No documents in the library yet.</td>
+              </tr>
+            <% } %>
             <% documents.forEach(d => { %>
               <tr>
                 <td><%= d.name %></td>
                 <td><span class="badge"><%= d.type %></span></td>
                 <td class="muted2"><%= d.updated %></td>
                 <td>
-                  <% if (d.downloadUrl) { %>
-                    <a class="btn primary" href="<%= d.downloadUrl %>">Download</a>
-                  <% } else { %>
-                    <a class="btn" href="<%= withBase('/documents/' + encodeURIComponent(d.name)) %>">View</a>
-                  <% } %>
+                  <a class="btn" href="<%= withBase('/documents/' + encodeURIComponent(d.name)) %>">View</a>
                 </td>
               </tr>
             <% }) %>
