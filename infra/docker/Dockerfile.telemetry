@@ -14,4 +14,4 @@ WORKDIR /app/services/logging-data-extraction
 ENV NODE_ENV=production
 ENV PORT=3002
 EXPOSE 3002
-CMD ["node", "testServer.js"]
+CMD ["node", "server.js"]

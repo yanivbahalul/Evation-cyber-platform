@@ -1,15 +1,15 @@
 // tests/mockAttack.js
 //
-// End-to-end smoke test for Max's telemetry pipeline.
+// End-to-end smoke test for the telemetry pipeline.
 //
 // What it proves:
 //   1. The Socket.io handshake accepts a valid ADMIN_SOCKET_TOKEN.
-//   2. Hitting a trap route (/test-trap) flows through telemetryTracker.
+//   2. Hitting /test-trap flows through the shared attack write pipeline.
 //   3. SocketService.emitLiveAlert reaches the dashboard channel.
-//   4. The payload shape matches what Yaniv's React SPA expects.
+//   4. The payload shape matches what the admin dashboard expects.
 //
 // Run order:
-//   Terminal 1: npm start              (spins up testServer.js)
+//   Terminal 1: npm start              (spins up server.js)
 //   Terminal 2: npm run mock-attack    (runs this file)
 //
 // Exits 0 on success, 1 on failure.
@@ -18,7 +18,7 @@ require('dotenv').config();
 const { io } = require('socket.io-client');
 const http = require('http');
 
-const SERVER = process.env.TEST_SERVER_URL || 'http://localhost:3000';
+const SERVER = process.env.TEST_SERVER_URL || 'http://localhost:3002';
 const TOKEN = process.env.ADMIN_SOCKET_TOKEN || 'admin-secret';
 const TIMEOUT_MS = 10_000;
 
@@ -79,8 +79,7 @@ socket.on('connect', () => {
             res.resume();
             res.on('end', () => {
                 pass(`/test-trap completed (status=${res.statusCode})`);
-                // The liveAlert is emitted from res.on('finish') on the server side,
-                // which fires after this response is closed. Give it a moment.
+                // The liveAlert is broadcast as the trap fires; give it a moment to arrive.
                 setTimeout(() => {
                     if (!alertReceived) {
                         fail('Server completed the trap but no liveAlert arrived (broadcast pipeline broken)');

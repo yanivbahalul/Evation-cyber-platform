@@ -555,7 +555,7 @@ Turn **Demo Mode OFF** on the dashboard so events come from the real malicious D
 ### Correlation mechanics
 
 - Cookie **`attacker_trace_id`** is created on first gateway hit and stored on every `attack_events` document as **`traceId`**.
-- Gateway **`report()`** sends fingerprint + HTTP context; telemetry **`POST /internal/live-alert`** upserts **AttackerProfile** and enriches geo on the socket payload.
+- Gateway **`report()`** sends fingerprint + HTTP context; telemetry **`POST /internal/attack`** writes the **AttackEvent**, upserts the **AttackerProfile**, enriches geo, and broadcasts the live alert.
 - API: `GET /api/admin/events?traceId=…` · `GET /api/admin/attackers/{ip}/timeline?traceId=…`
 
 **Demo tip:** Run the kill chain in §Presentation flow in one browser session, then open **Investigate** with that IP and the trace chip — you should see SQLi → RECON → DATA_BOMB (or similar) with seconds between steps.

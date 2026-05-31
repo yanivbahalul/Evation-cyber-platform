@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic'
 import { useSocket, type LiveAlert } from '@/features/dashboard/context/SocketContext'
 import { useInvestigation } from '@/features/investigation/context/InvestigationContext'
 import { shortTrace } from '@/lib/attackIntel'
+import { geoLocationLabel } from '@/lib/geoDisplay'
 import { AlertTriangle, MapPin, Zap, Clock } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 
@@ -121,7 +122,7 @@ function AlertRow({
         </span>
         <span className="text-foreground">{alert.attackerIp}</span>
         <MapPin className="w-3 h-3 text-muted-foreground shrink-0" />
-        <span className="text-muted-foreground truncate">{alert.city}</span>
+        <span className="text-muted-foreground truncate">{geoLocationLabel(alert.city, alert.country)}</span>
         <span className="ml-auto text-muted-foreground/60 flex items-center gap-1 shrink-0">
           <Clock className="w-3 h-3" />
           {ago}

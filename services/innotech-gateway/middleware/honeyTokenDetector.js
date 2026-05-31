@@ -1,8 +1,7 @@
 'use strict';
 
 const honeyToken = require('../traps/honeyToken');
-const { getAttackerIp } = require('@evation/shared-utils');
-const attackLog = require('../utils/attackLog');
+const { getAttackerIp, attackLog } = require('@evation/shared-utils');
 
 function extractToken(req) {
   const auth = req.headers['authorization'];

@@ -6,7 +6,7 @@
  */
 
 const TRAP_TYPES = require('@evation/shared-constants');
-const attackLog = require('../utils/attackLog');
+const { attackLog } = require('@evation/shared-utils');
 
 const isDev = process.env.NODE_ENV !== 'production';
 const MIN_HOLD_MS = isDev ? 4_000 : 30_000;

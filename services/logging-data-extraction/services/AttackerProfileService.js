@@ -1,21 +1,43 @@
 'use strict';
 
 const connectMaliciousDB = require('../config/maliciousDb');
-const attackLog = require('../utils/attackLog');
-const { resolveIpGeo } = require('./geoService');
+const { attackLog } = require('@evation/shared-utils');
+const { resolveIpGeo, hasValidCoords } = require('./geoService');
 
 function geoFromAttackData(attackData) {
   const city = attackData?.city;
-  if (!city || city === 'Unknown') return null;
+  if (!city || city === 'Unknown' || city === '—') return null;
   return {
     city,
+    country: attackData.country,
+    countryCode: attackData.countryCode,
     lat: attackData.lat ?? null,
     lng: attackData.lng ?? null,
+    isp: attackData.isp,
+    source: attackData.geoSource,
+    precision: attackData.geoPrecision,
   };
 }
 
+function applyGeoFields($set, geo) {
+  $set.city = geo.city;
+  if (geo.country) $set.country = geo.country;
+  if (geo.countryCode) $set.countryCode = geo.countryCode;
+  if (geo.source) $set.geoSource = geo.source;
+  if (geo.precision) $set.geoPrecision = geo.precision;
+  if (geo.isp) $set.isp = geo.isp;
+
+  if (hasValidCoords(geo.lat, geo.lng)) {
+    $set.lat = geo.lat;
+    $set.lng = geo.lng;
+  } else {
+    $set.lat = null;
+    $set.lng = null;
+  }
+}
+
 /**
- * Upsert attacker profile from a trap / live-alert payload (gateway or telemetryTracker).
+ * Upsert attacker profile from a trap payload received at /internal/attack.
  * @param {object} attackData
  */
 async function upsertFromAttack(attackData) {
@@ -34,16 +56,13 @@ async function upsertFromAttack(attackData) {
 
   const $set = {
     lastSeen: now,
-    city: geo.city,
-    lat: geo.lat ?? 0,
-    lng: geo.lng ?? 0,
     os: fp.os,
     platform: fp.platform,
     browser: fp.browserVersion || fp.browser,
     deviceType: fp.deviceType,
     isBot: !!fp.isBot,
   };
-  if (geo.isp) $set.isp = geo.isp;
+  applyGeoFields($set, geo);
   if (fp.screenResolution) $set.screenResolution = fp.screenResolution;
 
   const update = {
@@ -99,4 +118,19 @@ async function recordScreenResolution(attackerIp, screenResolution) {
   }
 }
 
-module.exports = { upsertFromAttack, upsertFromAttackSafe, recordScreenResolution };
+/**
+ * Return the set of currently banned attacker IPs. The gateway polls this so it
+ * never needs its own malicious-DB connection for ban enforcement.
+ */
+async function getBannedIps() {
+  const maliciousConn = connectMaliciousDB();
+  if (!maliciousConn?.models?.AttackerProfile) return [];
+  const rows = await maliciousConn
+    .model('AttackerProfile')
+    .find({ banned: true })
+    .select('ip')
+    .lean();
+  return rows.map((r) => String(r.ip));
+}
+
+module.exports = { upsertFromAttack, upsertFromAttackSafe, recordScreenResolution, getBannedIps };

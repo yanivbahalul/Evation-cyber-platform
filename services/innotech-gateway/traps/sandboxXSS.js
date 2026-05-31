@@ -8,7 +8,7 @@
  */
 
 const TRAP_TYPES = require('@evation/shared-constants');
-const attackLog = require('../utils/attackLog');
+const { attackLog } = require('@evation/shared-utils');
 const { classifyXssPayload } = require('../utils/xssPayloadClassifier');
 
 function truncate(s, max = 2000) {

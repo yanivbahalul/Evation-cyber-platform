@@ -20,7 +20,8 @@ type CookieInput = {
 /** Apply configured maxAge; omit for session cookies (close browser → gone). */
 export function withAuthMaxAge(cookie: CookieInput, maxAgeSec = authCookieMaxAgeSeconds()): CookieInput {
   if (maxAgeSec == null) {
-    const { maxAge: _drop, ...rest } = cookie
+    const rest = { ...cookie }
+    delete rest.maxAge
     return rest
   }
   return { ...cookie, maxAge: maxAgeSec }

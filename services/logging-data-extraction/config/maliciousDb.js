@@ -1,5 +1,5 @@
-const mongoose = require('mongoose');
-const attackLog = require('../utils/attackLog');
+const { createMaliciousConnection } = require('@evation/db-schemas');
+const { attackLog } = require('@evation/shared-utils');
 
 let maliciousConn = null;
 let maliciousConnDisabled = false;
@@ -14,11 +14,7 @@ const connectMaliciousDB = () => {
         throw new Error('Missing MALICIOUS_DB_URI env var for malicious telemetry DB');
     }
 
-    maliciousConn = mongoose.createConnection(URI, {
-        serverSelectionTimeoutMS: 2000,
-        connectTimeoutMS: 2000,
-        bufferCommands: false
-    });
+    maliciousConn = createMaliciousConnection(URI);
 
     maliciousConn.on('connected', () => {
         attackLog.info('TELEMETRY', 'malicious_database_connected', {
@@ -29,11 +25,6 @@ const connectMaliciousDB = () => {
     maliciousConn.on('error', (err) => {
         attackLog.error('TELEMETRY', 'malicious_database_error', { error: err.message });
     });
-
-    const schemas = require('@evation/db-schemas');
-    maliciousConn.model('AttackerProfile', schemas.AttackerProfileSchema);
-    maliciousConn.model('AttackEvent', schemas.AttackEventSchema);
-    maliciousConn.model('HoneyToken', schemas.HoneyTokenSchema);
 
     return maliciousConn;
 };

@@ -2,8 +2,7 @@
 
 const TRAP_TYPES = require('@evation/shared-constants');
 const decoyController = require('../controllers/decoyController');
-const { reportHoneyTokenHit } = require('../utils/honeyTokenAlert');
-const attackLog = require('../utils/attackLog');
+const { attackLog } = require('@evation/shared-utils');
 const {
   PATHS: DP,
   isDatabaseTrapPath,
@@ -85,7 +84,10 @@ module.exports = async function decoyReroute(req, res, next) {
       case TRAP_TYPES.SCANNER:
         return decoyController.serveScannerTarpit(req, res);
       case TRAP_TYPES.HONEY_TOKEN:
-        await reportHoneyTokenHit(req);
+        await decoyController.report(TRAP_TYPES.HONEY_TOKEN, req, {
+          payload: JSON.stringify({ action: 'token_used', path: req.originalUrl || req.path }),
+          wasted_time_ms: 0,
+        });
         return res.redirect(302, req.withBase(`${DP.console}?token_ack=1`));
       case TRAP_TYPES.RECON:
         await decoyController.renderAdminDashboard(req, res);

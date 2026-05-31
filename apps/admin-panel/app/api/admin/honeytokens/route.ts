@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { requireAdmin } from '@/lib/auth/requireAdmin'
 import { getTelemetryModels } from '@/lib/server/telemetryDb'
+import { DASHBOARD_HONEY_TOKENS_LIMIT } from '@/lib/server/fetchDashboardData'
 
 export const runtime = 'nodejs'
 
@@ -18,6 +19,8 @@ export async function GET(req: NextRequest) {
   try {
     const { HoneyToken } = await getTelemetryModels()
     const tokens = await HoneyToken.find()
+      .sort({ _id: -1 })
+      .limit(DASHBOARD_HONEY_TOKENS_LIMIT)
     const data = tokens.map((t: any) => ({
       _id: String(t._id),
       fakeUsername: t.fakeUsername,

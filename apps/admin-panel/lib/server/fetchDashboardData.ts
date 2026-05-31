@@ -16,14 +16,18 @@ function mapHoneyTokens(tokens: any[]) {
   }))
 }
 
+export const DASHBOARD_EVENTS_LIMIT_MAX = 500
+export const DASHBOARD_PROFILES_LIMIT = 500
+export const DASHBOARD_HONEY_TOKENS_LIMIT = 200
+
 export async function fetchDashboardData(eventsLimit = 200) {
-  const limit = Math.min(eventsLimit, 500)
+  const eventsCap = Math.min(eventsLimit, DASHBOARD_EVENTS_LIMIT_MAX)
   const { AttackEvent, AttackerProfile, HoneyToken } = await getTelemetryModels()
 
   const [events, profiles, tokens] = await Promise.all([
-    AttackEvent.find().sort({ timestamp: -1 }).limit(limit).lean(),
-    AttackerProfile.find().sort({ riskScore: -1 }).lean(),
-    HoneyToken.find().lean(),
+    AttackEvent.find().sort({ timestamp: -1 }).limit(eventsCap).lean(),
+    AttackerProfile.find().sort({ riskScore: -1 }).limit(DASHBOARD_PROFILES_LIMIT).lean(),
+    HoneyToken.find().sort({ _id: -1 }).limit(DASHBOARD_HONEY_TOKENS_LIMIT).lean(),
   ])
 
   return {

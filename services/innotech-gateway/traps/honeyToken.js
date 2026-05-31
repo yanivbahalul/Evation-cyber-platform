@@ -3,142 +3,75 @@
 /**
  * Honey Token Trap — hands out trackable fake credentials.
  *
- * Persists into Max's HoneyToken collection (fakeUsername / fakePassword /
- * isTriggered / triggeredLogs) so when the attacker reuses the token, it
- * can be matched and flagged elsewhere in the pipeline.
- *
- * NOTE: Max's TRAP_TYPES enum currently does not include HONEY_TOKEN, so
- * the closed-loop detector intentionally does NOT call LoggerService.logAttack
- * with that trapType (it would violate the schema enum). Instead, when a
- * honey credential is used, we append to HoneyToken.triggeredLogs directly.
+ * The HoneyToken collection lives in the malicious DB, which only the telemetry
+ * service touches. This trap persists/looks-up/records via telemetry HTTP and
+ * keeps an in-process cache so the hot-path detector avoids a network round-trip
+ * for tokens issued during this process lifetime.
  */
 
-const { faker }            = require('@faker-js/faker');
-const crypto               = require('crypto');
-const mongoose             = require('mongoose');
-const connectMaliciousDB   = require('../../logging-data-extraction/config/maliciousDb');
-const { HoneyTokenSchema } = require('@evation/db-schemas');
+const { faker } = require('@faker-js/faker');
+const crypto = require('crypto');
 const { getAttackerIp } = require('@evation/shared-utils');
+const telemetry = require('../utils/telemetryClient');
 
-// In-memory cache so the detector middleware doesn't hit Mongo on every
-// request. The DB remains the source of truth.
-const memCache = new Map(); // apiKey OR jwt → { fakeUsername, _id }
+// apiKey OR jwt → fakeUsername. Telemetry remains the source of truth across restarts.
+const memCache = new Map();
 
 function fakeJwt(user) {
   const b64 = (obj) => Buffer.from(JSON.stringify(obj)).toString('base64url');
-  const header  = b64({ alg: 'HS256', typ: 'JWT' });
+  const header = b64({ alg: 'HS256', typ: 'JWT' });
   const payload = b64({
-    sub:  user.id,
+    sub: user.id,
     name: user.name,
     role: 'admin',
-    iat:  Math.floor(Date.now() / 1000),
-    exp:  Math.floor(Date.now() / 1000) + 60 * 60 * 24,
+    iat: Math.floor(Date.now() / 1000),
+    exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24,
   });
   const sig = crypto.randomBytes(32).toString('base64url');
   return `${header}.${payload}.${sig}`;
 }
 
-function getHoneyTokenModel() {
-  try {
-    const conn = connectMaliciousDB();
-    return conn.models.HoneyToken || conn.model('HoneyToken', HoneyTokenSchema);
-  } catch (err) {
-    require('../utils/attackLog').warn('TRAP', 'honey_token_db_unavailable_using_memory', { error: err.message });
-    return null;
-  }
-}
-
-/**
- * Generate a new bait credential bundle and persist it.
- */
+/** Generate a new bait credential bundle and persist it via telemetry. */
 exports.generate = async (req) => {
   const user = {
-    id:         faker.string.uuid(),
-    name:       faker.person.fullName(),
-    email:      faker.internet.email({ provider: 'innotech.io' }),
+    id: faker.string.uuid(),
+    name: faker.person.fullName(),
+    email: faker.internet.email({ provider: 'innotech.io' }),
     department: faker.commerce.department(),
   };
 
   const apiKey = `itc_${faker.string.alphanumeric({ length: 32 })}`;
-  const jwt    = fakeJwt(user);
+  const jwt = fakeJwt(user);
 
-  const bundle = {
+  await telemetry.generateHoneyToken({ fakeUsername: user.email, fakePassword: apiKey });
+  memCache.set(apiKey, user.email);
+  memCache.set(jwt, user.email);
+
+  return {
     user,
     apiKey,
     jwt,
-    issuedAt:  new Date().toISOString(),
+    issuedAt: new Date().toISOString(),
     expiresIn: 86400,
-    honey:     true,
-    sourceIP:  getAttackerIp(req),
+    honey: true,
+    sourceIP: getAttackerIp(req),
   };
-
-  // Persist into Max's collection
-  const HoneyToken = getHoneyTokenModel();
-  if (HoneyToken) {
-    try {
-      const doc = await HoneyToken.create({
-        fakeUsername: user.email,
-        fakePassword: apiKey, // the bait — attackers will try this string
-      });
-      memCache.set(apiKey, { fakeUsername: user.email, _id: doc._id });
-      memCache.set(jwt,    { fakeUsername: user.email, _id: doc._id });
-    } catch (err) {
-      require('../utils/attackLog').error('TRAP', 'honey_token_save_failed', { error: err.message });
-      memCache.set(apiKey, { fakeUsername: user.email });
-      memCache.set(jwt,    { fakeUsername: user.email });
-    }
-  } else {
-    memCache.set(apiKey, { fakeUsername: user.email });
-    memCache.set(jwt,    { fakeUsername: user.email });
-  }
-
-  require('../utils/attackLog').info('TRAP', 'honey_token_issued', {
-    ip: bundle.sourceIP,
-    token_prefix: apiKey.slice(0, 12),
-    fake_user: user.email,
-  });
-  return bundle;
 };
 
-/**
- * @returns {boolean} true if this token value was previously issued
- */
+/** @returns {Promise<boolean>} true if this value was previously issued as a honey-token. */
 exports.isHoney = async (value) => {
   if (!value) return false;
   if (memCache.has(value)) return true;
 
-  const HoneyToken = getHoneyTokenModel();
-  if (!HoneyToken) return false;
-  try {
-    const found = await HoneyToken.findOne({ fakePassword: value }).lean();
-    if (found) {
-      memCache.set(value, { fakeUsername: found.fakeUsername, _id: found._id });
-      return true;
-    }
-  } catch (err) {
-    require('../utils/attackLog').error('TRAP', 'honey_token_lookup_failed', { error: err.message });
+  const { hit, fakeUsername } = await telemetry.checkHoneyToken(value);
+  if (hit) {
+    memCache.set(value, fakeUsername);
+    return true;
   }
   return false;
 };
 
-/**
- * Append a usage record to HoneyToken.triggeredLogs.
- */
+/** Record usage of a honey-token value. */
 exports.recordUsage = async (value, ctx = {}) => {
-  const HoneyToken = getHoneyTokenModel();
-  if (!HoneyToken) return;
-  try {
-    await HoneyToken.updateOne(
-      { fakePassword: value },
-      {
-        $set:  { isTriggered: true },
-        $push: { triggeredLogs: {
-          attackerIp:     ctx.attackerIp || 'unknown',
-          networkContext: ctx.networkContext || 'HTTP',
-        }},
-      }
-    );
-  } catch (err) {
-    require('../utils/attackLog').error('TRAP', 'honey_token_usage_record_failed', { error: err.message });
-  }
+  await telemetry.recordHoneyUsage(value, ctx);
 };

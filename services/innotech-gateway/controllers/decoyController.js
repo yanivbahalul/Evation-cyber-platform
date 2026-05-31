@@ -1,31 +1,22 @@
 'use strict';
 
 /**
- * decoyController.js (BAR — Deception Engine)
- *
- * Receives every malicious request that Sagiv's gatekeeper reroutes via
- *   req.threatInfo = { type, originIP };
- *   req.url        = '/decoy-portal';
- *
- * Dispatches to the appropriate trap based on threatInfo.type and reports
- * every fired trap to Max's telemetry pipeline (LoggerService.logAttack +
- * SocketService.emitLiveAlert).
+ * Deception engine: dispatches detected threats to the matching trap and reports
+ * every fired trap to the telemetry service via a single HTTP call.
  */
 
 const { faker } = require('@faker-js/faker');
 
-const dataBomb        = require('../traps/dataBomb');
-const tarpit          = require('../traps/tarpit');
-const fakeLoginTrap   = require('../traps/fakeLogin');
-const honeyToken      = require('../traps/honeyToken');
-const sandboxXSS      = require('../traps/sandboxXSS');
+const dataBomb = require('../traps/dataBomb');
+const tarpit = require('../traps/tarpit');
+const fakeLoginTrap = require('../traps/fakeLogin');
+const honeyToken = require('../traps/honeyToken');
+const sandboxXSS = require('../traps/sandboxXSS');
 const infiniteRedirect = require('../traps/infiniteRedirect');
 
-const TRAP_TYPES    = require('@evation/shared-constants');
-const { getAttackerIp } = require('@evation/shared-utils');
-const LoggerService = require('../../logging-data-extraction/services/LoggerService');
-const { emitLiveAlert } = require('../utils/telemetryLiveAlert');
-const attackLog     = require('../utils/attackLog');
+const TRAP_TYPES = require('@evation/shared-constants');
+const { getAttackerIp, attackLog } = require('@evation/shared-utils');
+const telemetry = require('../utils/telemetryClient');
 const legacyBreachSession = require('../utils/legacyBreachSession');
 const sqliDumpRotation = require('../utils/sqliDumpRotation');
 const { PATHS: DP } = require('../config/deceptionPaths');
@@ -56,10 +47,7 @@ function buildFakeCredentialRows() {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-/**
- * Stringify the relevant parts of the request so Max can store the raw
- * malicious string in AttackEvent.payload.
- */
+/** Stringify the relevant request parts for storage as AttackEvent.payload. */
 function extractPayload(req) {
   const candidate =
     req.body?.payload ??
@@ -89,49 +77,22 @@ function buildEventFields(req, opts = {}) {
 }
 
 /**
- * Centralised reporter: every trap calls this on entry (and again on exit
- * for streaming traps so wasted_time_ms / bytes_sent are accurate).
+ * Centralised reporter: every trap calls this on entry (and again on exit for
+ * streaming traps so wasted_time_ms / bytes_sent are accurate). A single HTTP
+ * call to telemetry persists the event, upserts the profile, and broadcasts.
  */
 async function report(trapType, req, opts = {}) {
-  const payload    = opts.payload  ?? extractPayload(req);
-  const attackerIp = getAttackerIp(req);
-
   const eventData = {
-    attackerIp,
+    attackerIp: getAttackerIp(req),
     trapType,
-    payload,
-    startTime:      opts.startTime,
+    payload: opts.payload ?? extractPayload(req),
+    startTime: opts.startTime,
     wasted_time_ms: opts.wasted_time_ms,
-    bytes_sent:     opts.bytes_sent || 0,
+    bytes_sent: opts.bytes_sent || 0,
     ...buildEventFields(req, opts),
   };
 
-  const alertResult = await emitLiveAlert({ ...eventData, timestamp: Date.now() });
-
-  LoggerService.logAttack(eventData).catch((err) => {
-    attackLog.error('TRAP', 'save_to_database_failed', { trap: trapType, ip: attackerIp, error: err.message });
-  });
-  if (alertResult.status === 'sent') {
-    attackLog.info('TRAP', 'live_alert_sent_to_admin', {
-      trap: trapType,
-      trap_label: attackLog.trapLabel(trapType),
-      ip: attackerIp,
-      trace_id: req.traceId,
-      telemetry_url: process.env.NEXT_PUBLIC_TELEMETRY_SOCKET_URL || 'http://localhost:3002',
-    });
-  } else if (alertResult.status === 'skipped') {
-    attackLog.warn('TRAP', 'live_alert_skipped', {
-      trap: trapType,
-      ip: attackerIp,
-      reason: alertResult.reason,
-    });
-  } else {
-    attackLog.error('TRAP', 'live_alert_failed', {
-      trap: trapType,
-      ip: attackerIp,
-      error: alertResult.reason || 'unknown',
-    });
-  }
+  return telemetry.reportAttack(eventData);
 }
 
 exports.report = report;
@@ -139,15 +100,8 @@ exports.report = report;
 // ─── Public Dispatch ─────────────────────────────────────────────────────────
 
 /**
- * Entry point wired to /decoy-portal (see INTEGRATION_NOTES.md).
- * Routes the request to the right trap based on req.threatInfo.type.
- *
- *   'SQLI' → Tarpit
- *   'XSS'  → Sandbox XSS
- *   else   → fake admin dashboard (keeps recon traffic busy)
- *
- * BRUTE_FORCE / DATA_BOMB traps are triggered by their own dedicated
- * routes, not via this dispatcher.
+ * Handler for direct visits to the decoy console path. Routes to the right trap
+ * when a threat is already flagged, otherwise serves the fake admin dashboard.
  */
 exports.dispatch = async (req, res) => {
   const threat = req.threatInfo?.type;
@@ -170,10 +124,6 @@ exports.dispatch = async (req, res) => {
 exports.serveDataBomb = async (req, res) => {
   // dataBomb reports its own bytes_sent / wasted_time_ms when the stream ends
   return dataBomb.stream(req, res, { report });
-};
-
-exports.serveFakeDBError = async (req, res) => {
-  return tarpit.hold(req, res, { report });
 };
 
 exports.renderDatabaseConsole = async (req, res) => {

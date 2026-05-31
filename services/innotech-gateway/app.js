@@ -13,14 +13,8 @@ const applyDevScript = path.join(__dirname, '../../apps/admin-panel/scripts/appl
 if (fs.existsSync(applyDevScript)) {
     require(applyDevScript).applyDevPublicHost();
 }
-const { initLanEgressGeo } = require('../logging-data-extraction/services/geoService');
-initLanEgressGeo().catch((err) => {
-    require('./utils/attackLog').warn('GATEWAY', 'lan_egress_geo_init_failed', {
-        error: err?.message || String(err),
-    });
-});
 const cookieParser = require('cookie-parser');
-const realController = require('./controllers/realController'); // MVC: Logic is separated 
+const realController = require('./controllers/realController');
 const gatekeeper = require('./middleware/gatekeeper');
 const { authOptional, requireAuth } = require('./middleware/auth');
 const { generate, verify, NobleCryptoPlugin, ScureBase32Plugin } = require('otplib');
@@ -31,26 +25,24 @@ const honeyTokenDetector = require('./middleware/honeyTokenDetector');
 const decoyReroute = require('./middleware/decoyReroute');
 const { PATHS: DP, ALIASES: DP_ALIAS } = require('./config/deceptionPaths');
 const legacyBreachSession = require('./utils/legacyBreachSession');
-const attackerTraceMiddleware = require('./middleware/attackerTrace');
+const { ensureTraceId } = require('./utils/attackerTrace');
 const useragent = require('express-useragent');
-const fingerprintMiddleware = require('../logging-data-extraction/middlewares/fingerprint');
+const { fingerprint: fingerprintMiddleware, attackLog: attackLogBoot } = require('@evation/shared-utils');
 
 const app = express();
 app.set('trust proxy', true);
 const PORT = process.env.PORT ? Number(process.env.PORT) : 4001;
 const BASE_PATH = (process.env.BASE_PATH || '').replace(/\/$/, '');
 
-// 1. Database Connection (Secure Persistence) [cite: 21]
+// Safezone DB holds real employee + admin accounts. The malicious DB is owned
+// exclusively by the telemetry service; the gateway never connects to it.
 const dbURI = process.env.MONGODB_URI || process.env.SAFEZONE_DB_URI;
 
 if (!dbURI) {
     throw new Error('Missing MONGODB_URI (or SAFEZONE_DB_URI) env var for gateway');
 }
 
-const attackLogBoot = require('./utils/attackLog');
-
-// 2. Middleware & View Engine
-app.set('view engine', 'ejs'); // Server-Side Rendering with EJS 
+app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 const mount = BASE_PATH || '/';
 const router = express.Router();
@@ -61,7 +53,10 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(useragent.express());
 
-router.use(attackerTraceMiddleware);
+router.use((req, res, next) => {
+    ensureTraceId(req, res);
+    next();
+});
 router.use(fingerprintMiddleware);
 router.use(honeyTokenDetector);
 router.use((req, res, next) => {
@@ -108,8 +103,8 @@ router.get('/debug/totp', async (req, res) => {
             return res.json({ success: true, source: 'admin_users', username, code, valid: check?.valid === true });
         }
 
-        // Fallback: safezone users collection (plaintext secret)
-        const user = await require('./models/User').findOne({ username, isActive: true }).select('+totpSecret');
+        // Fallback: real_employees collection (plaintext secret)
+        const user = await require('./models/RealEmployee').findOne({ username, isActive: true }).select('+totpSecret');
         if (!user || !user.totpEnabled || !user.totpSecret) {
             return res.status(404).json({ success: false, error: 'User not found or 2FA not enabled' });
         }
@@ -134,16 +129,17 @@ router.get('/me', requireAuth, realController.renderMePage);
 router.get('/workspace', requireAuth, realController.renderDashboardPage);
 router.get('/profile', requireAuth, realController.renderProfilePage);
 router.get('/documents', requireAuth, realController.renderDocumentsPage);
+router.get('/documents/:filename', requireAuth, realController.serveDocument);
 router.get('/contact', realController.renderContactPage);
 router.post('/contact', realController.submitContact);
 router.get('/search', realController.renderSearchPage);
 
-// Screen-resolution beacon (Requirements §Attacker Fingerprint → device).
-// Only updates rows that already exist in attacker_profiles.
+// Screen-resolution beacon — forwarded to telemetry, which updates the profile
+// (only rows that already exist in attacker_profiles).
 router.post('/telemetry/screen-beacon', express.json(), async (req, res) => {
     try {
         const { getAttackerIp } = require('@evation/shared-utils');
-        const { recordScreenResolution } = require('../logging-data-extraction/services/AttackerProfileService');
+        const { postScreenResolution } = require('./utils/telemetryClient');
         const ip = getAttackerIp(req);
         const w = Number(req.body?.w);
         const h = Number(req.body?.h);
@@ -151,7 +147,7 @@ router.post('/telemetry/screen-beacon', express.json(), async (req, res) => {
             return res.status(204).end();
         }
         const resolution = `${Math.min(w, 9999)}x${Math.min(h, 9999)}`;
-        await recordScreenResolution(ip, resolution);
+        await postScreenResolution(ip, resolution);
         res.status(204).end();
     } catch {
         res.status(204).end();

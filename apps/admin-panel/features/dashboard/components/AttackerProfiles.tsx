@@ -5,6 +5,7 @@ import { useSocket } from '@/features/dashboard/context/SocketContext'
 import { useInvestigation } from '@/features/investigation/context/InvestigationContext'
 import type { AttackerProfile } from '@/lib/types/telemetry'
 import { shortTrace, uniqueTraceIds } from '@/lib/attackIntel'
+import { geoLocationLabel } from '@/lib/geoDisplay'
 import { Bot, Monitor, MapPin, Ban, Search } from 'lucide-react'
 
 interface AttackerProfilesProps {
@@ -118,8 +119,13 @@ export default function AttackerProfiles({ onNavigateInvestigate }: AttackerProf
           <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
             <Row label="ip" value={selected.ip} />
             <Row label="isp" value={selected.isp ?? '—'} />
-            <Row label="city" value={selected.city} />
-            <Row label="coordinates" value={`[${selected.lat}, ${selected.lng}]`} />
+            <Row label="location" value={geoLocationLabel(selected.city, selected.country)} />
+            <Row label="geoSource" value={selected.geoSource ?? '—'} />
+            <Row label="coordinates" value={
+              selected.lat && selected.lng && !(selected.lat === 0 && selected.lng === 0)
+                ? `[${selected.lat}, ${selected.lng}]`
+                : '—'
+            } />
             <Row label="os" value={selected.os} />
             <Row label="platform" value={selected.platform ?? '—'} />
             <Row label="browser" value={selected.browser} />
@@ -199,7 +205,7 @@ function ProfileCard({
 
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-mono mb-1">
         <MapPin className="w-3 h-3 shrink-0" />
-        {profile.city}
+        {geoLocationLabel(profile.city, profile.country)}
       </div>
       <div className="flex items-center gap-3 text-xs text-muted-foreground font-mono">
         <span>{profile.os}</span>

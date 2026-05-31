@@ -1,10 +1,6 @@
-/**
- * gatekeeper.js
- * Domain: Traffic Routing & Middleware Pipeline [cite: 3, 10]
- */
+// Ban check + regex threat detection. Sets req.threatInfo for decoyReroute.
 const detectionService = require('../services/detectionService');
-const attackLog = require('../utils/attackLog');
-const { getAttackerIp } = require('@evation/shared-utils');
+const { getAttackerIp, attackLog } = require('@evation/shared-utils');
 const httpTrickle = require('../traps/httpTrickle');
 
 module.exports = (req, res, next) => {
