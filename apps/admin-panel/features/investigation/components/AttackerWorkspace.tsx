@@ -27,6 +27,7 @@ export default function AttackerWorkspace() {
   const [traceInput, setTraceInput] = useState(target?.traceId ?? '')
   const [timeline, setTimeline] = useState<AttackerTimeline | null>(null)
   const [loading, setLoading] = useState(false)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   useEffect(() => {
     setIpInput(target?.ip ?? '')
@@ -38,12 +39,14 @@ export default function AttackerWorkspace() {
     if (!ip) return
 
     const trace = traceInput.trim()
+    setLoadError(null)
     const instant = !demoMode ? getTimelineForIp(ip, trace || undefined) : null
     if (instant && (instant.profile || instant.events.length > 0)) {
-      setTimeline(instant)
+      setTimeline(normalizeTimeline(instant, ip))
       setLoading(false)
     } else {
       setLoading(true)
+      setTimeline(null)
     }
 
     try {
@@ -70,7 +73,7 @@ export default function AttackerWorkspace() {
         events = [...events].sort(
           (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
         )
-        setTimeline({ profile, events })
+        setTimeline(normalizeTimeline({ profile, events }, ip))
         return
       }
 
@@ -78,10 +81,25 @@ export default function AttackerWorkspace() {
       if (traceInput.trim()) q.set('traceId', traceInput.trim())
       const res = await fetch(
         `/api/admin/attackers/${encodeURIComponent(ip)}/timeline?${q}`,
-        { method: 'GET' },
+        { method: 'GET', credentials: 'include' },
       )
-      const json = await res.json()
-      if (json?.success) setTimeline(json.data)
+      const json = (await res.json().catch(() => null)) as
+        | { success: true; data: AttackerTimeline }
+        | { success: false; error?: string }
+        | null
+      if (!res.ok || !json || (json as { success?: boolean }).success !== true) {
+        const msg =
+          (json as { error?: string })?.error ||
+          (res.status === 401 ? 'Unauthorized — sign in as admin.' : `Failed (${res.status})`)
+        setLoadError(msg)
+        setTimeline(null)
+        return
+      }
+      const data = (json as { data: AttackerTimeline }).data
+      setTimeline(normalizeTimeline(data, ip))
+      if (!data.events?.length && traceInput.trim()) {
+        setLoadError('No events for this traceId. Try clearing traceId or pick another trace chip.')
+      }
     } finally {
       setLoading(false)
     }
@@ -180,30 +198,50 @@ export default function AttackerWorkspace() {
         </div>
       )}
 
-      {timeline?.profile && (
+      {loadError && !loading && (
+        <div className="text-xs font-mono text-danger border border-danger/30 bg-danger/10 rounded-lg px-3 py-2">
+          {loadError}
+        </div>
+      )}
+
+      {timeline && (timeline.profile || timeline.events.length > 0) && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 min-h-0 flex-1">
           <div className="lg:col-span-1 bg-surface border border-border rounded-xl p-4 space-y-3">
             <div className="flex items-center gap-2">
-              {timeline.profile.isBot ? (
+              {timeline.profile?.isBot ? (
                 <Bot className="w-5 h-5 text-danger" />
               ) : (
                 <User className="w-5 h-5 text-muted-foreground" />
               )}
-              <span className="font-mono font-bold text-foreground">{timeline.profile.ip}</span>
+              <span className="font-mono font-bold text-foreground">{timeline.profile?.ip ?? ipInput}</span>
             </div>
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-mono">
-              <MapPin className="w-3 h-3" />
-              {timeline.profile.city}
-            </div>
-            <p className="text-xs font-mono text-muted-foreground">
-              {timeline.profile.os} · {timeline.profile.browser}
-            </p>
-            <p className="text-xs font-mono">
-              Risk: <span className="text-accent font-bold">{timeline.profile.riskScore}/100</span>
-            </p>
-            <p className="text-[10px] font-mono text-muted-foreground/70">
-              First seen {formatDistanceToNow(new Date(timeline.profile.firstSeen), { addSuffix: true })}
-            </p>
+            {timeline.profile?.city && (
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-mono">
+                <MapPin className="w-3 h-3" />
+                {timeline.profile.city}
+              </div>
+            )}
+            {(timeline.profile?.os || timeline.profile?.browser) && (
+              <p className="text-xs font-mono text-muted-foreground">
+                {[timeline.profile.os, timeline.profile.browser].filter(Boolean).join(' · ')}
+              </p>
+            )}
+            {timeline.profile && (
+              <>
+                <p className="text-xs font-mono">
+                  Risk: <span className="text-accent font-bold">{timeline.profile.riskScore}/100</span>
+                </p>
+                <p className="text-[10px] font-mono text-muted-foreground/70">
+                  First seen{' '}
+                  {formatDistanceToNow(new Date(timeline.profile.firstSeen), { addSuffix: true })}
+                </p>
+              </>
+            )}
+            {!timeline.profile && (
+              <p className="text-[10px] font-mono text-muted-foreground/70">
+                No attacker profile yet — showing events only.
+              </p>
+            )}
 
             <div className="pt-3 border-t border-border">
               <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-1">
@@ -248,6 +286,31 @@ export default function AttackerWorkspace() {
       )}
     </div>
   )
+}
+
+/** UI requires a profile object; API may return events without AttackerProfile row. */
+function normalizeTimeline(data: AttackerTimeline, ip: string): AttackerTimeline {
+  const events = data.events ?? []
+  if (data.profile) return { profile: data.profile, events }
+  if (events.length === 0) return { profile: null, events }
+  const first = events[0]
+  const fp = first.fingerprint
+  return {
+    profile: {
+      ip,
+      city: 'Unknown',
+      lat: 0,
+      lng: 0,
+      os: fp?.os ?? '—',
+      browser: fp?.browser ?? '—',
+      isBot: Boolean(fp?.isBot),
+      riskScore: fp?.riskScore ?? 0,
+      firstSeen: first.timestamp,
+      lastSeen: events[events.length - 1]?.timestamp ?? first.timestamp,
+      traceIds: [...new Set(events.map(e => e.traceId).filter(Boolean) as string[])],
+    },
+    events,
+  }
 }
 
 function TimelineNode({ event, prev }: { event: AttackEvent; prev?: AttackEvent }) {
