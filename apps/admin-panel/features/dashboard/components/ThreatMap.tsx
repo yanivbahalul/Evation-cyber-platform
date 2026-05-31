@@ -29,7 +29,7 @@ interface ThreatMapProps {
 }
 
 export default function ThreatMap({ onNavigateInvestigate }: ThreatMapProps) {
-  const { displayAlerts, connected, clearScreen, liveAlerts } = useSocket()
+  const { displayAlerts, connected, clearScreen } = useSocket()
   const latest = displayAlerts.slice(0, 8) as unknown as LiveAlert[]
 
   return (
@@ -42,7 +42,7 @@ export default function ThreatMap({ onNavigateInvestigate }: ThreatMapProps) {
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-xs font-mono text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
             <Zap className="w-3 h-3 text-accent" />
-            {liveAlerts.length > 0 ? 'Live Alert Feed' : connected ? 'Live Alert Feed' : 'Recent Attack Feed'}
+            {connected ? 'Live Alert Feed' : 'Recent Attack Feed'}
           </h3>
           <div className="flex items-center gap-2">
             <button

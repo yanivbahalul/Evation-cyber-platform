@@ -23,7 +23,7 @@ const NAV_ITEMS: { id: ActiveTab; label: string; icon: React.ElementType }[] = [
 
 export default function Sidebar({ active, onSelect }: SidebarProps) {
   const router = useRouter()
-  const { connected, liveAlerts } = useSocket()
+  const { connected, displayAlerts } = useSocket()
   const { logout } = useAuth()
 
   return (
@@ -50,9 +50,9 @@ export default function Sidebar({ active, onSelect }: SidebarProps) {
             ? <><Wifi className="w-3 h-3" /> Socket live</>
             : <><WifiOff className="w-3 h-3" /> Socket offline</>
           }
-          {connected && liveAlerts.length > 0 && (
+          {connected && displayAlerts.length > 0 && (
             <span className="ml-auto bg-accent text-accent-foreground text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center pulse-orange">
-              {Math.min(liveAlerts.length, 9)}
+              {Math.min(displayAlerts.length, 9)}
             </span>
           )}
         </div>

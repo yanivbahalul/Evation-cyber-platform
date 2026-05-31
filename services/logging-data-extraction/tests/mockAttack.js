@@ -23,7 +23,7 @@ const TOKEN = process.env.ADMIN_SOCKET_TOKEN || 'admin-secret';
 const TIMEOUT_MS = 10_000;
 
 const REQUIRED_PAYLOAD_KEYS = [
-    'attackerIp', 'trapType', 'payload', 'wasted_time_ms', 'bytes_sent', 'fingerprint'
+    'eventID', 'attackerIp', 'trapType', 'payload', 'wasted_time_ms', 'bytes_sent', 'fingerprint'
 ];
 
 let alertReceived = false;

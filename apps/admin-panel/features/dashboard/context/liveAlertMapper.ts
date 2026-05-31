@@ -1,4 +1,4 @@
-import type { LiveAlert } from '@/lib/types/telemetry'
+import type { AttackEvent, LiveAlert } from '@/lib/types/telemetry'
 import { normalizeTrapType } from '@/lib/attackIntel'
 
 export function randomEventId(): string {
@@ -7,9 +7,68 @@ export function randomEventId(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 11)}`
 }
 
+export function liveAlertToAttackEvent(a: LiveAlert): AttackEvent {
+  return {
+    eventID: a.eventID,
+    attackerIp: a.attackerIp,
+    trapType: a.trapType,
+    payload: a.payload,
+    wasted_time_ms: a.wastedTimeMs ?? a.wasted_time_ms ?? 0,
+    bytes_sent: a.bytesSent ?? a.bytes_sent ?? 0,
+    timestamp: a.timestamp,
+    traceId: a.traceId,
+    method: a.method,
+    path: a.path,
+    userAgent: a.userAgent,
+    referer: a.referer,
+    fingerprint: a.fingerprint,
+    handoffFrom: a.handoffFrom,
+    xssTier: a.xssTier,
+    secondaryTraps: a.secondaryTraps,
+  }
+}
+
+function isAfterClear(timestamp: string, clearedAtMs: number): boolean {
+  if (!clearedAtMs) return true
+  const ts = new Date(timestamp).getTime()
+  return Number.isFinite(ts) ? ts >= clearedAtMs : true
+}
+
+/** Merge socket live alerts with polled events; live wins on duplicate eventID. */
+export function mergeAttackEvents(
+  live: LiveAlert[],
+  polled: AttackEvent[],
+  options?: { clearedAtMs?: number },
+): AttackEvent[] {
+  const clearedAtMs = options?.clearedAtMs ?? 0
+  const seen = new Set<string>()
+  const out: AttackEvent[] = []
+
+  for (const a of live) {
+    const id = a?.eventID?.trim()
+    if (!id || seen.has(id)) continue
+    if (!isAfterClear(a.timestamp, clearedAtMs)) continue
+    seen.add(id)
+    out.push(liveAlertToAttackEvent(a))
+  }
+
+  for (const e of polled) {
+    const id = e?.eventID?.trim()
+    if (!id || seen.has(id)) continue
+    if (!isAfterClear(e.timestamp, clearedAtMs)) continue
+    seen.add(id)
+    out.push(e)
+  }
+
+  return out.sort(
+    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+  )
+}
+
 /** Normalize a raw socket `liveAlert` payload into the dashboard's LiveAlert shape. */
-export function mapSocketLiveAlert(data: Record<string, unknown>): LiveAlert {
-  const eventID = typeof data.eventID === 'string' ? data.eventID : randomEventId()
+export function mapSocketLiveAlert(data: Record<string, unknown>): LiveAlert | null {
+  const eventID = typeof data.eventID === 'string' ? data.eventID.trim() : ''
+  if (!eventID) return null
   const trapType = normalizeTrapType(String(data.trapType ?? 'DATA_BOMB'))
   const fingerprint = (data.fingerprint as LiveAlert['fingerprint']) ?? {}
   const latRaw = typeof data.lat === 'number' || typeof data.lat === 'string' ? Number(data.lat) : NaN

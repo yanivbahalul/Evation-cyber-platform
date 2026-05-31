@@ -22,7 +22,7 @@ import {
   writeDashboardCache,
   type DashboardSnapshot,
 } from '@/lib/dashboardCache'
-import { randomEventId, mapSocketLiveAlert } from './liveAlertMapper'
+import { randomEventId, mapSocketLiveAlert, mergeAttackEvents } from './liveAlertMapper'
 import { mergeEventGeo } from '@/lib/geoDisplay'
 import {
   MOCK_PROFILES,
@@ -42,12 +42,9 @@ interface SocketContextValue {
   attackerProfiles: AttackerProfile[]
   honeyTokens: HoneyToken[]
   /**
-   * The canonical list used by BOTH the map and the bottom feed.
-   * - ordered newest → oldest
-   * - de-duped by eventID
-   * - liveAlerts first (realtime), then attackEvents (polled)
-   * - enriched with profile geo/os when coming from attackEvents
+   * Map + feed: newest first, de-duped by eventID, geo-enriched.
    */
+  mergedAttackEvents: AttackEvent[]
   displayAlerts: Array<{
     eventID: string
     attackerIp: string
@@ -125,6 +122,7 @@ export function SocketProvider({
   const syncingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const hasDashboardDataRef = useRef(false)
   const lastRefreshAtRef = useRef(0)
+  const connectedRef = useRef(false)
 
   const setDemoMode = useCallback((enabled: boolean) => {
     refreshGenerationRef.current += 1
@@ -217,12 +215,17 @@ export function SocketProvider({
     }
   }, [demoMode, applyDashboardPayload])
 
+  const mergedAttackEvents = useMemo(
+    () => mergeAttackEvents(liveAlerts, attackEvents, { clearedAtMs }),
+    [liveAlerts, attackEvents, clearedAtMs],
+  )
+
   const getTimelineForIp = useCallback(
     (ip: string, traceId?: string): AttackerTimeline | null => {
       const trimmed = ip.trim()
       if (!trimmed) return null
       const profile = attackerProfiles.find(p => p.ip === trimmed) ?? null
-      let events = attackEvents.filter(e => e.attackerIp === trimmed)
+      let events = mergedAttackEvents.filter(e => e.attackerIp === trimmed)
       const tid = traceId?.trim()
       if (tid) {
         events = events.filter(e => !e.traceId || e.traceId === tid)
@@ -233,8 +236,18 @@ export function SocketProvider({
       )
       return { profile, events }
     },
-    [attackEvents, attackerProfiles],
+    [mergedAttackEvents, attackerProfiles],
   )
+
+  useEffect(() => {
+    if (demoMode || attackEvents.length === 0) return
+    const polledIds = new Set(attackEvents.map(e => e.eventID).filter(Boolean))
+    if (polledIds.size === 0) return
+    setLiveAlerts(prev => {
+      const next = prev.filter(a => !polledIds.has(a.eventID))
+      return next.length === prev.length ? prev : next
+    })
+  }, [attackEvents, demoMode])
 
   useEffect(() => {
     if (bootstrap) {
@@ -303,8 +316,9 @@ export function SocketProvider({
 
     setConnected(false)
 
-    const socketUrl =
-      process.env.NEXT_PUBLIC_TELEMETRY_SOCKET_URL || window.location.origin
+    // nginx proxies /socket.io/ on the same host:port as the dashboard.
+    // A baked-in LAN IP breaks localhost, ngrok HTTPS, and mixed-content rules.
+    const socketUrl = window.location.origin
     const envToken = process.env.NEXT_PUBLIC_ADMIN_SOCKET_TOKEN
     const isProd = process.env.NODE_ENV === 'production'
     const token = envToken || (isProd ? '' : 'admin-secret')
@@ -317,6 +331,16 @@ export function SocketProvider({
     const abort = new AbortController()
     refreshGenerationRef.current += 1
 
+    const restartPoll = () => {
+      if (pollRef.current) clearInterval(pollRef.current)
+      const ms = connectedRef.current ? 15_000 : 5_000
+      pollRef.current = setInterval(() => {
+        if (document.visibilityState === 'visible') {
+          refresh(abort.signal).catch(() => {})
+        }
+      }, ms)
+    }
+
     let sock: Socket | null = null
     if (token) {
       sock = io(socketUrl, {
@@ -326,10 +350,20 @@ export function SocketProvider({
       })
       socketRef.current = sock
 
-      sock.on('connect', () => setConnected(true))
-      sock.on('disconnect', () => setConnected(false))
-      sock.on('connect_error', (err: Error) => {
+      sock.on('connect', () => {
+        connectedRef.current = true
+        setConnected(true)
+        restartPoll()
+      })
+      sock.on('disconnect', () => {
+        connectedRef.current = false
         setConnected(false)
+        restartPoll()
+      })
+      sock.on('connect_error', (err: Error) => {
+        connectedRef.current = false
+        setConnected(false)
+        restartPoll()
         if (process.env.NODE_ENV === 'development') {
           console.warn('[admin socket] connect_error →', socketUrl, err?.message || err)
         }
@@ -337,21 +371,23 @@ export function SocketProvider({
 
       sock.on('liveAlert', (data: Record<string, unknown>) => {
         const alert = mapSocketLiveAlert(data)
-        setLiveAlerts(prev => [alert, ...prev].slice(0, 200))
+        if (!alert) return
+        setLiveAlerts(prev => {
+          const rest = prev.filter(a => a.eventID !== alert.eventID)
+          return [alert, ...rest].slice(0, 200)
+        })
         if (refreshAfterAlertRef.current) clearTimeout(refreshAfterAlertRef.current)
         refreshAfterAlertRef.current = setTimeout(() => {
           refreshAfterAlertRef.current = null
+          // Bypass the 3s coalesce window so polled attackEvents catch up quickly.
+          lastRefreshAtRef.current = 0
           refresh(abort.signal).catch(() => {})
-        }, 600)
+        }, 300)
       })
     }
 
     refresh(abort.signal).catch(() => {})
-    pollRef.current = setInterval(() => {
-      if (document.visibilityState === 'visible') {
-        refresh(abort.signal).catch(() => {})
-      }
-    }, 15_000)
+    restartPoll()
 
     const onVisible = () => {
       if (document.visibilityState === 'visible') refresh(abort.signal).catch(() => {})
@@ -460,6 +496,7 @@ export function SocketProvider({
         attackEvents,
         attackerProfiles,
         honeyTokens,
+        mergedAttackEvents,
         displayAlerts,
         clearedAtMs,
         dataStale,

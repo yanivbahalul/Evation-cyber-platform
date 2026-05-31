@@ -52,26 +52,33 @@ async function enrichGeo(body) {
 }
 
 /**
- * Single write path for a trap event: broadcast to the dashboard, persist the
- * AttackEvent, and upsert the AttackerProfile. The telemetry service owns every
- * malicious-DB write.
+ * Single write path for a trap event: persist the AttackEvent, upsert the
+ * AttackerProfile, then broadcast a liveAlert that carries the saved eventID.
+ * The telemetry service owns every malicious-DB write.
+ *
+ * Profile upsert is best-effort. AttackEvent persistence is authoritative: its
+ * error propagates so the caller is told the event was NOT saved. liveAlert is
+ * only emitted after a successful save so the dashboard can dedupe by eventID.
  */
 async function processAttack(rawBody) {
-  const body = await enrichGeo(rawBody || {});
+  const raw = rawBody || {};
 
-  SocketService.emitLiveAlert(body);
-
-  AttackEventService.recordEvent(body).catch((err) => {
-    attackLog.error('ATTACK', 'event_record_failed', {
-      trap: body?.trapType,
-      ip: body?.attackerIp,
-      error: err.message,
-    });
-  });
+  const body = await enrichGeo(raw);
 
   void upsertFromAttackSafe(body);
 
-  return body;
+  const doc = await AttackEventService.recordEvent(body);
+
+  const ts = doc.timestamp instanceof Date ? doc.timestamp.toISOString() : doc.timestamp;
+  SocketService.emitLiveAlert({
+    ...body,
+    eventID: doc.eventID,
+    timestamp: ts ?? Date.now(),
+    wasted_time_ms: doc.wasted_time_ms,
+    bytes_sent: doc.bytes_sent,
+  });
+
+  return { ...body, eventID: doc.eventID, timestamp: ts };
 }
 
 // Gateway → telemetry: persist event + upsert profile + broadcast liveAlert.
@@ -81,8 +88,14 @@ async function handleAttack(req, res) {
     ip: req.body?.attackerIp,
     trace_id: req.body?.traceId,
   });
-  await processAttack(req.body || {});
-  return res.json({ success: true });
+  try {
+    await processAttack(req.body || {});
+    return res.json({ success: true });
+  } catch (err) {
+    // recordEvent already logged the detailed failure; tell the gateway the write
+    // did not land so it surfaces a real error instead of a false success.
+    return res.status(502).json({ success: false, error: 'event_not_persisted', detail: err.message });
+  }
 }
 
 router.post('/internal/attack', requireToken, handleAttack);
