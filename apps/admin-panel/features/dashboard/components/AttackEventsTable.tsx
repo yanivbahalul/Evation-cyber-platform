@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useSocket } from '@/features/dashboard/context/SocketContext'
-import type { AttackEvent, LiveAlert, TrapType } from '@/lib/types/telemetry'
+import type { AttackEvent, TrapType } from '@/lib/types/telemetry'
 import { shortTrace } from '@/lib/attackIntel'
 import EventDetailPanel from '@/features/investigation/components/EventDetailPanel'
 import { Activity, Bot, ChevronDown, ChevronUp, Search, Clock, Database } from 'lucide-react'
@@ -22,35 +22,18 @@ const TRAP_COLORS: Partial<Record<TrapType, string>> = {
   SCANNER: '#a855f7',
 }
 
-function liveAlertToEvent(a: LiveAlert): AttackEvent {
-  return {
-    eventID: a.eventID,
-    attackerIp: a.attackerIp,
-    trapType: a.trapType,
-    payload: a.payload,
-    wasted_time_ms: a.wastedTimeMs ?? a.wasted_time_ms ?? 0,
-    bytes_sent: a.bytesSent ?? a.bytes_sent ?? 0,
-    timestamp: a.timestamp,
-    traceId: a.traceId,
-    method: a.method,
-    path: a.path,
-    userAgent: a.userAgent,
-    referer: a.referer,
-    fingerprint: a.fingerprint,
-    handoffFrom: a.handoffFrom,
-    xssTier: a.xssTier,
-    secondaryTraps: a.secondaryTraps,
-  }
-}
-
 export default function AttackEventsTable() {
-  const { attackEvents, liveAlerts } = useSocket()
+  const { mergedAttackEvents, liveAlerts } = useSocket()
   const [search, setSearch] = useState('')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
   const [selected, setSelected] = useState<AttackEvent | null>(null)
 
-  const liveAsEvents = liveAlerts.map(liveAlertToEvent)
-  const allEvents = [...liveAsEvents, ...attackEvents]
+  const liveEventIds = useMemo(
+    () => new Set(liveAlerts.map(a => a.eventID).filter(Boolean)),
+    [liveAlerts],
+  )
+
+  const allEvents = mergedAttackEvents
   const filtered = allEvents.filter(
     e =>
       String(e.attackerIp ?? '').includes(search) ||
@@ -119,7 +102,7 @@ export default function AttackEventsTable() {
           <tbody>
             {sorted.map(evt => {
               const color = TRAP_COLORS[evt.trapType] ?? '#7a9bb5'
-              const isNew = liveAsEvents.some(l => l.eventID === evt.eventID)
+              const isNew = liveEventIds.has(evt.eventID)
               return (
                 <tr
                   key={evt.eventID}

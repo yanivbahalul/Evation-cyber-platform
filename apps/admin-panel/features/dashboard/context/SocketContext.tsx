@@ -22,7 +22,7 @@ import {
   writeDashboardCache,
   type DashboardSnapshot,
 } from '@/lib/dashboardCache'
-import { randomEventId, mapSocketLiveAlert } from './liveAlertMapper'
+import { randomEventId, mapSocketLiveAlert, mergeAttackEvents } from './liveAlertMapper'
 import { mergeEventGeo } from '@/lib/geoDisplay'
 import {
   MOCK_PROFILES,
@@ -42,12 +42,9 @@ interface SocketContextValue {
   attackerProfiles: AttackerProfile[]
   honeyTokens: HoneyToken[]
   /**
-   * The canonical list used by BOTH the map and the bottom feed.
-   * - ordered newest → oldest
-   * - de-duped by eventID
-   * - liveAlerts first (realtime), then attackEvents (polled)
-   * - enriched with profile geo/os when coming from attackEvents
+   * Map + feed: newest first, de-duped by eventID, geo-enriched.
    */
+  mergedAttackEvents: AttackEvent[]
   displayAlerts: Array<{
     eventID: string
     attackerIp: string
@@ -218,12 +215,17 @@ export function SocketProvider({
     }
   }, [demoMode, applyDashboardPayload])
 
+  const mergedAttackEvents = useMemo(
+    () => mergeAttackEvents(liveAlerts, attackEvents, { clearedAtMs }),
+    [liveAlerts, attackEvents, clearedAtMs],
+  )
+
   const getTimelineForIp = useCallback(
     (ip: string, traceId?: string): AttackerTimeline | null => {
       const trimmed = ip.trim()
       if (!trimmed) return null
       const profile = attackerProfiles.find(p => p.ip === trimmed) ?? null
-      let events = attackEvents.filter(e => e.attackerIp === trimmed)
+      let events = mergedAttackEvents.filter(e => e.attackerIp === trimmed)
       const tid = traceId?.trim()
       if (tid) {
         events = events.filter(e => !e.traceId || e.traceId === tid)
@@ -234,8 +236,18 @@ export function SocketProvider({
       )
       return { profile, events }
     },
-    [attackEvents, attackerProfiles],
+    [mergedAttackEvents, attackerProfiles],
   )
+
+  useEffect(() => {
+    if (demoMode || attackEvents.length === 0) return
+    const polledIds = new Set(attackEvents.map(e => e.eventID).filter(Boolean))
+    if (polledIds.size === 0) return
+    setLiveAlerts(prev => {
+      const next = prev.filter(a => !polledIds.has(a.eventID))
+      return next.length === prev.length ? prev : next
+    })
+  }, [attackEvents, demoMode])
 
   useEffect(() => {
     if (bootstrap) {
@@ -359,7 +371,11 @@ export function SocketProvider({
 
       sock.on('liveAlert', (data: Record<string, unknown>) => {
         const alert = mapSocketLiveAlert(data)
-        setLiveAlerts(prev => [alert, ...prev].slice(0, 200))
+        if (!alert) return
+        setLiveAlerts(prev => {
+          const rest = prev.filter(a => a.eventID !== alert.eventID)
+          return [alert, ...rest].slice(0, 200)
+        })
         if (refreshAfterAlertRef.current) clearTimeout(refreshAfterAlertRef.current)
         refreshAfterAlertRef.current = setTimeout(() => {
           refreshAfterAlertRef.current = null
@@ -480,6 +496,7 @@ export function SocketProvider({
         attackEvents,
         attackerProfiles,
         honeyTokens,
+        mergedAttackEvents,
         displayAlerts,
         clearedAtMs,
         dataStale,

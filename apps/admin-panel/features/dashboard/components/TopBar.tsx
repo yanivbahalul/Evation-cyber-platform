@@ -22,52 +22,18 @@ interface TopBarProps {
 
 export default function TopBar({ active }: TopBarProps) {
   const {
-    liveAlerts,
-    attackEvents,
-    attackerProfiles,
-    clearedAtMs,
+    displayAlerts,
     demoMode,
     setDemoMode,
     clearScreen,
     isSyncing,
     hasDashboardData,
-  } =
-    useSocket()
+  } = useSocket()
   const [openNotifications, setOpenNotifications] = useState(false)
   const [portalReady, setPortalReady] = useState(false)
 
-  const latest = useMemo(() => {
-    if (liveAlerts.length > 0) return liveAlerts.slice(0, 8)
-
-    const profileByIp = new Map(attackerProfiles.map(p => [p.ip, p]))
-    return attackEvents
-      .filter((e) => {
-        const ts = new Date(e.timestamp).getTime()
-        return Number.isFinite(ts) ? ts >= clearedAtMs : true
-      })
-      .slice(0, 8)
-      .map((e) => {
-        const p = profileByIp.get(e.attackerIp)
-        return {
-          eventID: e.eventID,
-          attackerIp: e.attackerIp,
-          trapType: e.trapType,
-          city: p?.city ?? '—',
-          timestamp: e.timestamp,
-          payload: e.payload,
-          traceId: e.traceId,
-          path: e.path,
-        } as const
-      })
-  }, [attackEvents, attackerProfiles, clearedAtMs, liveAlerts])
-
-  const notificationCount = useMemo(() => {
-    if (liveAlerts.length > 0) return liveAlerts.length
-    return attackEvents.filter((e) => {
-      const ts = new Date(e.timestamp).getTime()
-      return Number.isFinite(ts) ? ts >= clearedAtMs : true
-    }).length
-  }, [attackEvents, clearedAtMs, liveAlerts.length])
+  const latest = useMemo(() => displayAlerts.slice(0, 8), [displayAlerts])
+  const notificationCount = displayAlerts.length
   const [now, setNow] = useState('')
 
   useEffect(() => {

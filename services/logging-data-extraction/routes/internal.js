@@ -11,7 +11,7 @@ const {
   recordScreenResolution,
   getBannedIps,
 } = require('../services/AttackerProfileService');
-const { resolveIpGeo, resolveIpGeoFast, applyGeoToPayload } = require('../services/geoService');
+const { resolveIpGeo, applyGeoToPayload } = require('../services/geoService');
 
 const router = express.Router();
 
@@ -52,32 +52,33 @@ async function enrichGeo(body) {
 }
 
 /**
- * Single write path for a trap event: broadcast to the dashboard, upsert the
- * AttackerProfile, and persist the AttackEvent. The telemetry service owns every
- * malicious-DB write.
+ * Single write path for a trap event: persist the AttackEvent, upsert the
+ * AttackerProfile, then broadcast a liveAlert that carries the saved eventID.
+ * The telemetry service owns every malicious-DB write.
  *
- * The live alert and profile upsert are best-effort and must never block or mask
- * the event write. The AttackEvent persistence is authoritative: its error
- * propagates so the caller is told the event was NOT saved instead of having the
- * write silently dropped.
+ * Profile upsert is best-effort. AttackEvent persistence is authoritative: its
+ * error propagates so the caller is told the event was NOT saved. liveAlert is
+ * only emitted after a successful save so the dashboard can dedupe by eventID.
  */
 async function processAttack(rawBody) {
   const raw = rawBody || {};
-
-  // Broadcast immediately with fast geo (cache / geoip-lite / LAN) — do not block on HTTP geo APIs.
-  let livePayload = raw;
-  if (!hasResolvedGeo(raw) && raw.attackerIp) {
-    livePayload = applyGeoToPayload(raw, resolveIpGeoFast(raw.attackerIp));
-  }
-  SocketService.emitLiveAlert(livePayload);
 
   const body = await enrichGeo(raw);
 
   void upsertFromAttackSafe(body);
 
-  await AttackEventService.recordEvent(body);
+  const doc = await AttackEventService.recordEvent(body);
 
-  return body;
+  const ts = doc.timestamp instanceof Date ? doc.timestamp.toISOString() : doc.timestamp;
+  SocketService.emitLiveAlert({
+    ...body,
+    eventID: doc.eventID,
+    timestamp: ts ?? Date.now(),
+    wasted_time_ms: doc.wasted_time_ms,
+    bytes_sent: doc.bytes_sent,
+  });
+
+  return { ...body, eventID: doc.eventID, timestamp: ts };
 }
 
 // Gateway → telemetry: persist event + upsert profile + broadcast liveAlert.
