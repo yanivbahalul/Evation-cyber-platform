@@ -44,7 +44,7 @@ app.use(internalRouter);
 
 // Local smoke route: simulates a trap firing through the real write pipeline.
 app.get('/test-trap', (req, res) => {
-  void processAttack({
+  processAttack({
     attackerIp: req.ip,
     trapType: TRAP_TYPES.DATA_BOMB,
     payload: JSON.stringify({ source: 'test-trap' }),
@@ -52,6 +52,8 @@ app.get('/test-trap', (req, res) => {
     bytes_sent: 0,
     fingerprint: req.attackerFingerprint || {},
     timestamp: Date.now(),
+  }).catch((err) => {
+    attackLog.error('TELEMETRY', 'test_trap_failed', { error: err?.message || String(err) });
   });
   setTimeout(() => res.send('Trap finished. Check the logs and the socket alert.'), 1500);
 });

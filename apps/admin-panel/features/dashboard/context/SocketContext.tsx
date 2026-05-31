@@ -125,6 +125,7 @@ export function SocketProvider({
   const syncingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const hasDashboardDataRef = useRef(false)
   const lastRefreshAtRef = useRef(0)
+  const connectedRef = useRef(false)
 
   const setDemoMode = useCallback((enabled: boolean) => {
     refreshGenerationRef.current += 1
@@ -303,8 +304,9 @@ export function SocketProvider({
 
     setConnected(false)
 
-    const socketUrl =
-      process.env.NEXT_PUBLIC_TELEMETRY_SOCKET_URL || window.location.origin
+    // nginx proxies /socket.io/ on the same host:port as the dashboard.
+    // A baked-in LAN IP breaks localhost, ngrok HTTPS, and mixed-content rules.
+    const socketUrl = window.location.origin
     const envToken = process.env.NEXT_PUBLIC_ADMIN_SOCKET_TOKEN
     const isProd = process.env.NODE_ENV === 'production'
     const token = envToken || (isProd ? '' : 'admin-secret')
@@ -317,6 +319,16 @@ export function SocketProvider({
     const abort = new AbortController()
     refreshGenerationRef.current += 1
 
+    const restartPoll = () => {
+      if (pollRef.current) clearInterval(pollRef.current)
+      const ms = connectedRef.current ? 15_000 : 5_000
+      pollRef.current = setInterval(() => {
+        if (document.visibilityState === 'visible') {
+          refresh(abort.signal).catch(() => {})
+        }
+      }, ms)
+    }
+
     let sock: Socket | null = null
     if (token) {
       sock = io(socketUrl, {
@@ -326,10 +338,20 @@ export function SocketProvider({
       })
       socketRef.current = sock
 
-      sock.on('connect', () => setConnected(true))
-      sock.on('disconnect', () => setConnected(false))
-      sock.on('connect_error', (err: Error) => {
+      sock.on('connect', () => {
+        connectedRef.current = true
+        setConnected(true)
+        restartPoll()
+      })
+      sock.on('disconnect', () => {
+        connectedRef.current = false
         setConnected(false)
+        restartPoll()
+      })
+      sock.on('connect_error', (err: Error) => {
+        connectedRef.current = false
+        setConnected(false)
+        restartPoll()
         if (process.env.NODE_ENV === 'development') {
           console.warn('[admin socket] connect_error →', socketUrl, err?.message || err)
         }
@@ -341,17 +363,15 @@ export function SocketProvider({
         if (refreshAfterAlertRef.current) clearTimeout(refreshAfterAlertRef.current)
         refreshAfterAlertRef.current = setTimeout(() => {
           refreshAfterAlertRef.current = null
+          // Bypass the 3s coalesce window so polled attackEvents catch up quickly.
+          lastRefreshAtRef.current = 0
           refresh(abort.signal).catch(() => {})
-        }, 600)
+        }, 300)
       })
     }
 
     refresh(abort.signal).catch(() => {})
-    pollRef.current = setInterval(() => {
-      if (document.visibilityState === 'visible') {
-        refresh(abort.signal).catch(() => {})
-      }
-    }, 15_000)
+    restartPoll()
 
     const onVisible = () => {
       if (document.visibilityState === 'visible') refresh(abort.signal).catch(() => {})

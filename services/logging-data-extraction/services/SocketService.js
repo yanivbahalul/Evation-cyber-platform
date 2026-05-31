@@ -11,8 +11,9 @@ const SocketService = {
             .filter(Boolean);
 
         const isProd = process.env.NODE_ENV === 'production';
-        const corsOrigin =
-            allowedOrigins.length > 0 ? allowedOrigins : !isProd ? true : false;
+        // Dev: always allow the browser origin (localhost, LAN IP, ngrok HTTPS).
+        // Prod: restrict to ADMIN_DASHBOARD_ORIGINS when set.
+        const corsOrigin = !isProd ? true : allowedOrigins.length > 0 ? allowedOrigins : false;
 
         io = new Server(httpServer, {
             cors: {

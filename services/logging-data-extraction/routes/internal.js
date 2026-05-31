@@ -11,7 +11,7 @@ const {
   recordScreenResolution,
   getBannedIps,
 } = require('../services/AttackerProfileService');
-const { resolveIpGeo, applyGeoToPayload } = require('../services/geoService');
+const { resolveIpGeo, resolveIpGeoFast, applyGeoToPayload } = require('../services/geoService');
 
 const router = express.Router();
 
@@ -52,24 +52,30 @@ async function enrichGeo(body) {
 }
 
 /**
- * Single write path for a trap event: broadcast to the dashboard, persist the
- * AttackEvent, and upsert the AttackerProfile. The telemetry service owns every
+ * Single write path for a trap event: broadcast to the dashboard, upsert the
+ * AttackerProfile, and persist the AttackEvent. The telemetry service owns every
  * malicious-DB write.
+ *
+ * The live alert and profile upsert are best-effort and must never block or mask
+ * the event write. The AttackEvent persistence is authoritative: its error
+ * propagates so the caller is told the event was NOT saved instead of having the
+ * write silently dropped.
  */
 async function processAttack(rawBody) {
-  const body = await enrichGeo(rawBody || {});
+  const raw = rawBody || {};
 
-  SocketService.emitLiveAlert(body);
+  // Broadcast immediately with fast geo (cache / geoip-lite / LAN) — do not block on HTTP geo APIs.
+  let livePayload = raw;
+  if (!hasResolvedGeo(raw) && raw.attackerIp) {
+    livePayload = applyGeoToPayload(raw, resolveIpGeoFast(raw.attackerIp));
+  }
+  SocketService.emitLiveAlert(livePayload);
 
-  AttackEventService.recordEvent(body).catch((err) => {
-    attackLog.error('ATTACK', 'event_record_failed', {
-      trap: body?.trapType,
-      ip: body?.attackerIp,
-      error: err.message,
-    });
-  });
+  const body = await enrichGeo(raw);
 
   void upsertFromAttackSafe(body);
+
+  await AttackEventService.recordEvent(body);
 
   return body;
 }
@@ -81,8 +87,14 @@ async function handleAttack(req, res) {
     ip: req.body?.attackerIp,
     trace_id: req.body?.traceId,
   });
-  await processAttack(req.body || {});
-  return res.json({ success: true });
+  try {
+    await processAttack(req.body || {});
+    return res.json({ success: true });
+  } catch (err) {
+    // recordEvent already logged the detailed failure; tell the gateway the write
+    // did not land so it surfaces a real error instead of a false success.
+    return res.status(502).json({ success: false, error: 'event_not_persisted', detail: err.message });
+  }
 }
 
 router.post('/internal/attack', requireToken, handleAttack);
