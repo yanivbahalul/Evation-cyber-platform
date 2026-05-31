@@ -4,7 +4,6 @@
   "description": "InnoTech honeypot gateway: HR portal, threat detection, and deception traps. Reports to the telemetry service over HTTP.",
   "main": "app.js",
   "scripts": {
-    "prepare-docs": "node scripts/generatePortalDocuments.cjs",
     "dev": "node app.js",
     "start": "node app.js",
     "test": "echo \"Error: no test specified\" && exit 1"

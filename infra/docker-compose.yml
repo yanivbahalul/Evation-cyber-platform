@@ -74,6 +74,8 @@ services:
       # Trust reverse-proxy hops inside Docker + LAN proxies so we can honor
       # X-Forwarded-For / CF-Connecting-IP and distinguish WiFi vs cellular.
       TRUSTED_PROXY_IPS: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+    volumes:
+      - ../services/innotech-gateway/portal-documents:/app/services/innotech-gateway/portal-documents:ro
     expose:
       - "4001"
     healthcheck:
