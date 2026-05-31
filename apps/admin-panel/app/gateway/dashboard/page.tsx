@@ -36,12 +36,6 @@ export default function GatewayDashboardPage() {
   useEffect(() => {
     let cancelled = false
 
-    const cached = snapshotFromCache()
-    if (cached) {
-      setBootstrap(cached)
-      setPhase('admin')
-    }
-
     const dashboardWarm = fetch('/api/admin/dashboard?limit=200', {
       method: 'GET',
       credentials: 'include',
@@ -66,6 +60,8 @@ export default function GatewayDashboardPage() {
           return
         }
 
+        const cached = snapshotFromCache()
+        if (cached) setBootstrap(cached)
         setPhase('admin')
 
         const dashRes = await dashboardWarm

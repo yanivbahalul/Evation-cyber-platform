@@ -1,4 +1,5 @@
 import { SignJWT, jwtVerify } from 'jose'
+import { authJwtExpiresIn } from '@/lib/auth/cookiePolicy'
 
 function getGatewayIssuer() {
   return 'innotech-gateway'
@@ -17,7 +18,7 @@ export async function signGatewayAuthToken(payload: Record<string, unknown>) {
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt(now)
     .setIssuer(getGatewayIssuer())
-    .setExpirationTime('8h')
+    .setExpirationTime(authJwtExpiresIn())
     .sign(key)
 }
 

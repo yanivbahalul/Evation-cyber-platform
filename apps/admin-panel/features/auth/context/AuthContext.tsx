@@ -11,6 +11,8 @@ interface AuthState {
   error: string | null
   isLoading: boolean
   isCheckingSession: boolean
+  /** Valid session on login page — do not auto-redirect; user picks continue or sign out. */
+  existingSession: { sub: string; redirectTo: string } | null
 }
 
 interface AuthContextValue extends AuthState {
@@ -33,40 +35,56 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     error: null,
     isLoading: false,
     isCheckingSession: true,
+    existingSession: null,
   })
 
-  // Persist session across refresh/navigation: if the server cookie is valid, start authenticated.
+  const onLoginPage =
+    typeof window !== 'undefined' && /\/gateway\/login\/?$/.test(window.location.pathname)
+
+  // Restore session on protected pages; on /gateway/login show "already signed in" instead of auto-redirect.
   useEffect(() => {
     let cancelled = false
     ;(async () => {
       try {
-        const res = await fetch('/api/admin/session', { method: 'GET' })
+        const res = await fetch('/api/portal/session', { method: 'GET', credentials: 'include' })
         const json = (await res.json().catch(() => null)) as
-          | { authenticated: true; sub?: string; kind?: 'admin' | 'safezone'; redirectTo?: string }
+          | { authenticated: true; sub?: string; redirectTo?: string }
           | { authenticated: false }
           | null
         if (cancelled) return
-        if (json && (json as any).authenticated === true) {
+        if (json && (json as { authenticated?: boolean }).authenticated === true) {
+          const sub = (json as { sub?: string }).sub || ''
+          const redirectTo =
+            (json as { redirectTo?: string }).redirectTo || '/gateway/workspace/'
+          if (onLoginPage) {
+            setState(s => ({
+              ...s,
+              existingSession: sub ? { sub, redirectTo } : null,
+              isCheckingSession: false,
+            }))
+            return
+          }
           setState(s => ({
             ...s,
             step: 'authenticated',
-            redirectTo: (json as any).redirectTo || '/gateway/workspace/',
-            username: (json as any).sub || s.username,
+            redirectTo,
+            username: sub || s.username,
             error: null,
             isLoading: false,
             isCheckingSession: false,
+            existingSession: null,
           }))
           return
         }
       } catch {
         // Ignore: keep credentials step
       }
-      if (!cancelled) setState(s => ({ ...s, isCheckingSession: false }))
+      if (!cancelled) setState(s => ({ ...s, isCheckingSession: false, existingSession: null }))
     })()
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [onLoginPage])
 
   /**
    * Step 1 — POST /api/admin/login
@@ -150,6 +168,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       error: null,
       isLoading: false,
       isCheckingSession: false,
+      existingSession: null,
     })
     window.location.assign('/gateway/')
   }, [])

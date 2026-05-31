@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { SignJWT, jwtVerify } from 'jose'
+import { authJwtExpiresIn, withAuthMaxAge } from '@/lib/auth/cookiePolicy'
 
 export const runtime = 'nodejs'
 
@@ -31,7 +32,7 @@ export async function GET(req: NextRequest) {
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt(now)
     .setIssuer('innotech-honeynet')
-    .setExpirationTime('8h')
+    .setExpirationTime(authJwtExpiresIn())
     .sign(getKey())
 
   const nextPath = req.nextUrl.searchParams.get('next') || '/gateway/workspace/'
@@ -43,15 +44,16 @@ export async function GET(req: NextRequest) {
   // (important behind reverse proxies / Cloudflare Tunnel where the upstream host differs).
   const res = NextResponse.redirect(req.nextUrl)
   res.headers.set('Location', safeNext)
-  res.cookies.set({
-    name: 'admin_auth',
-    value: auth,
-    httpOnly: true,
-    sameSite: 'strict',
-    secure: process.env.NODE_ENV === 'production',
-    path: '/',
-    maxAge: 60 * 60 * 8,
-  })
+  res.cookies.set(
+    withAuthMaxAge({
+      name: 'admin_auth',
+      value: auth,
+      httpOnly: true,
+      sameSite: 'strict',
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+    }),
+  )
   return res
 }
 

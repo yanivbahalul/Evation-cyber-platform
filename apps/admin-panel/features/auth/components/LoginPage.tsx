@@ -11,7 +11,8 @@ import { useAuth } from '@/features/auth/context/AuthContext'
  * Everyone lands on `/gateway/workspace/`; attack monitor is optional for DB role `admin`.
  */
 export default function LoginPage() {
-  const { step, error, isLoading, submitCredentials, submitOtp, redirectTo } = useAuth()
+  const { step, error, isLoading, isCheckingSession, existingSession, submitCredentials, submitOtp, redirectTo, logout } =
+    useAuth()
   const router = useRouter()
 
   const [username, setUsername] = useState('')
@@ -77,6 +78,30 @@ export default function LoginPage() {
             <StepDot active={step === 'otp'} done={step === 'authenticated'} label="2" />
           </div>
 
+          {existingSession && step === 'credentials' && (
+            <div className="mb-4 rounded-lg border border-primary/30 bg-primary/10 px-3 py-3 text-sm">
+              <p className="text-foreground font-medium">
+                Already signed in as <span className="font-mono">{existingSession.sub}</span>
+              </p>
+              <div className="mt-3 flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={() => window.location.assign(existingSession.redirectTo)}
+                  className="w-full rounded-lg bg-primary py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
+                >
+                  Continue to portal
+                </button>
+                <button
+                  type="button"
+                  onClick={() => logout()}
+                  className="w-full rounded-lg border border-border py-2 text-sm text-muted-foreground hover:bg-surface-elevated"
+                >
+                  Sign out and use another account
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Error */}
           {error && (
             <div className="flex items-center gap-2 bg-danger/10 border border-danger/30 rounded-lg px-3 py-2 mb-4 text-danger text-sm">
@@ -85,8 +110,15 @@ export default function LoginPage() {
             </div>
           )}
 
+          {isCheckingSession && (
+            <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Checking session…
+            </div>
+          )}
+
           {/* Step 1: Credentials */}
-          {step === 'credentials' && (
+          {step === 'credentials' && !isCheckingSession && !existingSession && (
             <form onSubmit={handleCredentials} className="flex flex-col gap-4">
               <div>
                 <label className="block text-xs font-mono text-muted-foreground mb-1.5 uppercase tracking-wider">

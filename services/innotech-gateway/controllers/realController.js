@@ -2,6 +2,7 @@ const RealEmployee = require('../models/RealEmployee');
 const AdminUser = require('../models/AdminUser');
 const bcrypt = require('bcryptjs'); // [cite: 22]
 const { signAuthToken } = require('../middleware/auth');
+const { authCookieOptions, clearAllAuthCookies } = require('../utils/authCookies');
 const { TOTP, generateURI, verify, NobleCryptoPlugin, ScureBase32Plugin } = require('otplib');
 const QRCode = require('qrcode');
 const jwt = require('jsonwebtoken');
@@ -75,13 +76,7 @@ function finishBlueTeamOperatorLogin(req, res, { username, gatewaySub, gatewayRo
         username,
         role: gatewayRole,
     });
-    res.cookie('auth', gatewayAuth, {
-        httpOnly: true,
-        sameSite: 'lax',
-        secure: process.env.NODE_ENV === 'production',
-        path: '/',
-        maxAge: 1000 * 60 * 60 * 8,
-    });
+    res.cookie('auth', gatewayAuth, authCookieOptions('lax'));
     const homePath = '/gateway/workspace/';
     return {
         // Use a relative redirect so we stay on the current origin (works behind nginx, LAN IPs, and Cloudflare Tunnel).
@@ -223,13 +218,8 @@ exports.verifyRegistrationOtp = async (req, res) => {
 
         // Auto-login after enrollment
         const token = signAuthToken({ sub: String(user._id), username: user.username, role: user.role });
-        res.cookie('auth', token, {
-            httpOnly: true,
-            sameSite: 'lax',
-            secure: process.env.NODE_ENV === 'production',
-            path: '/',
-            maxAge: 1000 * 60 * 60 * 8,
-        });
+        clearAdminAuthCookie(res);
+        res.cookie('auth', token, authCookieOptions('lax'));
         setPreAuthCookie(res, '', 0);
         res.redirect(req.withBase('/me'));
     } catch (err) {
@@ -246,6 +236,7 @@ exports.renderLoginPage = (req, res) => {
 exports.loginUser = async (req, res) => {
     if (req.trapHandled || res.headersSent) return;
     try {
+        clearAllAuthCookies(res);
         const { username, password } = req.body;
         const cleanUsername = (username || '').trim();
         const cleanPassword = password || '';
@@ -360,13 +351,7 @@ exports.verifyLoginOtp = async (req, res) => {
 
             const token = signAuthToken({ sub: String(u._id), username: u.username, role: u.role || 'user' });
             clearAdminAuthCookie(res);
-            res.cookie('auth', token, {
-                httpOnly: true,
-                sameSite: 'lax',
-                secure: process.env.NODE_ENV === 'production',
-                path: '/',
-                maxAge: 1000 * 60 * 60 * 8,
-            });
+            res.cookie('auth', token, authCookieOptions('lax'));
             setPreAuthCookie(res, '', 0);
             return res.redirect(req.withBase(next));
         }
@@ -394,13 +379,7 @@ exports.verifyLoginOtp = async (req, res) => {
 
         const token = signAuthToken({ sub: String(user._id), username: user.username, role: user.role || 'user' });
         clearAdminAuthCookie(res);
-        res.cookie('auth', token, {
-            httpOnly: true,
-            sameSite: 'lax',
-            secure: process.env.NODE_ENV === 'production',
-            path: '/',
-            maxAge: 1000 * 60 * 60 * 8,
-        });
+        res.cookie('auth', token, authCookieOptions('lax'));
         res.redirect(req.withBase(next));
     } catch (err) {
         res.status(500).render('login', { user: null, error: 'OTP verification error. Please try again.', username: '' });
@@ -408,9 +387,7 @@ exports.verifyLoginOtp = async (req, res) => {
 };
 
 exports.logoutUser = async (req, res) => {
-    res.cookie('auth', '', { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', path: '/', maxAge: 0 });
-    res.cookie('preauth', '', { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', path: '/', maxAge: 0 });
-    clearAdminAuthCookie(res);
+    clearAllAuthCookies(res);
     res.redirect(req.withBase('/'));
 };
 

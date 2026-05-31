@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const { authJwtExpiresIn } = require('../utils/authCookies');
 const AdminUser = require('../models/AdminUser');
 const RealEmployee = require('../models/RealEmployee');
 
@@ -19,7 +20,11 @@ function getJwtSecret() {
 
 function signAuthToken(payload) {
   const secret = getJwtSecret();
-  return jwt.sign(payload, secret, { algorithm: 'HS256', expiresIn: '8h', issuer: 'innotech-gateway' });
+  return jwt.sign(payload, secret, {
+    algorithm: 'HS256',
+    expiresIn: authJwtExpiresIn(),
+    issuer: 'innotech-gateway',
+  });
 }
 
 function verifyAuthToken(token) {

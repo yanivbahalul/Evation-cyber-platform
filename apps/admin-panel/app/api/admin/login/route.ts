@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server'
+import { clearedAuthCookies, pre2faMaxAgeSeconds, withAuthMaxAge } from '@/lib/auth/cookiePolicy'
 import { signJwt } from '@/lib/auth/jwt'
 import { getAdminModels } from '@/lib/server/adminDb'
 import { getSafezoneModels } from '@/lib/server/safezoneDb'
@@ -10,6 +11,14 @@ export const runtime = 'nodejs'
 
 function jsonError(message: string, status = 400) {
   return NextResponse.json({ success: false, error: message }, { status })
+}
+
+function loginResponse(body: object, status = 200) {
+  const res = NextResponse.json(body, { status })
+  for (const cookie of clearedAuthCookies()) {
+    res.cookies.set(cookie)
+  }
+  return res
 }
 
 export async function POST(req: NextRequest) {
@@ -60,16 +69,20 @@ export async function POST(req: NextRequest) {
     const role = ((user as any).role as string | undefined) || 'user'
     const kind = role === 'admin' ? 'admin' : 'safezone'
     const pre2fa = await signJwt({ sub: username, kind }, 'pre2fa', '5m')
-    const res = NextResponse.json({ success: true, next: 'otp' })
-    res.cookies.set({
-      name: 'pre_2fa',
-      value: pre2fa,
-      httpOnly: true,
-      sameSite: 'strict',
-      secure: process.env.NODE_ENV === 'production',
-      path: '/',
-      maxAge: 60 * 5,
-    })
+    const res = loginResponse({ success: true, next: 'otp' })
+    res.cookies.set(
+      withAuthMaxAge(
+        {
+          name: 'pre_2fa',
+          value: pre2fa,
+          httpOnly: true,
+          sameSite: 'strict',
+          secure: process.env.NODE_ENV === 'production',
+          path: '/',
+        },
+        pre2faMaxAgeSeconds(),
+      ),
+    )
     return res
   } catch {
     // If admin DB auth fails, fall through to Safe Zone (regular user) auth below.
@@ -84,16 +97,20 @@ export async function POST(req: NextRequest) {
     if (!ok) return jsonError('Invalid credentials', 401)
 
     const pre2fa = await signJwt({ sub: username, kind: 'safezone' }, 'pre2fa', '5m')
-    const res = NextResponse.json({ success: true, next: 'otp' })
-    res.cookies.set({
-      name: 'pre_2fa',
-      value: pre2fa,
-      httpOnly: true,
-      sameSite: 'strict',
-      secure: process.env.NODE_ENV === 'production',
-      path: '/',
-      maxAge: 60 * 5,
-    })
+    const res = loginResponse({ success: true, next: 'otp' })
+    res.cookies.set(
+      withAuthMaxAge(
+        {
+          name: 'pre_2fa',
+          value: pre2fa,
+          httpOnly: true,
+          sameSite: 'strict',
+          secure: process.env.NODE_ENV === 'production',
+          path: '/',
+        },
+        pre2faMaxAgeSeconds(),
+      ),
+    )
     return res
   } catch (err: any) {
     const isProd = process.env.NODE_ENV === 'production'

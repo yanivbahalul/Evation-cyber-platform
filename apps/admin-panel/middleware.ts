@@ -1,5 +1,9 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { canAccessAttackMonitorEdge, PORTAL_HOME, resolvePortalUsernameEdge } from '@/lib/auth/portalAccessEdge'
+import {
+  dbRoleForUsername,
+  portalHomePath,
+  resolvePortalUsername,
+} from '@/lib/auth/portalAccess'
 import { applyGatewayClientIpHeaders, resolveMiddlewareClientIp } from '@/lib/forwardGatewayClientIp'
 
 /**
@@ -38,10 +42,7 @@ function adminPathScope(pathname: string): boolean {
   return false
 }
 
-/**
- * Block non-admin operators from the Blue Team dashboard URL before the page shell loads.
- * Edge-safe: JWT cookies only. DB role is enforced again in /api/portal/session.
- */
+/** Block non-admin operators from the attack monitor before the page shell loads (DB role). */
 function edgeSecretsConfigured() {
   return !!(process.env.JWT_SECRET || process.env.GATEWAY_JWT_SECRET)
 }
@@ -52,13 +53,13 @@ function nextWithGatewayClientIp(req: NextRequest) {
 }
 
 async function requireAttackMonitorAccess(req: NextRequest) {
-  const username = await resolvePortalUsernameEdge(req)
+  const username = await resolvePortalUsername(req)
   if (!username) {
     return NextResponse.redirect(new URL('/gateway/login/', req.url))
   }
-  const allowed = await canAccessAttackMonitorEdge(req)
-  if (!allowed) {
-    return NextResponse.redirect(new URL(PORTAL_HOME, req.url))
+  const role = await dbRoleForUsername(username)
+  if (role !== 'admin') {
+    return NextResponse.redirect(new URL(portalHomePath(), req.url))
   }
   return null
 }
