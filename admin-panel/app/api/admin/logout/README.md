@@ -1,4 +1,5 @@
-logout
-Owner: Yaniv
+# `POST /api/admin/logout`
 
-POST clear auth cookies.
+> **Owner:** Yaniv
+
+Clears the authentication cookies, ending the admin session.

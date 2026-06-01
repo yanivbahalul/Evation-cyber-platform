@@ -1,8 +1,11 @@
-## EJS PARTIALS
+# EJS Partials
 
-Shared layout fragments for gateway pages.
+Shared layout fragments included by both the real and decoy templates.
 
-  head.ejs, foot.ejs, sidebar.ejs, topbar.ejs     — Real HR UI (Sagiv)
-  decoy-sidebar.ejs, decoy-kill-chain.ejs         — Decoy kill-chain UI (Bar)
+| Files | Owner | Used by |
+|-------|-------|---------|
+| `head.ejs`, `foot.ejs`, `sidebar.ejs`, `topbar.ejs` | Sagiv | Real HR portal |
+| `decoy-sidebar.ejs`, `decoy-kill-chain.ejs` | Bar | Decoy kill-chain UI |
 
-Included by both safe zone and decoy templates.
+Keeping layout in partials means the real and fake pages share a look, so the decoy is
+harder to tell apart from the genuine portal.

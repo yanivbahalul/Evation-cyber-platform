@@ -1,9 +1,13 @@
-## DASHBOARD FEATURE (UI)
+# Dashboard Feature
 
-Owner: Yaniv — Missions 4.2 and 4.3
+> **Owner:** Yaniv · **Missions 4.2 & 4.3** — Real-time UI & live map
 
-  components/  ThreatMap, LeafletMap, AttackEventsTable, AttackerProfiles,
-               HoneyTokenPanel, Sidebar, TopBar, stats widgets
-  context/     SocketContext — binds socket.io-client to React state
+The live attack monitor — the centerpiece of the Blue Team interface.
 
-Live updates when Max broadcasts liveAlert. Geo from Max's geoService via API.
+| Folder | What's inside |
+|--------|---------------|
+| [`components/`](components/) | `ThreatMap`, `LeafletMap`, `AttackEventsTable`, `AttackerProfiles`, `HoneyTokenPanel`, `Sidebar`, `TopBar`, stat widgets |
+| [`context/`](context/) | `SocketContext` — binds `socket.io-client` to React state |
+
+Panels re-render the instant Max broadcasts a `liveAlert`; map coordinates come from the
+telemetry `geoService`.

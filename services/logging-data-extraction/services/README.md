@@ -1,13 +1,18 @@
-## TELEMETRY SERVICES
+# Telemetry Services
 
-Owner: Max
+> **Owner:** Max
 
-  AttackEventService.js     Persists attack_events collection
-  AttackerProfileService.js Upserts attacker profiles, banned IP reads
-  honeyTokenService.js      Honey token lifecycle
-  SocketService.js          socket.io liveAlert broadcast (Mission 3.2)
-  geoService.js             IP to lat/long for Yaniv's map (Mission 4.3)
-  LoggerService.js          Structured logging / wasted_time_ms metrics
+The business logic behind the internal API.
 
-Mission 3.1: User-Agent and header fingerprinting into JSON profiles.
-Mission 3.3: All writes use separate mongoose connection — no safezone leak.
+| File | Responsibility |
+|------|----------------|
+| `AttackEventService.js` | Writes documents to the `attack_events` collection |
+| `AttackerProfileService.js` | Upserts attacker profiles; reads banned IPs |
+| `honeyTokenService.js` | Honey-token create / check / usage |
+| `SocketService.js` | Socket.IO server + `liveAlert` broadcast (Mission 3.2) |
+| `geoService.js` | IP → latitude/longitude for the dashboard map (feeds Mission 4.3) |
+| `LoggerService.js` | Structured logging and metrics such as `wasted_time_ms` |
+
+- **Mission 3.1** — User-Agent and header fingerprinting into JSON attacker profiles.
+- **Mission 3.3** — all writes go through a separate Mongoose connection, so there is zero
+  cross-contamination with the safezone database.

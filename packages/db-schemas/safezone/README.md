@@ -1,8 +1,11 @@
-## SAFEZONE SCHEMAS
+# Safezone Schemas
 
-Owner: Sagiv Levy (REAL_EMPLOYEE spec)
+> **Owner:** Sagiv Levy · spec `REAL_EMPLOYEE`
 
-  RealEmployee.js  — real_employees collection (HR portal users)
-  SafezoneUser.js  — legacy/supporting safezone user model
+| File | Collection | Purpose |
+|------|------------|---------|
+| `RealEmployee.js` | `real_employees` | Real HR portal users |
+| `SafezoneUser.js` | — | Legacy / supporting safezone user model |
 
-Legitimate app only. bcrypt passwords. Never mixed with Max's malicious DB.
+Legitimate app only. Passwords are hashed with **bcrypt**, and this data is never mixed
+with the malicious database (Max).

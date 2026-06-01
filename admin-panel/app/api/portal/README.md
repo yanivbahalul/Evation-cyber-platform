@@ -1,5 +1,7 @@
-## PORTAL API
+# Portal API
 
-Owner: Yaniv (bridge to Sagiv's gateway session)
+> **Owner:** Yaniv · bridge to Sagiv's gateway session
 
-  session/ — Exposes portal role/session for gateway dashboard link in HR UI
+| Route | Purpose |
+|-------|---------|
+| [`session/`](session/) | Exposes the portal role/session so the gateway can show the dashboard link to admins |

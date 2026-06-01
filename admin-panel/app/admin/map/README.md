@@ -1,4 +1,5 @@
-map
-Owner: Yaniv
+# /admin/map
 
-Protected route alias to map tab.
+> **Owner:** Yaniv
+
+Protected route alias that redirects to the dashboard **map** tab.

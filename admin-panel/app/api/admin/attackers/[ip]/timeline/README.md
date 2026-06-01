@@ -1,4 +1,6 @@
-timeline
-Owner: Yaniv
+# `GET /api/admin/attackers/[ip]/timeline`
 
-Attacker profile endpoints.
+> **Owner:** Yaniv
+
+Returns the full, ordered event timeline for a single attacker IP — the data behind the
+investigation drill-down view.

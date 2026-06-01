@@ -1,4 +1,5 @@
-ban
-Owner: Yaniv
+# /admin/ban
 
-POST ban IP; syncs to Max banned-ips for Sagiv gatekeeper.
+> **Owner:** Yaniv
+
+Protected route alias that redirects to the dashboard **ban management** tab.

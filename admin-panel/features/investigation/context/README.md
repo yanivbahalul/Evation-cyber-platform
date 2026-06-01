@@ -1,5 +1,6 @@
-## INVESTIGATION CONTEXT
+# Investigation Context
 
-Owner: Yaniv
+> **Owner:** Yaniv
 
-InvestigationContext — selected attacker, events, chain view state.
+`InvestigationContext` — tracks the selected attacker, their events, and the chain-view
+state shared across the investigation components.

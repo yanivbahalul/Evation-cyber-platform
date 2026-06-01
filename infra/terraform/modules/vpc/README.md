@@ -1,4 +1,5 @@
-TERRAFORM MODULE — VPC
-Owner: Sagiv Levy
+# Terraform Module — VPC
 
-AWS VPC, subnets, routing for the honeypot production stack.
+> **Owner:** Sagiv Levy
+
+Provisions the AWS VPC, subnets, and routing for the honeypot production stack.

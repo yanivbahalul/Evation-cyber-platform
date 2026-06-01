@@ -1,5 +1,5 @@
-## INVESTIGATION COMPONENTS
+# Investigation Components
 
-Owner: Yaniv
+> **Owner:** Yaniv
 
-EventDetailPanel and timeline UI for single-attacker drill-down.
+`EventDetailPanel` and the timeline UI used to drill into a single attacker's activity.

@@ -1,4 +1,6 @@
-TERRAFORM MODULE — ECR
-Owner: Sagiv Levy
+# Terraform Module — ECR
 
-Elastic Container Registry — stores Docker images built from infra/docker.
+> **Owner:** Sagiv Levy
+
+Provisions the Elastic Container Registry that stores the Docker images built from
+[`../../../docker`](../../../docker).

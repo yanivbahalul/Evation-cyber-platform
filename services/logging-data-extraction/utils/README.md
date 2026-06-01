@@ -1,5 +1,7 @@
-## TELEMETRY UTILS
+# Telemetry Utils
 
-Owner: Max
+> **Owner:** Max
 
-  buildAttackEvent.js — Normalizes gateway trap payload into AttackEvent document fields
+| File | Purpose |
+|------|---------|
+| `buildAttackEvent.js` | Normalizes a raw trap payload from the gateway into the fields of an `AttackEvent` document |

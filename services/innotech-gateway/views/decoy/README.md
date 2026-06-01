@@ -1,10 +1,14 @@
-## DECOY VIEWS
+# Decoy Views
 
-Owner: Bar (Mission 2.1 and 2.3 — Decoy UI)
+> **Owner:** Bar · **Missions 2.1 & 2.3** — Decoy UI
 
-Each .ejs file is a fake "vulnerable" page shown after Gatekeeper (Sagiv)
-silently reroutes the request. Attacker should believe they reached a real system.
+Every `.ejs` file here is a fake "vulnerable" page rendered after the Gatekeeper (Sagiv)
+silently reroutes a malicious request. The goal is for the attacker to believe they
+reached a real, exploitable system.
 
-Paired trap logic lives in ../traps/ and decoyController.js.
+- Paired trap logic lives in [`../../traps/`](../../traps) and `decoyController.js`.
+- The fake admin dashboard is reseeded with random **Faker.js** data on every request, so
+  scrapers never see the same thing twice.
 
-Do not link these URLs from the real HR UI (Blue Team only for demos).
+> **Blue team only:** never link these URLs from the real HR UI. They exist purely to
+> trap and observe attackers.

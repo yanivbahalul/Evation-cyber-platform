@@ -1,8 +1,12 @@
-## INVESTIGATION FEATURE (UI)
+# Investigation Feature
 
-Owner: Yaniv
+> **Owner:** Yaniv
 
-  components/  EventDetailPanel, timeline views
-  context/     InvestigationContext
+Drill-down view for a single attacker — the story of one IP across the whole kill chain.
 
-Per-attacker chain timeline (attacker_trace_id from Bar's kill-chain decoys).
+| Folder | What's inside |
+|--------|---------------|
+| [`components/`](components/) | `EventDetailPanel` and timeline views |
+| [`context/`](context/) | `InvestigationContext` — selected attacker, events, chain state |
+
+Chains are linked by the `attacker_trace_id` cookie set by Bar's kill-chain decoys.

@@ -1,17 +1,18 @@
-# Lib (shared admin-panel code)
+# Lib (Shared Admin-Panel Code)
 
-**Owner:** Yaniv
+> **Owner:** Yaniv
 
-## What is here
+Non-UI building blocks shared across pages and API routes.
 
-| Folder | Contents |
-|--------|----------|
-| `auth/` | JWT (edge + node), TOTP, portal access, cookies, `requireAdmin` |
-| `db/` | Connections to safezone and malicious DB for admin reads |
-| `security/` | TOTP secret encryption |
-| `server/` | `fetchDashboardData`, `telemetryDb`, `adminDb` helpers |
-| `types/` | TypeScript types for API payloads |
+| Folder | What's inside |
+|--------|---------------|
+| [`auth/`](auth/) | JWT (edge + node), TOTP, portal access, cookies, `requireAdmin` |
+| [`db/`](db/) | Connections to the safezone and malicious DBs for admin reads |
+| [`security/`](security/) | TOTP secret encryption |
+| [`server/`](server/) | `fetchDashboardData`, `telemetryDb`, `adminDb` helpers |
+| [`types/`](types/) | TypeScript types for API payloads |
 
-**Mission 4.1:** HttpOnly JWT cookies, 2FA enrollment, protected `/admin/*` APIs.
+**Mission 4.1:** HttpOnly JWT cookies, 2FA enrollment, and protected `/admin/*` APIs.
 
-Schemas come from `packages/db-schemas` (Sagiv = admin/safezone, Max = malicious).
+Schemas come from [`../../packages/db-schemas`](../../packages/db-schemas) (Sagiv =
+admin/safezone, Max = malicious).

@@ -1,9 +1,9 @@
-## SHARED UTILITIES
+# Shared Utils
 
-Shared helpers.
+Small cross-service helpers.
 
-  getAttackerIp.js  — Reads true client IP from X-Forwarded-For (Sagiv's Nginx headers)
-  fingerprint.js    — Header/OSINT parsing (Max Mission 3.1)
-  startupLog.js     — Consistent service startup logging
-
-Primary owners: Sagiv (IP from proxy), Max (fingerprint payload for telemetry).
+| File | Owner | Purpose |
+|------|-------|---------|
+| `getAttackerIp.js` | Sagiv | Reads the true client IP from `X-Forwarded-For` (set by Nginx) |
+| `fingerprint.js` | Max | Parses headers/OSINT into an attacker fingerprint (Mission 3.1) |
+| `startupLog.js` | — | Consistent service startup logging |

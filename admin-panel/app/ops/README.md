@@ -1,5 +1,5 @@
-## OPS PAGES
+# Ops Pages
 
-Owner: Yaniv
+> **Owner:** Yaniv
 
-Internal operational pages for maintainers (not attacker-facing).
+Internal operational pages for maintainers. Not attacker-facing.

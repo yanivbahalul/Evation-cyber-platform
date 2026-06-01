@@ -1,5 +1,6 @@
-## AUTH CONTEXT
+# Auth Context
 
-Owner: Yaniv
+> **Owner:** Yaniv
 
-AuthContext — client-side auth state for admin panel pages.
+`AuthContext` — holds the client-side auth/session state and exposes it to the admin panel
+pages and components.

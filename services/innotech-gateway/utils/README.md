@@ -1,8 +1,12 @@
-## GATEWAY UTILS
+# Gateway Utils
 
+Small helpers used across the gateway.
 
-  telemetryClient.js  Reports traps to Max's POST /internal/attack (all traps)
-  authCookies.js      Session cookies for safezone (Sagiv)
-  adminTotpCrypto.js  TOTP helpers for gateway admin login (Sagiv/Yaniv overlap)
+| File | Owner | Purpose |
+|------|-------|---------|
+| `telemetryClient.js` | Bar + Max | Reports every trap to the telemetry `POST /internal/attack` endpoint |
+| `authCookies.js` | Sagiv | Sets/reads safezone session cookies |
+| `adminTotpCrypto.js` | Sagiv + Yaniv | TOTP helpers for gateway admin login |
 
-Bar's traps call telemetryClient after firing so Max + Yaniv see live alerts.
+After a trap fires, `telemetryClient` is what makes the event show up live on the
+dashboard (Max → Yaniv).

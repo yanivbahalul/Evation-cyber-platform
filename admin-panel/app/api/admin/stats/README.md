@@ -1,4 +1,6 @@
-stats
-Owner: Yaniv
+# `GET /api/admin/stats`
 
-GET live counters (wasted time, bandwidth, bans).
+> **Owner:** Yaniv
+
+Returns the live headline counters — wasted attacker time, bandwidth burned, and active
+bans.

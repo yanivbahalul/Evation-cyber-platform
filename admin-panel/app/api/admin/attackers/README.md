@@ -1,4 +1,10 @@
-attackers
-Owner: Yaniv
+# `/api/admin/attackers`
 
-Attacker profile endpoints.
+> **Owner:** Yaniv
+
+Attacker intel endpoints.
+
+| Route | Method | Purpose |
+|-------|--------|---------|
+| `attackers/` | `GET` | List attacker profiles |
+| `attackers/[ip]/timeline/` | `GET` | Full event timeline for one IP |

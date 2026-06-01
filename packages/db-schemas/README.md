@@ -1,10 +1,16 @@
-DB SCHEMAS (Mongoose)
+# DB Schemas
 
-  admin/      Owner: Sagiv — AdminUser (admin_users) for Blue Team accounts
-  safezone/   Owner: Sagiv — RealEmployee, SafezoneUser (legitimate HR data)
-  malicious/  Owner: Max — AttackerProfile, AttackEvent, HoneyToken
-  connect.js  Factory for safezone vs malicious connections (air-gap)
+Mongoose models for all three data zones, organized by owner. The folders are kept
+separate to enforce the **air-gap** between legitimate and attacker data.
 
-Mission 3.3: malicious/ uses mongoose.createConnection() — separate pool from safezone.
+| Folder | Owner | Database | Models |
+|--------|-------|----------|--------|
+| [`admin/`](admin/) | Sagiv | safezone | `AdminUser` |
+| [`safezone/`](safezone/) | Sagiv | safezone | `RealEmployee`, `SafezoneUser` |
+| [`malicious/`](malicious/) | Max | malicious | `AttackerProfile`, `AttackEvent`, `HoneyToken` |
+| `connect.js` | — | — | Connection factory (safezone vs malicious pools) |
 
-Yaniv reads malicious data via admin-panel and telemetry; does not own schemas.
+**Mission 3.3:** the malicious models use `mongoose.createConnection()` — a separate pool
+from the safezone, so the two databases never share a connection.
+
+Yaniv reads malicious data via the admin panel and telemetry but does not own the schemas.

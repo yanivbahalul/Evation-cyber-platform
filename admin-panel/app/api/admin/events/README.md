@@ -1,4 +1,5 @@
-events
-Owner: Yaniv
+# `GET /api/admin/events`
 
-GET paginated attack events from malicious DB.
+> **Owner:** Yaniv
+
+Returns paginated attack events from the malicious DB for the events table and feed.

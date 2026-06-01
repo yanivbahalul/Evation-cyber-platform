@@ -1,8 +1,12 @@
-## PROTECTED ADMIN ALIASES
+# Protected Admin Aliases
 
-Owner: Yaniv
+> **Owner:** Yaniv
 
-  map/ — Redirect/alias to dashboard map tab
-  ban/ — Redirect/alias to ban management tab
+Short, memorable URLs that redirect into dashboard tabs.
 
-Protected by middleware.ts and portalAccessEdge.
+| Route | Goes to |
+|-------|---------|
+| [`map/`](map/) | Dashboard map tab |
+| [`ban/`](ban/) | Ban management tab |
+
+Both are protected by `middleware.ts` and [`portalAccessEdge`](../../lib/auth).

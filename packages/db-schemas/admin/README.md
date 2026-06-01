@@ -1,6 +1,9 @@
-## ADMIN SCHEMAS
+# Admin Schemas
 
-Owner: Sagiv Levy (ADMIN_USER spec)
+> **Owner:** Sagiv Levy · spec `ADMIN_USER`
 
-  AdminUser.js — admin_users collection
-  Blue Team operator accounts (used with Yaniv's JWT/2FA login flow)
+| File | Collection | Purpose |
+|------|------------|---------|
+| `AdminUser.js` | `admin_users` | Blue Team operator accounts |
+
+Used by Yaniv's JWT + 2FA login flow in the admin panel.

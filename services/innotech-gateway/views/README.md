@@ -1,17 +1,23 @@
-VIEWS (EJS templates)
+# Views (EJS Templates)
 
-  Root *.ejs          Owner: Sagiv — Real InnoTech HR portal (login, workspace, etc.)
-  partials/           Shared layout (head, sidebar, topbar) for real and decoy pages
-  decoy/              Owner: Bar — Fake vulnerable UIs shown after traps fire
+Server-rendered pages for the gateway. The root templates are the **real** HR portal;
+[`decoy/`](decoy/) holds the **fake** vulnerable UIs shown to attackers.
 
-Decoy pages (Bar):
-  database-console.ejs   SQLi trap fake query UI
-  fake-login.ejs         Brute-force / legacy auth decoy
-  honey-token.ejs        Fake API keys
-  sandbox-xss.ejs        XSS submission page
-  file-viewer.ejs        Path traversal (LFI) decoy
-  fetch-status.ejs       SSRF decoy
-  admin-dashboard.ejs    Dynamic fake admin (Faker.js data)
-  credential-dump.ejs    Fake leak page
+| Path | Owner | Purpose |
+|------|-------|---------|
+| Root `*.ejs` (`index`, `login`, `profile`, …) | Sagiv | Real InnoTech HR portal |
+| [`partials/`](partials/) | Sagiv + Bar | Shared layout fragments (head, sidebar, topbar) |
+| [`decoy/`](decoy/) | Bar | Fake "vulnerable" pages triggered by traps |
 
-Mission 2.3: admin-dashboard uses randomized realistic data per request.
+## Decoy pages (`decoy/`)
+
+| File | Trap it sells |
+|------|---------------|
+| `database-console.ejs` | SQLi — fake query console |
+| `fake-login.ejs` | Brute-force / legacy auth |
+| `honey-token.ejs` | Fake API keys |
+| `sandbox-xss.ejs` | XSS submission form |
+| `file-viewer.ejs` | Path traversal (LFI) |
+| `fetch-status.ejs` | SSRF |
+| `admin-dashboard.ejs` | Fake admin — randomized **Faker.js** data per request (Mission 2.3) |
+| `credential-dump.ejs` | Fake credential leak |

@@ -1,21 +1,23 @@
 # Traps
 
-**Owner:** Bar (Mission 2.2 — Trap implementation)
+> **Owner:** Bar · **Mission 2.2** — Trap implementation & memory management
 
-## Files
+Each module wastes an attacker's CPU, bandwidth, and time **without** destabilizing the
+host. Streams and async delays keep the Node event loop free for real users.
 
-| File | Purpose |
-|------|---------|
-| `dataBomb.js` | Streams large fake download (bandwidth waste) |
-| `fakeLogin.js` | Simulated brute-force lockout delays |
-| `honeyToken.js` | Fake API keys page + trackable credentials |
-| `sandboxXSS.js` | Safe XSS logging environment |
-| `tarpit.js` | Slow fake DB errors (holds connection open) |
-| `httpTrickle.js` | Slow HTTP response trickle |
-| `infiniteRedirect.js` | Redirect loop decoy |
+## Modules
 
-## Goal
+| File | Trap | Technique |
+|------|------|-----------|
+| `dataBomb.js` | Data bomb | Streams huge fake download with backpressure (`stream.pipe(res)`) so RAM stays flat |
+| `tarpit.js` | Tarpit | Slow fake DB errors via `setTimeout` + Promises — holds the connection open |
+| `fakeLogin.js` | Brute-force | Simulated delayed lockout on repeated login attempts |
+| `honeyToken.js` | Honey token | Serves trackable fake credentials / API keys |
+| `sandboxXSS.js` | XSS sandbox | Safe DOM that logs the payload instead of executing it |
+| `httpTrickle.js` | HTTP trickle | Drips the response a few bytes at a time |
+| `infiniteRedirect.js` | Redirect loop | Endless redirect decoy |
 
-Waste attacker CPU, bandwidth, and time without crashing the host. Uses streams and async delays so the Node event loop stays non-blocking.
+## Reporting
 
-Each trap reports to telemetry via `utils/telemetryClient.js` (Max's pipeline).
+After firing, each trap calls [`../utils/telemetryClient.js`](../utils) to report the event to the
+telemetry service (Max), which persists it and pushes a live alert to the dashboard (Yaniv).

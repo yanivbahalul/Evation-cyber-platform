@@ -1,8 +1,12 @@
-PACKAGES (shared monorepo libraries)
-Used by gateway, telemetry, and admin-panel via pnpm workspace.
+# Packages
 
-  db-schemas/        Mongoose models — split by student area below
-  shared-constants/  TRAP_TYPES enum (all students, keep in sync)
-  shared-utils/      getAttackerIp, fingerprint, startupLog (Sagiv + Max)
+Shared libraries consumed by every app and service through the pnpm workspace. One
+definition, used everywhere — so the gateway, telemetry, and admin panel stay in sync.
 
-Open each package folder for "README.md".
+| Package | Owner(s) | What it provides |
+|---------|----------|------------------|
+| [`db-schemas/`](db-schemas/) | Sagiv + Max | Mongoose models, split by zone (admin, safezone, malicious) |
+| [`shared-constants/`](shared-constants/) | All | `TRAP_TYPES` enum |
+| [`shared-utils/`](shared-utils/) | Sagiv + Max | `getAttackerIp`, `fingerprint`, `startupLog` |
+
+Open each package folder for details.

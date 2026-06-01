@@ -1,4 +1,5 @@
-debug
-Owner: Yaniv
+# `/api/admin/debug`
 
-Debug routes (dev only).
+> **Owner:** Yaniv
+
+Development-only diagnostic routes. See [`totp/`](totp/). Not for production use.

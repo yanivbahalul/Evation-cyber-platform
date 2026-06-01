@@ -1,13 +1,19 @@
-FEATURES (React UI modules)
-Owner: Yaniv
+# Features (React UI)
 
-What is here:
-  auth/           Login, register, 2FA UI components and context
-  dashboard/      Live attack monitor: map, events table, profiles, honey tokens
-  investigation/  Per-attacker timeline and event detail panel
+> **Owner:** Yaniv · **Missions 4.2 & 4.3**
 
-Mission 4.2 and 4.3 from Responsibilities.docx:
-  Real-time state from Socket.IO (useState/useEffect)
-  Leaflet map with GeoIP attack origins (ThreatMap, LeafletMap)
+The React UI of the admin panel, organized by feature. Each feature keeps its components
+and its context together.
 
-Max provides liveAlert events; this layer renders them.
+| Feature | What it does |
+|---------|--------------|
+| [`auth/`](auth/) | Login, register, and 2FA UI + session context |
+| [`dashboard/`](dashboard/) | Live attack monitor — map, events table, profiles, honey tokens |
+| [`investigation/`](investigation/) | Per-attacker timeline and event detail panel |
+
+## Real-time + map
+
+- State updates from Socket.IO via React hooks (`useState`/`useEffect`).
+- Attack origins are plotted on a Leaflet map (`ThreatMap`, `LeafletMap`) using GeoIP data.
+
+Max's backend emits the `liveAlert` events; this layer renders them.

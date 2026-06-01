@@ -1,5 +1,6 @@
-## AUTH COMPONENTS
+# Auth Components
 
-Owner: Yaniv
+> **Owner:** Yaniv
 
-LoginPage, RegisterPage, OTP UI components.
+The React components for signing in and enrolling 2FA: `LoginPage`, `RegisterPage`, and the
+OTP entry UI.

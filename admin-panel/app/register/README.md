@@ -1,5 +1,6 @@
-## REGISTER PAGE
+# Register Page
 
-Owner: Yaniv
+> **Owner:** Yaniv
 
-New admin account signup; 2FA enrollment; waits for role=admin grant.
+New admin account signup with 2FA enrollment. After registering, the account waits for an
+existing admin to grant the `admin` role.

@@ -1,13 +1,28 @@
-## SERVICES
+# Services
 
+The two Node.js backends that power the honeypot. The admin panel (`../admin-panel`) sits in front of them.
 
-Two Node.js backends:
+| Service | Port | Owner(s) | Role |
+|---------|------|----------|------|
+| [`innotech-gateway/`](innotech-gateway/) | `4001` | Sagiv + Bar | HR portal, Gatekeeper, and all traps |
+| [`logging-data-extraction/`](logging-data-extraction/) | `3002` | Max | Telemetry, malicious DB, live alerts |
 
-  innotech-gateway/         Port 4001 — HR portal + traps (Sagiv + Bar)
-  logging-data-extraction/  Port 3002 — Telemetry only (Max)
+## How a request flows
 
-Flow:
-  Browser → admin-panel → gateway detects attack → POST /internal/attack → telemetry
-  → malicious MongoDB + Socket.IO → admin-panel dashboard updates live.
+```text
+Browser
+   │
+   ▼
+admin-panel (:3000)  ──proxy /gateway/*──►  innotech-gateway (:4001)
+                                                  │  attack detected
+                                                  ▼  POST /internal/attack
+                                          logging-data-extraction (:3002)
+                                                  │
+                                   ┌──────────────┴──────────────┐
+                                   ▼                             ▼
+                          Malicious MongoDB            Socket.IO  ──►  dashboard (live)
+```
 
-See each service folder for "README.md".
+The gateway **never** writes to the malicious database — it only reports over HTTP, and the telemetry service owns every write and broadcast.
+
+See each service folder's `README.md` for details.

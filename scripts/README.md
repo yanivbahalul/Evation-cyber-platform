@@ -1,10 +1,10 @@
-SCRIPTS (repo root)
+# Scripts
 
-  yaniv-test/              Trap simulation against running server (pnpm trap:demo)
-  migrate-users-to-real-employees.js  One-time safezone DB migration (Sagiv schemas)
-  clear-attack-data.js     Wipe malicious DB test data (Max's DB)
-  demo-traps-lite.sh       Lightweight demo helper
+Repo-level utilities for QA, demos, and database maintenance.
 
-yaniv-test/ — Owner: Yaniv (QA for full stack; exercises Bar's traps via HTTP)
-
-Migration script supports Sagiv's RealEmployee schema move from legacy users.
+| Path | Owner | Purpose |
+|------|-------|---------|
+| [`yaniv-test/`](yaniv-test/) | Yaniv | End-to-end trap simulation (`pnpm trap:demo`, `pnpm trap:chain`) |
+| `migrate-users-to-real-employees.js` | Sagiv | One-time safezone migration to the `RealEmployee` schema |
+| `clear-attack-data.js` | Max | Wipes malicious-DB test data |
+| `demo-traps-lite.sh` | — | Lightweight demo helper |

@@ -1,5 +1,6 @@
-## TYPES
+# Types
 
-Owner: Yaniv
+> **Owner:** Yaniv
 
-TypeScript interfaces for dashboard events, attackers, API responses.
+Shared TypeScript interfaces for dashboard events, attacker profiles, and API
+request/response payloads — the contract between the UI and the API routes.

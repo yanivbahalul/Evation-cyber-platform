@@ -1,6 +1,10 @@
-## ADMIN SCRIPTS
+# Admin Panel Scripts
 
-Owner: Yaniv
+> **Owner:** Yaniv
 
-  applyDevPublicHost.cjs    — Sets dev LAN URL for socket/dashboard
-  benchDashboardQueries.cjs — Performance benchmark for dashboard DB reads
+Developer helper scripts for the admin panel.
+
+| File | Purpose |
+|------|---------|
+| `applyDevPublicHost.cjs` | Sets the dev LAN URL used by the socket/dashboard |
+| `benchDashboardQueries.cjs` | Benchmarks dashboard database read performance |

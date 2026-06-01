@@ -1,12 +1,19 @@
-TERRAFORM (AWS production)
-Owner: Sagiv Levy
+# Terraform (AWS Production)
 
-  main.tf, variables.tf, versions.tf — Root AWS stack
-  terraform.tfvars.example — Example variables
-  modules/
-    vpc/   Network
-    alb/   Load balancer
-    ecs/   Container service
-    ecr/   Container registry
+> **Owner:** Sagiv Levy
 
-Deploy guide: docs/DEPLOYMENT.md (if present) or README.md deploy section.
+Infrastructure-as-code for deploying the stack to AWS.
+
+| File | Purpose |
+|------|---------|
+| `main.tf`, `variables.tf`, `versions.tf` | Root AWS stack |
+| `terraform.tfvars.example` | Example variable values |
+| [`modules/`](modules/) | Reusable building blocks (vpc, alb, ecs, ecr) |
+
+```bash
+cd infra/terraform
+terraform init
+terraform plan
+```
+
+See the deploy section of the root [`README.md`](../../README.md) for the full workflow.

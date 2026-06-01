@@ -1,7 +1,12 @@
-## TELEMETRY CONFIG
+# Telemetry Config
 
-Owner: Max
+> **Owner:** Max · **Mission 3.3** — Air-gapped database
 
-  maliciousDb.js — Isolated connection to malicious MongoDB (Mission 3.3 air-gap)
+| File | Purpose |
+|------|---------|
+| `maliciousDb.js` | Isolated Mongoose connection to the malicious MongoDB |
 
-Requires MALICIOUS_DB_URI and ADMIN_SOCKET_TOKEN in environment.
+This dedicated connection pool (`mongoose.createConnection()`) guarantees an attacker
+cannot pivot from honeypot data into the safe system.
+
+**Requires** `MALICIOUS_DB_URI` and `ADMIN_SOCKET_TOKEN` in the environment.

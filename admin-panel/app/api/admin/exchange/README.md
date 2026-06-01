@@ -1,4 +1,5 @@
-exchange
-Owner: Yaniv
+# `GET /api/admin/exchange`
 
-Token/session exchange helper.
+> **Owner:** Yaniv
+
+Token/session exchange helper — bridges a verified login into an admin session cookie.

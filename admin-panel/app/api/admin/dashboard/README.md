@@ -1,4 +1,6 @@
-dashboard
-Owner: Yaniv
+# `GET /api/admin/dashboard`
 
-GET dashboard bundle for attack monitor UI.
+> **Owner:** Yaniv
+
+Returns the aggregated data bundle that powers the attack monitor (recent events, stats,
+profiles) in a single call.

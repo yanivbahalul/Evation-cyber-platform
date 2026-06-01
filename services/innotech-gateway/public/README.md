@@ -1,7 +1,8 @@
-## GATEWAY PUBLIC STATIC
+# Gateway Static Assets
 
-Owner: Sagiv Levy
+> **Owner:** Sagiv Levy
 
-  safezone.css and static assets for the legitimate HR portal look and feel.
+`safezone.css` and other static files that give the legitimate HR portal its corporate
+look and feel.
 
-Decoy pages use inline styles in EJS; main corporate CSS is here.
+Decoy pages mostly use inline styles in their EJS; the main shared stylesheet lives here.

@@ -1,10 +1,12 @@
-## TERRAFORM MODULES
+# Terraform Modules
 
-Owner: Sagiv Levy
+> **Owner:** Sagiv Levy
 
-  vpc/  Network
-  alb/  Load balancer
-  ecs/  Containers
-  ecr/  Image registry
+Reusable building blocks composed by the root Terraform stack.
 
-Each module has its own README.md.
+| Module | Provisions |
+|--------|------------|
+| [`vpc/`](vpc/) | Network — VPC, subnets, routing |
+| [`alb/`](alb/) | Application Load Balancer — public entry + TLS |
+| [`ecs/`](ecs/) | Container cluster + services |
+| [`ecr/`](ecr/) | Container image registry |

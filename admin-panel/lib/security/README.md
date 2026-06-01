@@ -1,5 +1,7 @@
-## SECURITY LIBRARY
+# Security Library
 
-Owner: Yaniv
+> **Owner:** Yaniv
 
-  totpSecretCrypto.ts — Encrypts TOTP secrets at rest for admin 2FA
+| File | Purpose |
+|------|---------|
+| `totpSecretCrypto.ts` | Encrypts TOTP secrets at rest so 2FA seeds are never stored in plain text |

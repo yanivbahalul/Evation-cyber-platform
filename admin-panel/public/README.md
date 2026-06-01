@@ -1,5 +1,5 @@
-## ADMIN PUBLIC
+# Public Assets
 
-Owner: Yaniv
+> **Owner:** Yaniv
 
-Static files for Next.js (favicon, images). No trap logic here.
+Static files served by Next.js (favicon, images). No application or trap logic lives here.

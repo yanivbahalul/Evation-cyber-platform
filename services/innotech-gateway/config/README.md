@@ -1,6 +1,6 @@
-## GATEWAY CONFIG
+# Gateway Config
 
-Owner: Sagiv Levy
+> **Owner:** Sagiv Levy
 
-Environment and app configuration (DB URIs, ports, feature flags).
-Loaded at gateway startup.
+Environment and application configuration for the gateway — database URIs, ports, and
+feature flags. Loaded at startup before the Express app boots.

@@ -1,6 +1,8 @@
-## ADMIN API
+# Admin API
 
-Owner: Yaniv
+> **Owner:** Yaniv
 
-REST endpoints for Blue Team. JWT in HttpOnly cookie validated on each request.
-Data comes from malicious DB (Max) and admin users (Sagiv schema).
+REST endpoints for the Blue Team. A JWT in an HttpOnly cookie is validated on **every**
+request. Data comes from the malicious DB (Max) and the admin-user schema (Sagiv).
+
+Browse the subfolders for individual endpoints.

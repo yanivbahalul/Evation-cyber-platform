@@ -1,4 +1,5 @@
-2fa
-Owner: Yaniv
+# `/api/admin/2fa`
 
-2FA enrollment endpoints.
+> **Owner:** Yaniv · **Mission 4.1**
+
+Two-factor authentication endpoints. The enrollment step lives in [`enroll/`](enroll/).

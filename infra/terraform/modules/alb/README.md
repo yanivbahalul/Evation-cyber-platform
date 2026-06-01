@@ -1,4 +1,6 @@
-TERRAFORM MODULE — ALB
-Owner: Sagiv Levy
+# Terraform Module — ALB
 
-Application Load Balancer — public entry, TLS, forwards to ECS services.
+> **Owner:** Sagiv Levy
+
+Provisions the Application Load Balancer — the public entry point that terminates TLS and
+forwards traffic to the ECS services.

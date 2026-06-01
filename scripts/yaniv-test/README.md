@@ -1,14 +1,21 @@
-YANIV-TEST (trap simulation)
-Owner: Yaniv — End-to-end QA scripts for demos and grading
+# yaniv-test — Trap Simulation
 
-Shell scripts fire each trap type against a running stack:
-  01-scanner.sh through 12-scanner-breadcrumbs.sh
-  run-all.sh, run-kill-chain.sh
+> **Owner:** Yaniv · End-to-end QA scripts for demos and grading
 
-Usage (from repo root):
-  pnpm trap:demo
-  pnpm trap:chain
+Shell scripts that fire each trap type against a running stack, so you can verify the full
+pipeline — Gatekeeper (Sagiv) → decoys (Bar) → telemetry (Max) → dashboard (Yaniv) — in one go.
 
-Server must be up (Docker or pnpm dev:full). Config: config.example.env
+## Contents
 
-Tests Sagiv Gatekeeper + Bar decoys + Max telemetry + Yaniv dashboard together.
+- `01-scanner.sh` … `12-scanner-breadcrumbs.sh` — one script per attack type
+- `run-all.sh` — runs every trap in sequence
+- `run-kill-chain.sh` — runs a realistic multi-step attack chain
+- `config.example.env` — copy and edit for your host/URL
+
+## Usage
+
+```bash
+# from the repo root, with the stack running (Docker or pnpm dev:full)
+pnpm trap:demo    # run-all.sh
+pnpm trap:chain   # run-kill-chain.sh
+```

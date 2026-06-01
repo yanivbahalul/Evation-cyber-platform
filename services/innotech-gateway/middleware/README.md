@@ -1,16 +1,23 @@
-## MIDDLEWARE
+# Gatekeeper Middleware
 
-Owner: Sagiv Levy (Mission 1.2 — Gatekeeper)
+> **Owner:** Sagiv Levy · **Mission 1.2** — Gatekeeper traffic middleware
 
-Files:
-  gatekeeper.js       IP ban check, SQLi/XSS regex on body/query, scanner UA
-  decoyReroute.js     Silent reroute: mutates req.url to decoy routes (no 302)
-  auth.js             Session and role for real employees
-  honeyTokenDetector.js  Detects Bearer honey-token usage (works with Bar traps)
+The custom Express pipeline that inspects every request with near-zero overhead and
+decides whether a visitor is a real employee or an attacker.
 
-Responsibilities doc:
-  checkIP — O(1) blacklist lookup
-  detectSQLi and detectXSS — ReDoS-safe patterns in detectionService.js
-  silentReroute — under 50ms handoff to decoy controller
+## Files
 
-Bar owns what happens AFTER reroute (decoyController + traps).
+| File | Purpose |
+|------|---------|
+| `gatekeeper.js` | IP-ban check, SQLi/XSS regex scan of `req.body`/`req.query`, scanner User-Agent detection |
+| `decoyReroute.js` | **Silent reroute** — mutates `req.url` to a decoy route and calls `next()` (no HTTP 302) |
+| `auth.js` | Session and role handling for real employees |
+| `honeyTokenDetector.js` | Flags requests that carry a Bearer honey-token |
+
+## Design goals (from the spec)
+
+- **`checkIP`** — O(1) lookup against an in-memory blacklist.
+- **`detectSQLi` / `detectXSS`** — ReDoS-safe regex (no catastrophic backtracking); pattern lists live in [`../services/detectionService.js`](../services/detectionService.js).
+- **`silentReroute`** — invisible handoff to the decoy controller in under 50 ms, so the attacker never sees a redirect.
+
+Once a request is rerouted, **Bar's** [`../controllers/decoyController.js`](../controllers) and [`../traps/`](../traps) take over.

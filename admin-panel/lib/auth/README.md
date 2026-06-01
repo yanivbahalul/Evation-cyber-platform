@@ -1,8 +1,17 @@
-## AUTH LIBRARY
+# Auth Library
 
-Owner: Yaniv — JWT, TOTP, portal session, HttpOnly cookies
+> **Owner:** Yaniv · **Mission 4.1** — Authentication, JWT & 2FA
 
-  jwt.ts, jwtEdge.ts, totp.ts, portalAccess.ts, portalAccessEdge.ts
-  requireAuth.ts, requireAdmin.ts, cookiePolicy.ts, gatewayJwt.ts
+Everything that proves who a user is and gates access to the dashboard.
 
-Mission 4.1: tokens in HttpOnly Secure cookies; edge middleware validates dashboard access.
+| File | Purpose |
+|------|---------|
+| `jwt.ts` / `jwtEdge.ts` | Sign & verify JWTs (Node runtime and Edge middleware) |
+| `totp.ts` | Time-based one-time passwords for 2FA |
+| `portalAccess.ts` / `portalAccessEdge.ts` | Role/permission checks for protected routes |
+| `requireAuth.ts` / `requireAdmin.ts` | Guards for API routes |
+| `cookiePolicy.ts` | HttpOnly + Secure cookie settings |
+| `gatewayJwt.ts` | Token bridge to the gateway session |
+
+Tokens are stored in **HttpOnly, Secure cookies** so XSS can't steal them; the Edge
+middleware validates dashboard access before a page loads.
