@@ -5,24 +5,60 @@ node_modules/
 .next/
 out/
 
-# Env and secrets
+# Env and secrets (keep committed templates: **/.env.example)
 .env
-.env*.local
-*.env
-!*.example.env
+.env.*
+!.env.example
+!**/.env.example
+
+# Local runtime secrets (admin-panel TOTP/JWT file store)
+.local/
 
 # QA run output (generated)
 docs/qa-automated-results.txt
 
 # OS / IDE
 .DS_Store
+Thumbs.db
 .idea/
 .vscode/
+.cursor/
 
 # Logs / caches
 *.log
+pnpm-debug.log*
 .turbo/
+.eslintcache
+.cache/
+*.tsbuildinfo
 
-# Build outputs
+# Build / test outputs
 dist/
 build/
+coverage/
+.nyc_output/
+
+# Vercel / v0 (admin-panel sandbox artifacts)
+.vercel/
+__v0_*
+.v0-trash/
+.snowflake/
+
+# Docker local overrides
+docker-compose.override.yml
+docker-compose.override.yaml
+
+# Terraform (keep terraform.tfvars.example)
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+terraform.tfvars
+!terraform.tfvars.example
+**/terraform.tfvars
+!**/terraform.tfvars.example
