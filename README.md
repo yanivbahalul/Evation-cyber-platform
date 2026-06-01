@@ -4,6 +4,27 @@ Monorepo for the InnoTech HR honeypot: deceptive gateway traps, air-gapped telem
 
 **Codebase map:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — traps, telemetry, admin API, shared packages.
 
+Every folder has a **README.md** with what it contains and which student owns it (from [docs/Responsibilities.docx](docs/Responsibilities.docx)).
+
+## Student missions
+
+| Student | Mission |
+|---------|---------|
+| **Sagiv Levy** | Safe zone gateway, Gatekeeper, Nginx/infra, real employee app |
+| **Bar** | Decoy traps, fake pages, attacker time/bandwidth waste |
+| **Max** | Telemetry, malicious DB, live Socket.IO alerts |
+| **Yaniv** | Admin panel, secure APIs, dashboard map and investigation |
+
+| Folder | Owner |
+|--------|-------|
+| `admin-panel/` | Yaniv |
+| `services/innotech-gateway/` | Sagiv + Bar |
+| `services/logging-data-extraction/` | Max |
+| `packages/` | Shared (see each package README) |
+| `infra/` | Sagiv |
+| `docs/` | Specs and architecture |
+| `scripts/` | QA and migrations |
+
 ## Start the server (Docker)
 
 **Requirements:** [Docker Desktop](https://www.docker.com/products/docker-desktop/) running (`docker ps` works).
