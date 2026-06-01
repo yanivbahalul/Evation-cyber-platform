@@ -4,11 +4,11 @@ const fs = require('fs');
 // Prefer `.env` next to this file, then merge admin panel secrets (monorepo local dev).
 const dotenvQuiet = { quiet: true };
 require('dotenv').config({ path: path.join(__dirname, '.env'), ...dotenvQuiet });
-const adminEnvPath = path.join(__dirname, '../../apps/admin-panel/.env');
+const adminEnvPath = path.join(__dirname, '../../admin-panel/.env');
 if (fs.existsSync(adminEnvPath) && !process.env.MALICIOUS_DB_URI) {
   require('dotenv').config({ path: adminEnvPath, ...dotenvQuiet });
 }
-const applyDevScript = path.join(__dirname, '../../apps/admin-panel/scripts/applyDevPublicHost.cjs');
+const applyDevScript = path.join(__dirname, '../../admin-panel/scripts/applyDevPublicHost.cjs');
 if (fs.existsSync(applyDevScript)) {
   require(applyDevScript).applyDevPublicHost();
 }

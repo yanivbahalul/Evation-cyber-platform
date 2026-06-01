@@ -4,13 +4,13 @@ RUN corepack enable
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages ./packages
-COPY apps/admin-panel ./apps/admin-panel
+COPY admin-panel ./admin-panel
 
 RUN corepack prepare pnpm@11.0.8 --activate \
   && pnpm install --frozen-lockfile --filter admin-panel...
 
 FROM deps AS builder
-WORKDIR /app/apps/admin-panel
+WORKDIR /app/admin-panel
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 # NEXT_PUBLIC_* values must be present at build time to be embedded in the client bundle.
@@ -31,9 +31,9 @@ ENV HOSTNAME=0.0.0.0
 
 RUN addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001
 
-COPY --from=builder /app/apps/admin-panel/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/apps/admin-panel/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/apps/admin-panel/.next/static ./apps/admin-panel/.next/static
+COPY --from=builder /app/admin-panel/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/admin-panel/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/admin-panel/.next/static ./admin-panel/.next/static
 
 COPY infra/docker/start-admin-panel.sh /start-admin-panel.sh
 RUN chmod +x /start-admin-panel.sh

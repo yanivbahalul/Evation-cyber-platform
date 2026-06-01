@@ -5,7 +5,7 @@
   "scripts": {
     "clean": "rm -rf .next",
     "dev": "next dev",
-    "dev:all": "dotenv -e .env -- concurrently -n ui,gateway -c blue,green \"next dev -p 3000\" \"BASE_PATH=/gateway PORT=4001 MONGODB_URI=$SAFEZONE_DB_URI pnpm --dir ../../services/innotech-gateway dev\"",
+    "dev:all": "dotenv -e .env -- concurrently -n ui,gateway -c blue,green \"next dev -p 3000\" \"BASE_PATH=/gateway PORT=4001 MONGODB_URI=$SAFEZONE_DB_URI pnpm --dir ../services/innotech-gateway dev\"",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",

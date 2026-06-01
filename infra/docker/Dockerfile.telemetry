@@ -5,7 +5,7 @@ RUN corepack enable
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages ./packages
 COPY services/logging-data-extraction ./services/logging-data-extraction
-COPY apps/admin-panel/scripts ./apps/admin-panel/scripts
+COPY admin-panel/scripts ./admin-panel/scripts
 
 RUN corepack prepare pnpm@11.0.8 --activate \
   && pnpm install --frozen-lockfile --filter hit_evation_cyber...

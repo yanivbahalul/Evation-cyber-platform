@@ -623,7 +623,7 @@ Watch logs: `docker compose logs -f gateway telemetry` (from `infra/`).
 | 404 on `/login` | Sign in at **`http://localhost:3000/gateway/login`** (canonical) |
 | Two different login pages | Old EJS login redirects here; attack dashboard is only at **`/`** for `admin` role |
 | Only “loading”, no tarpit text | Wait up to 2 minutes; or use `curl -N` |
-| Admin Offline | `docker compose restart`; socket token match in `apps/admin-panel/.env` |
+| Admin Offline | `docker compose restart`; socket token match in `admin-panel/.env` |
 | 502 on `/gateway/` | `docker compose logs gateway` — need `server_listening`; if healthy, **`docker compose restart nginx`** (stale upstream IP after rebuild) |
 | No live alert from gateway | `docker compose ps` — telemetry + gateway Up; `docker compose logs telemetry` |
 | Trap works but wrong DB | Check `SAFEZONE_DB_URI` / `MALICIOUS_DB_URI` in `.env` |

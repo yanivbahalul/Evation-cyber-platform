@@ -2,14 +2,14 @@
  * Benchmark dashboard Mongo queries (same shape as fetchDashboardData).
  *
  * Usage:
- *   pnpm --dir apps/admin-panel bench:dashboard
+ *   pnpm --dir admin-panel bench:dashboard
  *
- * Loads MALICIOUS_DB_URI from apps/admin-panel/.env or infra/.env.
+ * Loads MALICIOUS_DB_URI from admin-panel/.env or infra/.env.
  */
 const path = require('path')
 const fs = require('fs')
 
-const repoRoot = path.join(__dirname, '../../..')
+const repoRoot = path.join(__dirname, '../..')
 const dotenvQuiet = { quiet: true }
 
 for (const envPath of [
@@ -30,7 +30,7 @@ async function loadModels() {
   const { createMaliciousConnection } = require('@evation/db-schemas')
   const uri = process.env.MALICIOUS_DB_URI
   if (!uri) {
-    console.log('SKIP: MALICIOUS_DB_URI not set (apps/admin-panel/.env or infra/.env)')
+    console.log('SKIP: MALICIOUS_DB_URI not set (admin-panel/.env or infra/.env)')
     process.exit(0)
   }
   const conn = createMaliciousConnection(uri)

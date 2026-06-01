@@ -6,7 +6,7 @@ Quick navigation for developers. For attack demos and trap walkthroughs, see [RE
 
 | Path | Role |
 |------|------|
-| [`apps/admin-panel/`](../apps/admin-panel/) | Next.js UI (port 3000), proxies `/gateway/*` to the honeypot gateway |
+| [`admin-panel/`](../admin-panel/) | Next.js UI (port 3000), proxies `/gateway/*` to the honeypot gateway |
 | [`services/innotech-gateway/`](../services/innotech-gateway/) | Express + EJS HR portal, gatekeeper, traps (port 4001) |
 | [`services/logging-data-extraction/`](../services/logging-data-extraction/) | Telemetry API, Mongo writes, Socket.IO live alerts (port 3002) |
 | [`packages/shared-constants/`](../packages/shared-constants/) | `TRAP_TYPES` enum (gateway + telemetry + admin) |
@@ -28,13 +28,13 @@ Quick navigation for developers. For attack demos and trap walkthroughs, see [RE
 | Persist attack + live alert | [`services/logging-data-extraction/routes/internal.js`](../services/logging-data-extraction/routes/internal.js) (`POST /internal/attack`) |
 | Socket.IO broadcast | [`services/logging-data-extraction/services/SocketService.js`](../services/logging-data-extraction/services/SocketService.js) |
 | Malicious DB connection (telemetry-only) | [`services/logging-data-extraction/config/maliciousDb.js`](../services/logging-data-extraction/config/maliciousDb.js) via [`packages/db-schemas/connect.js`](../packages/db-schemas/connect.js) |
-| Blue Team dashboard UI | [`apps/admin-panel/features/dashboard/`](../apps/admin-panel/features/dashboard/) |
-| Investigation / timeline UI | [`apps/admin-panel/features/investigation/`](../apps/admin-panel/features/investigation/) |
-| Admin REST API | [`apps/admin-panel/app/api/admin/`](../apps/admin-panel/app/api/admin/) |
-| Portal session / role gate | [`apps/admin-panel/app/api/portal/session/route.ts`](../apps/admin-panel/app/api/portal/session/route.ts) |
-| Dashboard URL protection (Edge) | [`apps/admin-panel/middleware.ts`](../apps/admin-panel/middleware.ts), [`apps/admin-panel/lib/auth/portalAccessEdge.ts`](../apps/admin-panel/lib/auth/portalAccessEdge.ts) |
-| JWT / TOTP (Node) | [`apps/admin-panel/lib/auth/`](../apps/admin-panel/lib/auth/) |
-| Central env file | [`apps/admin-panel/.env`](../apps/admin-panel/.env) (see [`.env.example`](../apps/admin-panel/.env.example)) |
+| Blue Team dashboard UI | [`admin-panel/features/dashboard/`](../admin-panel/features/dashboard/) |
+| Investigation / timeline UI | [`admin-panel/features/investigation/`](../admin-panel/features/investigation/) |
+| Admin REST API | [`admin-panel/app/api/admin/`](../admin-panel/app/api/admin/) |
+| Portal session / role gate | [`admin-panel/app/api/portal/session/route.ts`](../admin-panel/app/api/portal/session/route.ts) |
+| Dashboard URL protection (Edge) | [`admin-panel/middleware.ts`](../admin-panel/middleware.ts), [`admin-panel/lib/auth/portalAccessEdge.ts`](../admin-panel/lib/auth/portalAccessEdge.ts) |
+| JWT / TOTP (Node) | [`admin-panel/lib/auth/`](../admin-panel/lib/auth/) |
+| Central env file | [`admin-panel/.env`](../admin-panel/.env) (see [`.env.example`](../admin-panel/.env.example)) |
 | Shared Mongoose schemas | [`packages/db-schemas/`](../packages/db-schemas/) |
 | Production deploy | [DEPLOYMENT.md](./DEPLOYMENT.md) |
 | Protected admin aliases | `/admin/map`, `/admin/ban` → dashboard tabs |
@@ -69,7 +69,7 @@ pnpm dev:full
 ```
 
 - Browser: http://localhost:3000/gateway/
-- Env: `apps/admin-panel/.env` (`SAFEZONE_DB_URI`, `MALICIOUS_DB_URI`, socket tokens, `DEV_PUBLIC_HOST`)
+- Env: `admin-panel/.env` (`SAFEZONE_DB_URI`, `MALICIOUS_DB_URI`, socket tokens, `DEV_PUBLIC_HOST`)
 
 ## Trap simulation (optional)
 

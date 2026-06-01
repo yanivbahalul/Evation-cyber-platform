@@ -15,14 +15,14 @@ importers:
         specifier: ^8.0.0
         version: 8.0.0
 
-  apps/admin-panel:
+  admin-panel:
     dependencies:
       '@evation/db-schemas':
         specifier: workspace:*
-        version: link:../../packages/db-schemas
+        version: link:../packages/db-schemas
       '@evation/shared-utils':
         specifier: workspace:*
-        version: link:../../packages/shared-utils
+        version: link:../packages/shared-utils
       '@otplib/plugin-base32-scure':
         specifier: ^13.4.0
         version: 13.4.0

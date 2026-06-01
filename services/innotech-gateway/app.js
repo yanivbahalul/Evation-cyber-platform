@@ -5,11 +5,11 @@ const path = require('path');
 
 const dotenvQuiet = { quiet: true };
 require('dotenv').config(dotenvQuiet);
-const adminEnvPath = path.join(__dirname, '../../apps/admin-panel/.env');
+const adminEnvPath = path.join(__dirname, '../../admin-panel/.env');
 if (fs.existsSync(adminEnvPath) && !process.env.SAFEZONE_DB_URI) {
     require('dotenv').config({ path: adminEnvPath, ...dotenvQuiet });
 }
-const applyDevScript = path.join(__dirname, '../../apps/admin-panel/scripts/applyDevPublicHost.cjs');
+const applyDevScript = path.join(__dirname, '../../admin-panel/scripts/applyDevPublicHost.cjs');
 if (fs.existsSync(applyDevScript)) {
     require(applyDevScript).applyDevPublicHost();
 }

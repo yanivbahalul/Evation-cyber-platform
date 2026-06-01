@@ -17,7 +17,7 @@ const repoRoot = path.join(serviceRoot, '../..');
 
 const dotenvQuiet = { quiet: true };
 require('dotenv').config({ path: path.join(repoRoot, 'infra/.env'), ...dotenvQuiet });
-const adminEnvPath = path.join(repoRoot, 'apps/admin-panel/.env');
+const adminEnvPath = path.join(repoRoot, 'admin-panel/.env');
 if (fs.existsSync(adminEnvPath) && !process.env.MALICIOUS_DB_URI) {
   require('dotenv').config({ path: adminEnvPath, ...dotenvQuiet });
 }
