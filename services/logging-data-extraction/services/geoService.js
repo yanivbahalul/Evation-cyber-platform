@@ -1,7 +1,7 @@
 'use strict';
 
 const geoip = require('geoip-lite');
-const { isPrivateIp, normalizeIp, attackLog } = require('@evation/shared-utils');
+const { isPrivateIp, normalizeIp, attackLog, startupLog } = require('@evation/shared-utils');
 
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const NEGATIVE_CACHE_TTL_MS = 15 * 60 * 1000;
@@ -403,11 +403,13 @@ async function initLanEgressGeo() {
     if (geo) {
       lanEgressGeo = geo;
       clearGeoCache();
-      log.info('TELEMETRY', 'lan_egress_geo_ready', {
-        city: geo.city,
-        country: geo.country,
-        source: geo.source,
-      });
+      if (startupLog.isVerbose()) {
+        log.info('TELEMETRY', 'lan_egress_geo_ready', {
+          city: geo.city,
+          country: geo.country,
+          source: geo.source,
+        });
+      }
       return;
     }
   } catch (err) {
@@ -422,11 +424,13 @@ async function initLanEgressGeo() {
     if (geo) {
       lanEgressGeo = geo;
       clearGeoCache();
-      log.info('TELEMETRY', 'lan_egress_geo_ready', {
-        city: geo.city,
-        country: geo.country,
-        source: geo.source,
-      });
+      if (startupLog.isVerbose()) {
+        log.info('TELEMETRY', 'lan_egress_geo_ready', {
+          city: geo.city,
+          country: geo.country,
+          source: geo.source,
+        });
+      }
       return;
     }
   } catch (err) {

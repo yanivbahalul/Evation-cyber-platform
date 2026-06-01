@@ -48,7 +48,6 @@ const SocketService = {
             });
         });
 
-        attackLog.info('TELEMETRY', 'socket_server_ready', { port: process.env.PORT || 3002 });
     },
 
     emitLiveAlert: (trapData) => {

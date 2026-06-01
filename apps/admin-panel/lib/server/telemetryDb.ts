@@ -1,18 +1,21 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import connectMaliciousDB from '@/lib/db/maliciousDb'
 
-let cachedConn: any = null
-let cachedConnPromise: Promise<any> | null = null
+type TelemetryGlobal = typeof globalThis & {
+  __telemetryDbConn?: any
+}
+
+function getGlobal(): TelemetryGlobal {
+  return globalThis as TelemetryGlobal
+}
 
 async function ensureConnected(conn: any) {
-  // If already connected, fast path.
   // readyState: 0 = disconnected, 1 = connected, 2 = connecting, 3 = disconnecting
   if (conn?.readyState === 1) return conn
   if (typeof conn?.asPromise === 'function') {
     await conn.asPromise()
     return conn
   }
-  // Worst case: wait for 'connected' event once.
   await new Promise<void>((resolve, reject) => {
     const onConnected = () => {
       cleanup()
@@ -33,11 +36,14 @@ async function ensureConnected(conn: any) {
 }
 
 export async function getTelemetryConn() {
-  if (cachedConn && cachedConn.readyState === 1) return cachedConn
-  if (!cachedConn) cachedConn = (connectMaliciousDB as any)()
-  if (!cachedConnPromise) cachedConnPromise = ensureConnected(cachedConn)
-  await cachedConnPromise
-  return cachedConn
+  const g = getGlobal()
+  if (!g.__telemetryDbConn) {
+    g.__telemetryDbConn = (connectMaliciousDB as any)()
+  }
+  const conn = g.__telemetryDbConn
+  if (conn?.readyState === 1) return conn
+  await ensureConnected(conn)
+  return conn
 }
 
 export async function getTelemetryModels() {
@@ -54,4 +60,3 @@ export async function getTelemetryModels() {
 if (process.env.MALICIOUS_DB_URI) {
   getTelemetryConn().catch(() => {})
 }
-

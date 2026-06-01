@@ -15,7 +15,7 @@ if (fs.existsSync(applyDevScript)) {
 
 const express = require('express');
 const http = require('http');
-const { attackLog } = require('@evation/shared-utils');
+const { attackLog, startupLog } = require('@evation/shared-utils');
 const TRAP_TYPES = require('@evation/shared-constants');
 
 const connectMaliciousDB = require('./config/maliciousDb');
@@ -28,8 +28,6 @@ app.use(express.json({ limit: '64kb' }));
 app.set('trust proxy', true);
 
 const server = http.createServer(app);
-
-attackLog.info('TELEMETRY', 'server_starting', {});
 
 const maliciousConn = connectMaliciousDB();
 SocketService.init(server);
@@ -83,14 +81,16 @@ async function startServer() {
 
   try {
     await maliciousConn.asPromise();
-    attackLog.info('TELEMETRY', 'malicious_database_ready', {});
   } catch (err) {
     attackLog.error('TELEMETRY', 'malicious_database_connection_failed', { error: err?.message || String(err) });
     process.exit(1);
   }
 
   server.listen(PORT, '0.0.0.0', () => {
-    attackLog.info('TELEMETRY', 'server_listening', { url: `http://0.0.0.0:${PORT}` });
+    startupLog.logServiceReady('telemetry');
+    if (startupLog.isVerbose()) {
+      attackLog.info('TELEMETRY', 'server_listening', { url: `http://0.0.0.0:${PORT}` });
+    }
   });
 
   const shutdown = (signal) => {

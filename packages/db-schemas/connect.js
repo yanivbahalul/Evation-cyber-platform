@@ -4,8 +4,9 @@ const mongoose = require('mongoose');
 const schemas = require('./index');
 
 const DEFAULT_OPTIONS = {
-  serverSelectionTimeoutMS: 2000,
-  connectTimeoutMS: 2000,
+  serverSelectionTimeoutMS: 8000,
+  connectTimeoutMS: 8000,
+  maxPoolSize: 10,
   bufferCommands: false,
 };
 

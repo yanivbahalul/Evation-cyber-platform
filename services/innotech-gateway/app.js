@@ -27,7 +27,11 @@ const { PATHS: DP, ALIASES: DP_ALIAS } = require('./config/deceptionPaths');
 const legacyBreachSession = require('./utils/legacyBreachSession');
 const { ensureTraceId } = require('./utils/attackerTrace');
 const useragent = require('express-useragent');
-const { fingerprint: fingerprintMiddleware, attackLog: attackLogBoot } = require('@evation/shared-utils');
+const {
+    fingerprint: fingerprintMiddleware,
+    attackLog: attackLogBoot,
+    startupLog,
+} = require('@evation/shared-utils');
 
 const app = express();
 app.set('trust proxy', true);
@@ -204,7 +208,6 @@ app.use(mount, router);
 async function startServer() {
     try {
         await mongoose.connect(dbURI);
-        attackLogBoot.info('GATEWAY', 'safezone_database_connected', {});
         const banService = require('./services/banService');
         banService.startBanRefreshLoop();
     } catch (err) {
@@ -214,8 +217,12 @@ async function startServer() {
 
     // Bind to all interfaces so nginx (other container) can reach us.
     const server = app.listen(PORT, '0.0.0.0', () => {
-        const base = BASE_PATH ? `http://0.0.0.0:${PORT}${BASE_PATH}` : `http://0.0.0.0:${PORT}`;
-        attackLogBoot.info('GATEWAY', 'server_listening', { url: base });
+        startupLog.logServiceReady('gateway');
+        startupLog.logStackUrls();
+        if (startupLog.isVerbose()) {
+            const base = BASE_PATH ? `http://0.0.0.0:${PORT}${BASE_PATH}` : `http://0.0.0.0:${PORT}`;
+            attackLogBoot.info('GATEWAY', 'server_listening', { url: base });
+        }
     });
 
     const shutdown = (signal) => {

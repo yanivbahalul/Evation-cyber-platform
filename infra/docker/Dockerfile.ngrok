@@ -2,12 +2,14 @@ FROM alpine:3.21
 
 RUN apk add --no-cache ca-certificates curl tar && update-ca-certificates
 
-# Install ngrok agent (linux arm64; works on Apple Silicon Docker)
 RUN curl -fsSL -o /tmp/ngrok.tgz \
     https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-arm64.tgz \
   && tar -xzf /tmp/ngrok.tgz -C /usr/local/bin \
   && rm -f /tmp/ngrok.tgz \
   && chmod +x /usr/local/bin/ngrok
 
-ENTRYPOINT ["ngrok"]
+COPY infra/docker/start-ngrok.sh /start-ngrok.sh
+RUN chmod +x /start-ngrok.sh
 
+ENTRYPOINT ["/start-ngrok.sh"]
+CMD ["http://nginx:80"]

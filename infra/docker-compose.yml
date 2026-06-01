@@ -1,6 +1,8 @@
 services:
   nginx:
     image: nginx:1.27-alpine
+    environment:
+      NGINX_ENTRYPOINT_QUIET_LOGS: "1"
     # Single public entrypoint (gateway-first).
     ports:
       - "0.0.0.0:3000:80"
@@ -15,21 +17,21 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
-  # Public URL via ngrok tunnel (prints a single public URL line in logs).
+  # Public URL via ngrok tunnel (prints one [EVATION] public tunnel line when ready).
+  # If the tunnel URL is already in use (ERR_NGROK_334), stop this service until the old session clears:
+  #   docker compose stop ngrok
   ngrok:
     build:
       context: ..
       dockerfile: infra/docker/Dockerfile.ngrok
     env_file:
       - ./.env
-    # Equivalent to: ngrok http 3000 (but inside docker we point at nginx:80)
-    command: ["http", "http://nginx:80", "--log=stdout", "--log-format=term", "--log-level=info"]
     environment:
       NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN:-}
     depends_on:
       nginx:
         condition: service_started
-    restart: unless-stopped
+    restart: on-failure:5
 
   admin-panel:
     build:
