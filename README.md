@@ -1,4 +1,5 @@
-# InnoTech Honeypot (Evation Cyber Platform)
+![Honey Shield Logo](docs/logo.png)
+# Honny Shield - Cyber Security Platform
 
 Monorepo for the InnoTech HR honeypot: deceptive gateway traps, air-gapped telemetry, and the Blue Team admin dashboard.
 
