@@ -113,6 +113,10 @@ services:
     build:
       context: ..
       dockerfile: infra/docker/Dockerfile.ml-threat-intel
+      args:
+        # Only bake the heavy ML stack into the image when models are enabled.
+        # Flip ML_ENABLE_MODELS=true in infra/.env, then `docker compose up --build`.
+        INSTALL_ML: ${ML_ENABLE_MODELS:-false}
     env_file:
       - ./.env
     environment:

@@ -30,10 +30,15 @@ service runs heuristic-only, so it boots instantly for CI and demos.
 ```bash
 cd services/ml-threat-intel
 python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
+pip install -r requirements.txt        # core only — heuristic mode
+# pip install -r requirements-ml.txt   # optional: real Hugging Face models
 cp .env.example .env            # then edit ADMIN_SOCKET_TOKEN
 python app.py                   # listens on :3003
 ```
+
+> The heavy ML stack (torch/transformers) lives in `requirements-ml.txt` and is
+> only required when `ML_ENABLE_MODELS=true`. The default build/run is fully
+> functional on heuristics alone.
 
 Smoke test:
 
@@ -47,10 +52,14 @@ curl -s -X POST http://localhost:3003/enrich \
 Enable the real models (downloads weights on first request):
 
 ```bash
+pip install -r requirements-ml.txt
 ML_ENABLE_MODELS=true python app.py
 # or a subset:
 ML_ENABLE_MODELS=true ML_ENABLED_MODELS=payload,mitre_tactic,attack_bert python app.py
 ```
+
+In Docker, set `ML_ENABLE_MODELS=true` in `infra/.env` and `docker compose up
+--build` — the heavy stack is baked in only when that flag is true.
 
 ## API
 

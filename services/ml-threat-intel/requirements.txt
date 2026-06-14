@@ -1,13 +1,11 @@
-# Core API
+# Core API deps — ALWAYS installed. Lightweight so the image builds fast and the
+# service runs fully (heuristic-only) out of the box with ML_ENABLE_MODELS=false.
 fastapi==0.115.6
 uvicorn[standard]==0.34.0
 pydantic==2.10.4
 
-# ML stack — only pulled/used when ML_ENABLE_MODELS=true.
-# Pinned for reproducible, supply-chain-safe builds. CPU torch is plenty here.
-transformers==4.48.0
-sentence-transformers==3.3.1
-torch==2.5.1
-numpy==2.2.1
-# Force safetensors-only loads (no pickle) for HF supply-chain hygiene.
-safetensors==0.4.5
+# The heavy ML stack (torch, transformers, sentence-transformers) is optional and
+# lives in requirements-ml.txt. It is only needed when ML_ENABLE_MODELS=true.
+# Install it explicitly:  pip install -r requirements-ml.txt
+# (In Docker, build with --build-arg INSTALL_ML=true, or set ML_ENABLE_MODELS=true
+#  in infra/.env and rebuild — see infra/docker-compose.yml.)
