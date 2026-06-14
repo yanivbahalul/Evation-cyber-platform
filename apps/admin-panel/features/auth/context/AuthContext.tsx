@@ -15,7 +15,8 @@ const AuthContext = createContext<AuthContextValue | null>(null)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(() => {
     fetch('/api/admin/logout', { method: 'POST' }).catch(() => {})
-    window.location.assign('/gateway/')
+    // Gateway clears shared auth cookies and redirects to the HR landing page.
+    window.location.assign('/gateway/logout')
   }, [])
 
   return <AuthContext.Provider value={{ logout }}>{children}</AuthContext.Provider>
