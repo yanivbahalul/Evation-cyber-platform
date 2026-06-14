@@ -6,6 +6,159 @@ import { Shield, Lock, User, Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-re
 
 const isValidUsername = (value: string) => /^[a-zA-Z0-9._-]{3,64}$/.test(value)
 
+const AuthAlert = ({ error, success }: { error: string | null; success: string | null }) => {
+  if (!error && !success) return null
+  return (
+    <div
+      className={`flex items-center gap-2 rounded-lg px-3 py-2 mb-4 text-sm border ${
+        error ? 'bg-danger/10 border-danger/30 text-danger' : 'bg-primary/10 border-primary/30 text-foreground'
+      }`}
+    >
+      <AlertCircle className="w-4 h-4 shrink-0" />
+      <span>{error || success}</span>
+    </div>
+  )
+}
+
+type RegisterFieldsProps = {
+  username: string
+  password: string
+  showPassword: boolean
+  isLoading: boolean
+  onUsernameChange: (value: string) => void
+  onPasswordChange: (value: string) => void
+  onToggleShowPassword: () => void
+}
+
+const RegisterFields = ({
+  username,
+  password,
+  showPassword,
+  isLoading,
+  onUsernameChange,
+  onPasswordChange,
+  onToggleShowPassword,
+}: RegisterFieldsProps) => (
+  <>
+    <div>
+      <label className="block text-xs font-mono text-muted-foreground mb-1.5 uppercase tracking-wider">Username</label>
+      <div className="relative">
+        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <input
+          type="text"
+          autoComplete="username"
+          required
+          value={username}
+          onChange={e => onUsernameChange(e.target.value)}
+          placeholder="admin"
+          className="w-full bg-background border border-border rounded-lg pl-9 pr-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 font-mono focus:outline-none focus:border-primary transition-colors"
+        />
+      </div>
+    </div>
+
+    <div>
+      <label className="block text-xs font-mono text-muted-foreground mb-1.5 uppercase tracking-wider">Password</label>
+      <div className="relative">
+        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <input
+          type={showPassword ? 'text' : 'password'}
+          autoComplete="new-password"
+          required
+          value={password}
+          onChange={e => onPasswordChange(e.target.value)}
+          placeholder="••••••••"
+          className="w-full bg-background border border-border rounded-lg pl-9 pr-10 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 font-mono focus:outline-none focus:border-primary transition-colors"
+        />
+        <button
+          type="button"
+          onClick={onToggleShowPassword}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+          aria-label={showPassword ? 'Hide password' : 'Show password'}
+        >
+          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+        </button>
+      </div>
+    </div>
+
+    <button
+      type="submit"
+      disabled={isLoading}
+      className="flex items-center justify-center gap-2 w-full bg-primary hover:bg-primary-hover disabled:opacity-60 text-primary-foreground rounded-lg py-2.5 text-sm font-semibold transition-colors mt-1"
+    >
+      {isLoading ? (
+        <>
+          <Loader2 className="w-4 h-4 animate-spin" /> Creating...
+        </>
+      ) : (
+        'Create account'
+      )}
+    </button>
+  </>
+)
+
+type OtpBlockProps = {
+  qr: { qrDataUrl: string; secret: string }
+  otp: string
+  readyForOtp: boolean
+  isLoading: boolean
+  onOtpChange: (value: string) => void
+  onVerify: () => void
+}
+
+const OtpBlock = ({ qr, otp, readyForOtp, isLoading, onOtpChange, onVerify }: OtpBlockProps) => (
+  <div className="bg-background/40 border border-border rounded-lg p-3 flex flex-col items-center gap-2">
+    <img src={qr.qrDataUrl} alt="2FA QR code" className="w-44 h-44 rounded" />
+    <div className="w-full text-[11px] font-mono text-muted-foreground break-all text-center">
+      Secret (manual entry): <span className="text-foreground">{qr.secret}</span>
+    </div>
+
+    <div className="w-full flex flex-col gap-2 mt-2">
+      <input
+        type="text"
+        inputMode="numeric"
+        pattern="[0-9]{6}"
+        maxLength={6}
+        required
+        value={otp}
+        onChange={e => onOtpChange(e.target.value.replace(/\D/g, ''))}
+        placeholder="123456"
+        className="w-full bg-background border border-border rounded-lg px-4 py-2.5 text-center text-lg tracking-[0.4em] text-foreground font-mono focus:outline-none focus:border-accent transition-colors"
+      />
+      <button
+        type="button"
+        onClick={onVerify}
+        disabled={!readyForOtp || isLoading || otp.length !== 6}
+        className="flex items-center justify-center gap-2 w-full bg-accent hover:bg-accent-hover disabled:opacity-60 text-accent-foreground rounded-lg py-2.5 text-sm font-semibold transition-colors"
+      >
+        {isLoading ? (
+          <>
+            <Loader2 className="w-4 h-4 animate-spin" /> Verifying...
+          </>
+        ) : (
+          'Verify OTP (create account)'
+        )}
+      </button>
+    </div>
+  </div>
+)
+
+const AuthFooter = ({ phase }: { phase: 'register' | 'otp' | 'done' }) => (
+  <div className="text-xs font-mono text-muted-foreground text-center">
+    {phase === 'done' ? (
+      <Link href="/login" className="text-primary hover:underline underline-offset-4">
+        Return to login
+      </Link>
+    ) : (
+      <>
+        Already have an account?{' '}
+        <Link href="/login" className="text-primary hover:underline underline-offset-4">
+          Login
+        </Link>
+      </>
+    )}
+  </div>
+)
+
 const RegisterPage = () => {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -120,133 +273,33 @@ const RegisterPage = () => {
         </div>
 
         <div className="bg-surface border border-border rounded-xl p-6 shadow-2xl">
-          {(error || success) && (
-            <div
-              className={`flex items-center gap-2 rounded-lg px-3 py-2 mb-4 text-sm border ${
-                error
-                  ? 'bg-danger/10 border-danger/30 text-danger'
-                  : 'bg-primary/10 border-primary/30 text-foreground'
-              }`}
-            >
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{error || success}</span>
-            </div>
-          )}
+          <AuthAlert error={error} success={success} />
 
           <form onSubmit={handleRegister} className="flex flex-col gap-4">
             {phase === 'register' && (
-              <>
-            <div>
-              <label className="block text-xs font-mono text-muted-foreground mb-1.5 uppercase tracking-wider">
-                Username
-              </label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <input
-                  type="text"
-                  autoComplete="username"
-                  required
-                  value={username}
-                  onChange={e => setUsername(e.target.value)}
-                  placeholder="admin"
-                  className="w-full bg-background border border-border rounded-lg pl-9 pr-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 font-mono focus:outline-none focus:border-primary transition-colors"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-mono text-muted-foreground mb-1.5 uppercase tracking-wider">
-                Password
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  autoComplete="new-password"
-                  required
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full bg-background border border-border rounded-lg pl-9 pr-10 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 font-mono focus:outline-none focus:border-primary transition-colors"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(v => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="flex items-center justify-center gap-2 w-full bg-primary hover:bg-primary-hover disabled:opacity-60 text-primary-foreground rounded-lg py-2.5 text-sm font-semibold transition-colors mt-1"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" /> Creating...
-                </>
-              ) : (
-                'Create account'
-              )}
-            </button>
-              </>
+              <RegisterFields
+                username={username}
+                password={password}
+                showPassword={showPassword}
+                isLoading={isLoading}
+                onUsernameChange={setUsername}
+                onPasswordChange={setPassword}
+                onToggleShowPassword={() => setShowPassword(v => !v)}
+              />
             )}
 
             {qr && (
-              <div className="bg-background/40 border border-border rounded-lg p-3 flex flex-col items-center gap-2">
-                <img src={qr.qrDataUrl} alt="2FA QR code" className="w-44 h-44 rounded" />
-                <div className="w-full text-[11px] font-mono text-muted-foreground break-all text-center">
-                  Secret (manual entry): <span className="text-foreground">{qr.secret}</span>
-                </div>
-
-                <div className="w-full flex flex-col gap-2 mt-2">
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]{6}"
-                    maxLength={6}
-                    required
-                    value={otp}
-                    onChange={e => setOtp(e.target.value.replace(/\D/g, ''))}
-                    placeholder="123456"
-                    className="w-full bg-background border border-border rounded-lg px-4 py-2.5 text-center text-lg tracking-[0.4em] text-foreground font-mono focus:outline-none focus:border-accent transition-colors"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => handleVerify()}
-                    disabled={!readyForOtp || isLoading || otp.length !== 6}
-                    className="flex items-center justify-center gap-2 w-full bg-accent hover:bg-accent-hover disabled:opacity-60 text-accent-foreground rounded-lg py-2.5 text-sm font-semibold transition-colors"
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" /> Verifying...
-                      </>
-                    ) : (
-                      'Verify OTP (create account)'
-                    )}
-                  </button>
-                </div>
-              </div>
+              <OtpBlock
+                qr={qr}
+                otp={otp}
+                readyForOtp={readyForOtp}
+                isLoading={isLoading}
+                onOtpChange={setOtp}
+                onVerify={handleVerify}
+              />
             )}
 
-            <div className="text-xs font-mono text-muted-foreground text-center">
-              {phase === 'done' ? (
-                <Link href="/login" className="text-primary hover:underline underline-offset-4">
-                  Return to login
-                </Link>
-              ) : (
-                <>
-                  Already have an account?{' '}
-                  <Link href="/login" className="text-primary hover:underline underline-offset-4">
-                    Login
-                  </Link>
-                </>
-              )}
-            </div>
+            <AuthFooter phase={phase} />
           </form>
         </div>
       </div>

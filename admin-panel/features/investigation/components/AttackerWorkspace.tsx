@@ -93,6 +93,163 @@ const TimelineNode = ({ event, prev }: { event: AttackEvent; prev?: AttackEvent 
   )
 }
 
+type SessionSelectorProps = {
+  ipInput: string
+  traceInput: string
+  loading: boolean
+  hasTarget: boolean
+  traceOptions: string[]
+  onIpChange: (value: string) => void
+  onTraceChange: (value: string) => void
+  onLoad: () => void
+  onClear: () => void
+  onSelectTrace: (id: string) => void
+}
+
+const SessionSelector = ({
+  ipInput,
+  traceInput,
+  loading,
+  hasTarget,
+  traceOptions,
+  onIpChange,
+  onTraceChange,
+  onLoad,
+  onClear,
+  onSelectTrace,
+}: SessionSelectorProps) => (
+  <div className="bg-surface border border-border rounded-xl p-4">
+    <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-3">Select attacker session</p>
+    <div className="flex flex-wrap gap-3 items-end">
+      <label className="flex flex-col gap-1 text-xs font-mono">
+        <span className="text-muted-foreground">IP address</span>
+        <input
+          value={ipInput}
+          onChange={e => onIpChange(e.target.value)}
+          placeholder="185.220.101.5"
+          className="bg-background border border-border rounded-lg px-3 py-2 text-foreground min-w-[180px]"
+        />
+      </label>
+      <label className="flex flex-col gap-1 text-xs font-mono">
+        <span className="text-muted-foreground">traceId (optional)</span>
+        <input
+          value={traceInput}
+          onChange={e => onTraceChange(e.target.value)}
+          placeholder="filter one session"
+          className="bg-background border border-border rounded-lg px-3 py-2 text-foreground min-w-[200px]"
+        />
+      </label>
+      <button
+        type="button"
+        onClick={onLoad}
+        disabled={!ipInput.trim() || loading}
+        className="px-4 py-2 rounded-lg bg-primary/20 text-primary border border-primary/30 text-xs font-mono hover:bg-primary/30 disabled:opacity-50"
+      >
+        Load timeline
+      </button>
+      {hasTarget && (
+        <button
+          type="button"
+          onClick={onClear}
+          className="px-3 py-2 rounded-lg text-xs font-mono text-muted-foreground border border-border hover:text-foreground"
+        >
+          Clear
+        </button>
+      )}
+    </div>
+    {traceOptions.length > 0 && (
+      <div className="mt-3 flex flex-wrap gap-2">
+        {traceOptions.map(id => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => onSelectTrace(id)}
+            className={`text-[10px] font-mono px-2 py-1 rounded border ${
+              traceInput === id
+                ? 'border-primary/50 bg-primary/10 text-primary'
+                : 'border-border text-muted-foreground hover:border-border-bright'
+            }`}
+          >
+            {shortTrace(id)}
+          </button>
+        ))}
+      </div>
+    )}
+  </div>
+)
+
+const ProfileCard = ({
+  profile,
+  fallbackIp,
+  hints,
+}: {
+  profile: AttackerProfile | null
+  fallbackIp: string
+  hints: string[]
+}) => (
+  <div className="lg:col-span-1 bg-surface border border-border rounded-xl p-4 space-y-3">
+    <div className="flex items-center gap-2">
+      {profile?.isBot ? <Bot className="w-5 h-5 text-danger" /> : <User className="w-5 h-5 text-muted-foreground" />}
+      <span className="font-mono font-bold text-foreground">{profile?.ip ?? fallbackIp}</span>
+    </div>
+    {profile?.city && (
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-mono">
+        <MapPin className="w-3 h-3" />
+        {profile.city}
+      </div>
+    )}
+    {(profile?.os || profile?.browser) && (
+      <p className="text-xs font-mono text-muted-foreground">
+        {[profile?.os, profile?.browser].filter(Boolean).join(' · ')}
+      </p>
+    )}
+    {profile && (
+      <>
+        <p className="text-xs font-mono">
+          Risk: <span className="text-accent font-bold">{profile.riskScore}/100</span>
+        </p>
+        <p className="text-[10px] font-mono text-muted-foreground/70">
+          First seen {formatDistanceToNow(new Date(profile.firstSeen), { addSuffix: true })}
+        </p>
+      </>
+    )}
+    {!profile && (
+      <p className="text-[10px] font-mono text-muted-foreground/70">No attacker profile yet — showing events only.</p>
+    )}
+
+    <div className="pt-3 border-t border-border">
+      <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-1">
+        <Lightbulb className="w-3 h-3 text-accent" />
+        Learning notes
+      </p>
+      <ul className="space-y-2">
+        {hints.map(hint => (
+          <li key={hint} className="text-[11px] font-mono text-muted-foreground leading-relaxed">
+            • {hint}
+          </li>
+        ))}
+      </ul>
+    </div>
+  </div>
+)
+
+const KillChain = ({ events }: { events: AttackEvent[] }) => (
+  <div className="lg:col-span-2 bg-surface border border-border rounded-xl p-4 overflow-y-auto min-h-[320px]">
+    <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-4">
+      Kill chain ({events.length} events)
+    </p>
+    {events.length === 0 ? (
+      <p className="text-xs font-mono text-muted-foreground">No events for this filter.</p>
+    ) : (
+      <div className="relative pl-6 border-l border-border space-y-6">
+        {events.map((evt, idx) => (
+          <TimelineNode key={evt.eventID} event={evt} prev={idx > 0 ? events[idx - 1] : undefined} />
+        ))}
+      </div>
+    )}
+  </div>
+)
+
 const AttackerWorkspace = () => {
   const { demoMode, attackEvents, attackerProfiles, getTimelineForIp } = useSocket()
   const { target, openInvestigation, clearInvestigation } = useInvestigation()
@@ -197,72 +354,24 @@ const AttackerWorkspace = () => {
 
   return (
     <div className="flex flex-col gap-4 h-full min-h-0">
-      <div className="bg-surface border border-border rounded-xl p-4">
-        <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-3">
-          Select attacker session
-        </p>
-        <div className="flex flex-wrap gap-3 items-end">
-          <label className="flex flex-col gap-1 text-xs font-mono">
-            <span className="text-muted-foreground">IP address</span>
-            <input
-              value={ipInput}
-              onChange={e => setIpInput(e.target.value)}
-              placeholder="185.220.101.5"
-              className="bg-background border border-border rounded-lg px-3 py-2 text-foreground min-w-[180px]"
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-xs font-mono">
-            <span className="text-muted-foreground">traceId (optional)</span>
-            <input
-              value={traceInput}
-              onChange={e => setTraceInput(e.target.value)}
-              placeholder="filter one session"
-              className="bg-background border border-border rounded-lg px-3 py-2 text-foreground min-w-[200px]"
-            />
-          </label>
-          <button
-            type="button"
-            onClick={() => {
-              openInvestigation({ ip: ipInput.trim(), traceId: traceInput.trim() || undefined })
-              loadTimeline()
-            }}
-            disabled={!ipInput.trim() || loading}
-            className="px-4 py-2 rounded-lg bg-primary/20 text-primary border border-primary/30 text-xs font-mono hover:bg-primary/30 disabled:opacity-50"
-          >
-            Load timeline
-          </button>
-          {target && (
-            <button
-              type="button"
-              onClick={clearInvestigation}
-              className="px-3 py-2 rounded-lg text-xs font-mono text-muted-foreground border border-border hover:text-foreground"
-            >
-              Clear
-            </button>
-          )}
-        </div>
-        {traceOptions.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {traceOptions.map(id => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => {
-                  setTraceInput(id)
-                  openInvestigation({ ip: ipInput.trim(), traceId: id })
-                }}
-                className={`text-[10px] font-mono px-2 py-1 rounded border ${
-                  traceInput === id
-                    ? 'border-primary/50 bg-primary/10 text-primary'
-                    : 'border-border text-muted-foreground hover:border-border-bright'
-                }`}
-              >
-                {shortTrace(id)}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+      <SessionSelector
+        ipInput={ipInput}
+        traceInput={traceInput}
+        loading={loading}
+        hasTarget={Boolean(target)}
+        traceOptions={traceOptions}
+        onIpChange={setIpInput}
+        onTraceChange={setTraceInput}
+        onLoad={() => {
+          openInvestigation({ ip: ipInput.trim(), traceId: traceInput.trim() || undefined })
+          loadTimeline()
+        }}
+        onClear={clearInvestigation}
+        onSelectTrace={id => {
+          setTraceInput(id)
+          openInvestigation({ ip: ipInput.trim(), traceId: id })
+        }}
+      />
 
       {loading && (
         <div className="text-xs font-mono text-muted-foreground flex items-center gap-2">
@@ -279,76 +388,8 @@ const AttackerWorkspace = () => {
 
       {timeline && (timeline.profile || timeline.events.length > 0) && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 min-h-0 flex-1">
-          <div className="lg:col-span-1 bg-surface border border-border rounded-xl p-4 space-y-3">
-            <div className="flex items-center gap-2">
-              {timeline.profile?.isBot ? (
-                <Bot className="w-5 h-5 text-danger" />
-              ) : (
-                <User className="w-5 h-5 text-muted-foreground" />
-              )}
-              <span className="font-mono font-bold text-foreground">{timeline.profile?.ip ?? ipInput}</span>
-            </div>
-            {timeline.profile?.city && (
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-mono">
-                <MapPin className="w-3 h-3" />
-                {timeline.profile.city}
-              </div>
-            )}
-            {(timeline.profile?.os || timeline.profile?.browser) && (
-              <p className="text-xs font-mono text-muted-foreground">
-                {[timeline.profile.os, timeline.profile.browser].filter(Boolean).join(' · ')}
-              </p>
-            )}
-            {timeline.profile && (
-              <>
-                <p className="text-xs font-mono">
-                  Risk: <span className="text-accent font-bold">{timeline.profile.riskScore}/100</span>
-                </p>
-                <p className="text-[10px] font-mono text-muted-foreground/70">
-                  First seen{' '}
-                  {formatDistanceToNow(new Date(timeline.profile.firstSeen), { addSuffix: true })}
-                </p>
-              </>
-            )}
-            {!timeline.profile && (
-              <p className="text-[10px] font-mono text-muted-foreground/70">
-                No attacker profile yet — showing events only.
-              </p>
-            )}
-
-            <div className="pt-3 border-t border-border">
-              <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-1">
-                <Lightbulb className="w-3 h-3 text-accent" />
-                Learning notes
-              </p>
-              <ul className="space-y-2">
-                {hints.map((hint) => (
-                  <li key={hint} className="text-[11px] font-mono text-muted-foreground leading-relaxed">
-                    • {hint}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-
-          <div className="lg:col-span-2 bg-surface border border-border rounded-xl p-4 overflow-y-auto min-h-[320px]">
-            <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-4">
-              Kill chain ({timeline.events.length} events)
-            </p>
-            {timeline.events.length === 0 ? (
-              <p className="text-xs font-mono text-muted-foreground">No events for this filter.</p>
-            ) : (
-              <div className="relative pl-6 border-l border-border space-y-6">
-                {timeline.events.map((evt, idx) => (
-                  <TimelineNode
-                    key={evt.eventID}
-                    event={evt}
-                    prev={idx > 0 ? timeline.events[idx - 1] : undefined}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
+          <ProfileCard profile={timeline.profile} fallbackIp={ipInput} hints={hints} />
+          <KillChain events={timeline.events} />
         </div>
       )}
 

@@ -11,6 +11,57 @@ type AdminUser = {
   updatedAt?: string
 }
 
+type UserRowProps = {
+  user: AdminUser
+  saving: boolean
+  onRoleChange: (role: AdminUser['role']) => void
+  onActiveChange: (isActive: boolean) => void
+  onResetFa: () => void
+  onSave: () => void
+}
+
+const UserRow = ({ user, saving, onRoleChange, onActiveChange, onResetFa, onSave }: UserRowProps) => (
+  <tr className="border-t border-border/60">
+    <td className="px-3 py-2 font-mono text-foreground">{user.username}</td>
+    <td className="px-3 py-2">
+      <select
+        value={user.role}
+        onChange={e => onRoleChange(e.target.value as AdminUser['role'])}
+        className="bg-background border border-border rounded-md px-2 py-1 text-xs font-mono"
+      >
+        <option value="user">user</option>
+        <option value="admin">admin</option>
+      </select>
+    </td>
+    <td className="px-3 py-2">
+      <input type="checkbox" checked={user.isActive} onChange={e => onActiveChange(e.target.checked)} />
+    </td>
+    <td className="px-3 py-2 text-right">
+      <RowActions saving={saving} onResetFa={onResetFa} onSave={onSave} />
+    </td>
+  </tr>
+)
+
+const RowActions = ({ saving, onResetFa, onSave }: { saving: boolean; onResetFa: () => void; onSave: () => void }) => (
+  <div className="flex items-center justify-end gap-2">
+    <button
+      onClick={onResetFa}
+      disabled={saving}
+      className="text-xs font-mono px-2.5 py-1 rounded-md bg-surface border border-border text-muted-foreground hover:text-foreground hover:border-border-bright transition-colors disabled:opacity-60"
+      title="Reset user's 2FA secret"
+    >
+      Reset 2FA
+    </button>
+    <button
+      onClick={onSave}
+      disabled={saving}
+      className="text-xs font-mono px-2.5 py-1 rounded-md bg-primary/15 border border-primary/25 text-primary hover:bg-primary/20 transition-colors disabled:opacity-60"
+    >
+      {saving ? 'Saving…' : 'Save'}
+    </button>
+  </div>
+)
+
 const AdminUsersPanel = () => {
   const [users, setUsers] = useState<AdminUser[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -139,45 +190,15 @@ const AdminUsersPanel = () => {
           </thead>
           <tbody>
             {sorted.map(u => (
-              <tr key={u._id} className="border-t border-border/60">
-                <td className="px-3 py-2 font-mono text-foreground">{u.username}</td>
-                <td className="px-3 py-2">
-                  <select
-                    value={u.role}
-                    onChange={e => setUsers(prev => prev.map(x => (x._id === u._id ? { ...x, role: e.target.value as any } : x)))}
-                    className="bg-background border border-border rounded-md px-2 py-1 text-xs font-mono"
-                  >
-                    <option value="user">user</option>
-                    <option value="admin">admin</option>
-                  </select>
-                </td>
-                <td className="px-3 py-2">
-                  <input
-                    type="checkbox"
-                    checked={u.isActive}
-                    onChange={e => setUsers(prev => prev.map(x => (x._id === u._id ? { ...x, isActive: e.target.checked } : x)))}
-                  />
-                </td>
-                <td className="px-3 py-2 text-right">
-                  <div className="flex items-center justify-end gap-2">
-                    <button
-                      onClick={() => reset2fa(u.username)}
-                      disabled={savingUser === u.username}
-                      className="text-xs font-mono px-2.5 py-1 rounded-md bg-surface border border-border text-muted-foreground hover:text-foreground hover:border-border-bright transition-colors disabled:opacity-60"
-                      title="Reset user's 2FA secret"
-                    >
-                      Reset 2FA
-                    </button>
-                    <button
-                      onClick={() => updateUser(u.username, { role: u.role, isActive: u.isActive })}
-                      disabled={savingUser === u.username}
-                      className="text-xs font-mono px-2.5 py-1 rounded-md bg-primary/15 border border-primary/25 text-primary hover:bg-primary/20 transition-colors disabled:opacity-60"
-                    >
-                      {savingUser === u.username ? 'Saving…' : 'Save'}
-                    </button>
-                  </div>
-                </td>
-              </tr>
+              <UserRow
+                key={u._id}
+                user={u}
+                saving={savingUser === u.username}
+                onRoleChange={role => setUsers(prev => prev.map(x => (x._id === u._id ? { ...x, role } : x)))}
+                onActiveChange={isActive => setUsers(prev => prev.map(x => (x._id === u._id ? { ...x, isActive } : x)))}
+                onResetFa={() => reset2fa(u.username)}
+                onSave={() => updateUser(u.username, { role: u.role, isActive: u.isActive })}
+              />
             ))}
             {!sorted.length && (
               <tr>
