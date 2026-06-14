@@ -1,0 +1,13 @@
+# Core API
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.4
+
+# ML stack — only pulled/used when ML_ENABLE_MODELS=true.
+# Pinned for reproducible, supply-chain-safe builds. CPU torch is plenty here.
+transformers==4.48.0
+sentence-transformers==3.3.1
+torch==2.5.1
+numpy==2.2.1
+# Force safetensors-only loads (no pickle) for HF supply-chain hygiene.
+safetensors==0.4.5

@@ -1,4 +1,4 @@
-import type { AttackEvent, TrapType } from '@/lib/types/telemetry'
+import type { AttackEvent, MlSeverity, TrapType } from '@/lib/types/telemetry'
 
 export function normalizeTrapType(raw: string): TrapType {
   const map: Record<string, TrapType> = {
@@ -90,6 +90,93 @@ export function learningHints(events: AttackEvent[], userAgent?: string): string
   }
   if (hints.length === 0) {
     hints.push('Collect more traps on this traceId to build a fuller attacker story.')
+  }
+  return hints
+}
+
+const SEVERITY_RANK: Record<MlSeverity, number> = { benign: 0, suspicious: 1, malicious: 2 }
+
+export function severityColor(severity?: MlSeverity): string {
+  switch (severity) {
+    case 'malicious':
+      return '#ef4444'
+    case 'suspicious':
+      return '#f59e0b'
+    case 'benign':
+      return '#22c55e'
+    default:
+      return '#7a9bb5'
+  }
+}
+
+export interface MlSummary {
+  riskScore: number
+  severity?: MlSeverity
+  tactics: string[]
+  techniques: Array<{ id: string; name: string; tactic: string }>
+  threatActor?: { group: string; confidence?: number }
+  modelsUsed: string[]
+  enrichedCount: number
+  engine?: string
+}
+
+/** Roll the per-event ML enrichment up into a single attacker-level summary. */
+export function summarizeMl(events: AttackEvent[]): MlSummary | null {
+  const enriched = events.filter(e => e.mlEnrichment)
+  if (enriched.length === 0) return null
+
+  let riskScore = 0
+  let severity: MlSeverity | undefined
+  const tactics = new Set<string>()
+  const techniques = new Map<string, { id: string; name: string; tactic: string }>()
+  const models = new Set<string>()
+  let actor: { group: string; confidence?: number } | undefined
+  let engine: string | undefined
+
+  for (const e of enriched) {
+    const ml = e.mlEnrichment!
+    if (typeof ml.riskScore === 'number') riskScore = Math.max(riskScore, ml.riskScore)
+    if (ml.severity && (!severity || SEVERITY_RANK[ml.severity] > SEVERITY_RANK[severity])) {
+      severity = ml.severity
+    }
+    if (ml.engine) engine = ml.engine
+    if (ml.mitre?.tactic) tactics.add(ml.mitre.tactic)
+    ml.mitre?.techniques?.forEach(t => {
+      if (t.id && !techniques.has(t.id)) techniques.set(t.id, { id: t.id, name: t.name, tactic: t.tactic })
+    })
+    ml.modelsUsed?.forEach(m => models.add(m))
+    const g = ml.threatActor?.group
+    if (g && g !== 'Unknown' && (!actor || (ml.threatActor?.confidence ?? 0) > (actor.confidence ?? 0))) {
+      actor = { group: g, confidence: ml.threatActor?.confidence }
+    }
+  }
+
+  return {
+    riskScore,
+    severity,
+    tactics: [...tactics],
+    techniques: [...techniques.values()],
+    threatActor: actor,
+    modelsUsed: [...models],
+    enrichedCount: enriched.length,
+    engine,
+  }
+}
+
+/** Extra learning notes derived from the ML enrichment (kept separate from regex hints). */
+export function mlHints(events: AttackEvent[]): string[] {
+  const summary = summarizeMl(events)
+  if (!summary) return []
+  const hints: string[] = []
+  if (summary.severity === 'malicious') {
+    hints.push(`ML severity: malicious (risk ${summary.riskScore}/100) — confirmed high-confidence attacker.`)
+  }
+  if (summary.tactics.length >= 2) {
+    hints.push(`ML maps this session across ${summary.tactics.length} ATT&CK tactics: ${summary.tactics.join(' → ')}.`)
+  }
+  if (summary.threatActor) {
+    const conf = summary.threatActor.confidence != null ? ` (${Math.round(summary.threatActor.confidence * 100)}%)` : ''
+    hints.push(`Possible threat-actor profile: ${summary.threatActor.group}${conf} — corroborate before acting.`)
   }
   return hints
 }

@@ -94,6 +94,9 @@ services:
       - ./.env
     environment:
       TRUSTED_PROXY_IPS: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+      # Best-effort ML enrichment (services/ml-threat-intel).
+      ML_SERVICE_URL: http://ml-threat-intel:3003
+      ML_ENRICHMENT_ENABLED: ${ML_ENRICHMENT_ENABLED:-true}
     expose:
       - "3002"
     healthcheck:
@@ -103,3 +106,32 @@ services:
       retries: 20
       start_period: 20s
     restart: unless-stopped
+
+  # ML threat-intel enrichment (Hugging Face models). Heuristic-only by default
+  # (ML_ENABLE_MODELS=false) so it boots instantly; flip the flag to load models.
+  ml-threat-intel:
+    build:
+      context: ..
+      dockerfile: infra/docker/Dockerfile.ml-threat-intel
+    env_file:
+      - ./.env
+    environment:
+      PORT: "3003"
+      ML_ENABLE_MODELS: ${ML_ENABLE_MODELS:-false}
+      ML_ENABLED_MODELS: ${ML_ENABLED_MODELS:-}
+      HF_HOME: /app/.hf-cache
+    volumes:
+      - ml-hf-cache:/app/.hf-cache
+    expose:
+      - "3003"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:3003/healthz').status==200 else 1)\""]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    restart: unless-stopped
+
+volumes:
+  # Persists Hugging Face model weights so they download only once.
+  ml-hf-cache:

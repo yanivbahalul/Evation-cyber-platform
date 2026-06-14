@@ -1,5 +1,72 @@
-import type { AttackEvent } from '@/lib/types/telemetry'
+import type { AttackEvent, MlEnrichment, MlSeverity } from '@/lib/types/telemetry'
 import { uniqueTraceIds } from '@/lib/attackIntel'
+
+function num(v: unknown): number | undefined {
+  return v != null && Number.isFinite(Number(v)) ? Number(v) : undefined
+}
+
+function str(v: unknown): string | undefined {
+  return v != null ? String(v) : undefined
+}
+
+function mapMlEnrichment(raw: unknown): MlEnrichment | undefined {
+  if (!raw || typeof raw !== 'object') return undefined
+  const m = raw as Record<string, unknown>
+  const payload = m.payload as Record<string, unknown> | undefined
+  const log = m.log as Record<string, unknown> | undefined
+  const mitre = m.mitre as Record<string, unknown> | undefined
+  const actor = m.threatActor as Record<string, unknown> | undefined
+
+  return {
+    riskScore: num(m.riskScore),
+    severity: str(m.severity) as MlSeverity | undefined,
+    engine: str(m.engine) as MlEnrichment['engine'],
+    payload: payload
+      ? {
+          label: str(payload.label),
+          attackType: str(payload.attackType),
+          confidence: num(payload.confidence),
+          model: str(payload.model),
+        }
+      : undefined,
+    log: log
+      ? { label: str(log.label), confidence: num(log.confidence), model: str(log.model) }
+      : undefined,
+    mitre: mitre
+      ? {
+          tactic: str(mitre.tactic),
+          tacticConfidence: num(mitre.tacticConfidence),
+          techniques: Array.isArray(mitre.techniques)
+            ? (mitre.techniques as Record<string, unknown>[]).map((t) => ({
+                id: String(t.id ?? ''),
+                name: String(t.name ?? ''),
+                tactic: String(t.tactic ?? ''),
+                score: num(t.score) ?? 0,
+              }))
+            : undefined,
+          model: str(mitre.model),
+        }
+      : undefined,
+    threatActor: actor
+      ? {
+          group: str(actor.group),
+          confidence: num(actor.confidence),
+          candidates: Array.isArray(actor.candidates)
+            ? (actor.candidates as Record<string, unknown>[]).map((c) => ({
+                group: String(c.group ?? ''),
+                score: num(c.score) ?? 0,
+              }))
+            : undefined,
+          model: str(actor.model),
+        }
+      : undefined,
+    styleSignature: str(m.styleSignature),
+    modelsUsed: Array.isArray(m.modelsUsed) ? m.modelsUsed.map(String) : undefined,
+    computedAt: m.computedAt
+      ? (m.computedAt instanceof Date ? m.computedAt : new Date(String(m.computedAt))).toISOString()
+      : undefined,
+  }
+}
 
 export function mapAttackEventDoc(e: Record<string, unknown>): AttackEvent {
   const ts = e.timestamp instanceof Date ? e.timestamp : new Date(String(e.timestamp ?? Date.now()))
@@ -33,6 +100,7 @@ export function mapAttackEventDoc(e: Record<string, unknown>): AttackEvent {
     secondaryTraps: Array.isArray(e.secondaryTraps)
       ? e.secondaryTraps.map(String)
       : undefined,
+    mlEnrichment: mapMlEnrichment(e.mlEnrichment),
   }
 }
 
@@ -61,5 +129,12 @@ export function mapAttackerProfileDoc(p: Record<string, unknown>) {
       ? (p.bannedAt instanceof Date ? p.bannedAt : new Date(String(p.bannedAt))).toISOString()
       : undefined,
     bannedBy: p.bannedBy != null ? String(p.bannedBy) : undefined,
+    mlRiskScore: num(p.mlRiskScore),
+    mlSeverity: str(p.mlSeverity) as MlSeverity | undefined,
+    mlTactics: Array.isArray(p.mlTactics) ? p.mlTactics.map(String) : undefined,
+    mlThreatActor: str(p.mlThreatActor),
+    mlThreatActorConfidence: num(p.mlThreatActorConfidence),
+    mlStyleSignatures: Array.isArray(p.mlStyleSignatures) ? p.mlStyleSignatures.map(String) : undefined,
+    mlModelsUsed: Array.isArray(p.mlModelsUsed) ? p.mlModelsUsed.map(String) : undefined,
   }
 }

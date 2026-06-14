@@ -1,11 +1,11 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Bot, Clock, Lightbulb, MapPin, RefreshCw, User } from 'lucide-react'
+import { Bot, BrainCircuit, Clock, Crosshair, Lightbulb, MapPin, RefreshCw, ShieldAlert, User } from 'lucide-react'
 import { useSocket } from '@/features/dashboard/context/SocketContext'
 import { useInvestigation } from '@/features/investigation/context/InvestigationContext'
-import type { AttackEvent, AttackerProfile, AttackerTimeline } from '@/lib/types/telemetry'
-import { deltaMs, learningHints, shortTrace, trapLabel } from '@/lib/attackIntel'
+import type { AttackEvent, AttackerProfile, AttackerTimeline, MlEnrichment } from '@/lib/types/telemetry'
+import { deltaMs, learningHints, mlHints, severityColor, shortTrace, summarizeMl, trapLabel } from '@/lib/attackIntel'
 import { formatDistanceToNow } from 'date-fns'
 
 const TRAP_COLORS: Record<string, string> = {
@@ -112,8 +112,10 @@ export default function AttackerWorkspace() {
   const hints = useMemo(() => {
     if (!timeline?.events.length) return []
     const ua = timeline.events.find(e => e.userAgent)?.userAgent
-    return learningHints(timeline.events, ua)
+    return [...learningHints(timeline.events, ua), ...mlHints(timeline.events)]
   }, [timeline])
+
+  const ml = useMemo(() => (timeline?.events.length ? summarizeMl(timeline.events) : null), [timeline])
 
   const traceOptions = useMemo(() => {
     const ids = new Set<string>()
@@ -243,6 +245,75 @@ export default function AttackerWorkspace() {
               </p>
             )}
 
+            {ml && (
+              <div className="pt-3 border-t border-border space-y-2">
+                <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1 flex items-center gap-1">
+                  <BrainCircuit className="w-3 h-3 text-accent" />
+                  ML threat intel
+                  {ml.engine && (
+                    <span className="ml-auto text-[8px] font-mono px-1 py-0.5 rounded bg-background border border-border text-muted-foreground/70">
+                      {ml.engine}
+                    </span>
+                  )}
+                </p>
+                {ml.severity && (
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="text-[10px] font-bold px-2 py-0.5 rounded uppercase"
+                      style={{
+                        background: `${severityColor(ml.severity)}20`,
+                        color: severityColor(ml.severity),
+                        border: `1px solid ${severityColor(ml.severity)}40`,
+                      }}
+                    >
+                      {ml.severity}
+                    </span>
+                    <span className="text-[11px] font-mono text-muted-foreground">
+                      ML risk <span className="text-accent font-bold">{ml.riskScore}/100</span>
+                    </span>
+                  </div>
+                )}
+                {ml.tactics.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-1">
+                    <Crosshair className="w-3 h-3 text-muted-foreground" />
+                    {ml.tactics.map(t => (
+                      <span
+                        key={t}
+                        className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20"
+                      >
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {ml.techniques.length > 0 && (
+                  <ul className="space-y-0.5">
+                    {ml.techniques.slice(0, 4).map(t => (
+                      <li key={t.id} className="text-[10px] font-mono text-muted-foreground/80">
+                        <span className="text-accent">{t.id}</span> {t.name}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {ml.threatActor && (
+                  <p className="text-[10px] font-mono text-muted-foreground flex items-center gap-1">
+                    <ShieldAlert className="w-3 h-3 text-danger" />
+                    Actor: <span className="text-foreground">{ml.threatActor.group}</span>
+                    {ml.threatActor.confidence != null && (
+                      <span className="text-muted-foreground/60">
+                        ({Math.round(ml.threatActor.confidence * 100)}%)
+                      </span>
+                    )}
+                  </p>
+                )}
+                {ml.modelsUsed.length > 0 && (
+                  <p className="text-[9px] font-mono text-muted-foreground/50 leading-relaxed">
+                    Models: {ml.modelsUsed.map(m => m.split('/').pop()).join(', ')}
+                  </p>
+                )}
+              </div>
+            )}
+
             <div className="pt-3 border-t border-border">
               <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-1">
                 <Lightbulb className="w-3 h-3 text-accent" />
@@ -313,6 +384,41 @@ function normalizeTimeline(data: AttackerTimeline, ip: string): AttackerTimeline
   }
 }
 
+function MlEventBadge({ ml }: { ml: MlEnrichment }) {
+  const topTech = ml.mitre?.techniques?.[0]
+  const conf = ml.payload?.confidence != null ? ` ${Math.round(ml.payload.confidence * 100)}%` : ''
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+      <span className="text-[8px] font-mono uppercase tracking-wider text-muted-foreground/60 flex items-center gap-0.5">
+        <BrainCircuit className="w-2.5 h-2.5" /> ML
+      </span>
+      {ml.severity && (
+        <span
+          className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase"
+          style={{
+            background: `${severityColor(ml.severity)}20`,
+            color: severityColor(ml.severity),
+            border: `1px solid ${severityColor(ml.severity)}40`,
+          }}
+        >
+          {ml.severity}
+          {conf}
+        </span>
+      )}
+      {ml.payload?.attackType && ml.payload.attackType !== 'NONE' && (
+        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-background border border-border text-muted-foreground">
+          {ml.payload.attackType}
+        </span>
+      )}
+      {topTech && (
+        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">
+          {topTech.id} · {topTech.tactic}
+        </span>
+      )}
+    </div>
+  )
+}
+
 function TimelineNode({ event, prev }: { event: AttackEvent; prev?: AttackEvent }) {
   const color = TRAP_COLORS[event.trapType] ?? '#7a9bb5'
   const d = prev ? deltaMs(prev.timestamp, event.timestamp) : null
@@ -354,6 +460,7 @@ function TimelineNode({ event, prev }: { event: AttackEvent; prev?: AttackEvent 
           {event.payload.length > 200 ? `${event.payload.slice(0, 200)}…` : event.payload}
         </pre>
       )}
+      {event.mlEnrichment && <MlEventBadge ml={event.mlEnrichment} />}
       <p className="mt-1 text-[10px] text-success font-mono">
         wasted {(event.wasted_time_ms / 1000).toFixed(1)}s · {event.bytes_sent}B
       </p>
