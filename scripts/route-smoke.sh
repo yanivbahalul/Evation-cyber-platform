@@ -13,7 +13,7 @@ check_redirect() {
   code=$(curl -s --max-time 10 -o /dev/null -w "%{http_code}" "$url" 2>/dev/null || echo "000")
   local ok=0
   IFS='|' read -ra codes <<< "$expect"
-  for c in "${codes[@]}"; do [[ "$code" == "$c" ]] && ok=1 && break; done
+  for c in "${codes[@]}"; do [[ "$code" = "$c" ]] && ok=1 && break; done
   if [[ $ok -eq 1 ]]; then echo "PASS [$code] $name"; PASS=$((PASS + 1))
   else echo "FAIL [$code] $name (expected $expect)"; FAIL=$((FAIL + 1)); fi
 }
@@ -21,7 +21,7 @@ check_redirect() {
 check() {
   local name="$1" url="$2" expect="$3" method="${4:-GET}"
   local code body
-  if [[ "$method" == "POST" ]]; then
+  if [[ "$method" = "POST" ]]; then
     code=$(curl -s --max-time 10 -o /tmp/route_smoke_body -w "%{http_code}" -X POST -L "$url" 2>/dev/null || echo "000")
   else
     code=$(curl -s --max-time 10 -o /tmp/route_smoke_body -w "%{http_code}" -L "$url" 2>/dev/null || echo "000")
@@ -30,7 +30,7 @@ check() {
   local ok=0
   IFS='|' read -ra codes <<< "$expect"
   for c in "${codes[@]}"; do
-    if [[ "$code" == "$c" ]]; then ok=1; break; fi
+    if [[ "$code" = "$c" ]]; then ok=1; break; fi
   done
   if echo "$body" | grep -qi "Cannot GET\|Cannot POST"; then ok=0; fi
   if [[ $ok -eq 1 ]]; then

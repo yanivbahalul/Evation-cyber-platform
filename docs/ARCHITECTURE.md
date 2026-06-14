@@ -9,6 +9,7 @@ Quick navigation for developers. For attack demos and trap walkthroughs, see [RE
 | [`admin-panel/`](../admin-panel/) | Next.js UI (port 3000), proxies `/gateway/*` to the honeypot gateway |
 | [`services/innotech-gateway/`](../services/innotech-gateway/) | Express + EJS HR portal, gatekeeper, traps (port 4001) |
 | [`services/logging-data-extraction/`](../services/logging-data-extraction/) | Telemetry API, Mongo writes, Socket.IO live alerts (port 3002) |
+| [`services/ml-threat-intel/`](../services/ml-threat-intel/) | Hugging Face ML enrichment (`POST /enrich`, port 3003) — see [ML_THREAT_INTEL.md](./ML_THREAT_INTEL.md) |
 | [`packages/shared-constants/`](../packages/shared-constants/) | `TRAP_TYPES` enum (gateway + telemetry + admin) |
 | [`packages/shared-utils/`](../packages/shared-utils/) | `getAttackerIp` and shared helpers |
 | [`packages/db-schemas/`](../packages/db-schemas/) | Mongoose schemas (malicious DB, `AdminUser`, `RealEmployee`) |
@@ -57,6 +58,8 @@ flowchart LR
   AdminPanel -->|rewrite /gateway| Gateway["innotech-gateway :4001"]
   Gateway -->|report via HTTP POST /internal/attack| Telemetry["logging-data-extraction :3002"]
   Telemetry -->|writes events + profiles| MaliciousDB[(Malicious MongoDB)]
+  Telemetry -->|POST /enrich best-effort| MLThreatIntel["ml-threat-intel :3003"]
+  MLThreatIntel -->|mlEnrichment| MaliciousDB
   Telemetry -->|Socket.IO liveAlert| AdminPanel
   Gateway --> SafezoneDB[(Safezone MongoDB)]
 ```

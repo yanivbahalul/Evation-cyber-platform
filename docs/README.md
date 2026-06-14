@@ -5,6 +5,7 @@ Project documentation and the official specifications.
 | File | Purpose |
 |------|---------|
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | Codebase map — where to find traps, APIs, and databases |
+| [`ML_THREAT_INTEL.md`](ML_THREAT_INTEL.md) | שימוש במודלי Hugging Face — זרימה, מודלים, DB, ו-UI (עברית) |
 | `Design.docx` | Product design document |
 | `Diagrams.pdf` | System diagrams |
 | `Requirements.docx` | Project requirements |

@@ -134,7 +134,8 @@ export function summarizeMl(events: AttackEvent[]): MlSummary | null {
   let engine: string | undefined
 
   for (const e of enriched) {
-    const ml = e.mlEnrichment!
+    const ml = e.mlEnrichment
+    if (!ml) continue
     if (typeof ml.riskScore === 'number') riskScore = Math.max(riskScore, ml.riskScore)
     if (ml.severity && (!severity || SEVERITY_RANK[ml.severity] > SEVERITY_RANK[severity])) {
       severity = ml.severity

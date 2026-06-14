@@ -96,7 +96,7 @@ router.get('/debug/totp', async (req, res) => {
         const admin = await AdminUser.findOne({ username, isActive: true }).select(
             '+totpSecretEnc +totpSecretIv +totpSecretTag'
         );
-        if (admin && admin.totpEnabled && admin.totpSecretEnc && admin.totpSecretIv && admin.totpSecretTag) {
+        if (admin?.totpEnabled && admin.totpSecretEnc && admin.totpSecretIv && admin.totpSecretTag) {
             const secret = decryptTotpSecret({
                 ctB64: admin.totpSecretEnc,
                 ivB64: admin.totpSecretIv,
@@ -155,9 +155,9 @@ router.post('/telemetry/screen-beacon', express.json(), async (req, res) => {
         }
         const resolution = `${Math.min(w, 9999)}x${Math.min(h, 9999)}`;
         await postScreenResolution(ip, resolution);
-        res.status(204).end();
+        return res.status(204).end();
     } catch {
-        res.status(204).end();
+        return res.status(204).end();
     }
 });
 
@@ -191,10 +191,10 @@ router.get('/sitemap.xml', (req, res) => {
   const base = BASE_PATH || '';
   const host = `${req.protocol}://${req.get('host')}`;
   res.type('application/xml').send(
-    `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">` +
+    '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' +
     `<url><loc>${host}${base}/internal/console</loc></url>` +
     `<url><loc>${host}${base}/internal/auth/legacy</loc></url>` +
-    `</urlset>`
+    '</urlset>'
   );
 });
 router.post(DP.signOut, decoyController.logoutLegacyAdmin);

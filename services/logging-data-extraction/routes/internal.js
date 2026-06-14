@@ -26,7 +26,7 @@ function requireToken(req, res, next) {
   if (token !== expected) {
     return res.status(401).json({ success: false, error: 'Unauthorized' });
   }
-  next();
+  return next();
 }
 
 function hasResolvedGeo(body) {

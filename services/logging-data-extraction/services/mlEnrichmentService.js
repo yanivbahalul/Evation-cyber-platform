@@ -131,7 +131,7 @@ async function enrichEventSafe(eventDoc, attackData) {
       referer: attackData.referer,
       attackerIp,
       trapSequence,
-      isBot: !!fp.isBot,
+      isBot: Boolean(fp.isBot),
     };
 
     const enrichment = await callEnrich(payload);
