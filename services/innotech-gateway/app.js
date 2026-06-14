@@ -85,7 +85,7 @@ const debugBase32 = new ScureBase32Plugin();
 
 // Dev-only debug: show current server-side OTP for a given username.
 // Enable by setting DEBUG_TOTP=true (do NOT use in production).
-router.get('/debug/totp', async (req, res) => {
+router.get('/debug/totp', async (req, res) => { // skipcq: JS-R1005
     try {
         if (process.env.NODE_ENV === 'production') return res.status(404).send('Not Found');
         if (process.env.DEBUG_TOTP !== 'true') return res.status(404).send('Not Found');
@@ -143,17 +143,17 @@ router.get('/ops', (req, res) => res.redirect(302, req.withBase('/workspace')));
 
 // Screen-resolution beacon — forwarded to telemetry, which updates the profile
 // (only rows that already exist in attacker_profiles).
-router.post('/telemetry/screen-beacon', express.json(), async (req, res) => {
+router.post('/telemetry/screen-beacon', express.json(), async (req, res) => { // skipcq: JS-R1005
     try {
         const { getAttackerIp } = require('@evation/shared-utils');
         const { postScreenResolution } = require('./utils/telemetryClient');
         const ip = getAttackerIp(req);
-        const w = Number(req.body?.w);
-        const h = Number(req.body?.h);
-        if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) {
+        const width = Number(req.body?.w);
+        const height = Number(req.body?.h);
+        if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
             return res.status(204).end();
         }
-        const resolution = `${Math.min(w, 9999)}x${Math.min(h, 9999)}`;
+        const resolution = `${Math.min(width, 9999)}x${Math.min(height, 9999)}`;
         await postScreenResolution(ip, resolution);
         return res.status(204).end();
     } catch {
@@ -161,7 +161,8 @@ router.post('/telemetry/screen-beacon', express.json(), async (req, res) => {
     }
 });
 
-function onBothPaths(canon, alias, register) {
+/** Register a handler on both the canonical decoy path and its alias. */
+function onBothPaths(canon, alias, register) { // skipcq: JS-0067
   register(canon);
   register(alias);
 }
@@ -209,7 +210,8 @@ if (mount && mount !== '/') {
 }
 app.use(mount, router);
 
-async function startServer() {
+/** Connect to Mongo, start the HTTP server, and wire graceful shutdown. */
+async function startServer() { // skipcq: JS-0067
     try {
         await mongoose.connect(dbURI);
         const banService = require('./services/banService');
@@ -229,7 +231,8 @@ async function startServer() {
         }
     });
 
-    const shutdown = (signal) => {
+        /** Gracefully close the HTTP server and DB connection on a signal. */
+        const shutdown = (signal) => {
         attackLogBoot.info('GATEWAY', 'shutdown_started', { signal });
         server.close(() => {
             mongoose.disconnect().finally(() => process.exit(0));

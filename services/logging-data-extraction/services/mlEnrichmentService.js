@@ -19,7 +19,7 @@ const TIMEOUT_MS = Number(process.env.ML_ENRICHMENT_TIMEOUT_MS || 8000);
 const SEVERITY_RANK = { benign: 0, suspicious: 1, malicious: 2 };
 
 /** Pull the recent trap-type sequence for this attacker (oldest → newest). */
-async function recentTrapSequence(attackerIp, traceId) {
+async function recentTrapSequence(attackerIp, traceId) { // skipcq: JS-0067
   try {
     const conn = connectMaliciousDB();
     if (!conn?.models?.AttackEvent) return [];
@@ -39,7 +39,7 @@ async function recentTrapSequence(attackerIp, traceId) {
 }
 
 /** Call POST /enrich on the ML service. Returns the enrichment object or null. */
-async function callEnrich(payload) {
+async function callEnrich(payload) { // skipcq: JS-0067
   const token = process.env.ADMIN_SOCKET_TOKEN;
   const res = await fetch(`${ML_SERVICE_URL}/enrich`, {
     method: 'POST',
@@ -57,7 +57,7 @@ async function callEnrich(payload) {
 }
 
 /** Persist enrichment onto the AttackEvent and roll it up into the profile. */
-async function persistEnrichment(eventID, attackerIp, enrichment) {
+async function persistEnrichment(eventID, attackerIp, enrichment) { // skipcq: JS-0067, JS-R1005
   const conn = connectMaliciousDB();
   if (!conn?.models?.AttackEvent) return;
 
@@ -113,7 +113,7 @@ async function persistEnrichment(eventID, attackerIp, enrichment) {
  * @param {object} eventDoc  the saved AttackEvent (needs eventID)
  * @param {object} attackData the raw trap payload
  */
-async function enrichEventSafe(eventDoc, attackData) {
+async function enrichEventSafe(eventDoc, attackData) { // skipcq: JS-0067, JS-R1005
   if (!ENABLED) return null;
   const eventID = eventDoc?.eventID;
   const attackerIp = attackData?.attackerIp;

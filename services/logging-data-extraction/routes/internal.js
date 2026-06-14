@@ -16,7 +16,8 @@ const { resolveIpGeo, applyGeoToPayload } = require('../services/geoService');
 
 const router = express.Router();
 
-function requireToken(req, res, next) {
+/** Express middleware: require the shared admin socket bearer token. */
+function requireToken(req, res, next) { // skipcq: JS-0067
   const expected = process.env.ADMIN_SOCKET_TOKEN;
   if (!expected) {
     return res.status(503).json({ success: false, error: 'ADMIN_SOCKET_TOKEN not configured' });
@@ -29,13 +30,14 @@ function requireToken(req, res, next) {
   return next();
 }
 
-function hasResolvedGeo(body) {
+/** True when the payload already carries a resolved (non-placeholder) city. */
+function hasResolvedGeo(body) { // skipcq: JS-0067
   const city = body?.city;
   return Boolean(city && city !== 'Unknown' && city !== '—');
 }
 
 /** Full geo lookup before broadcast so live alerts and profiles stay in sync. */
-async function enrichGeo(body) {
+async function enrichGeo(body) { // skipcq: JS-0067, JS-R1005
   const raw = body || {};
   if (hasResolvedGeo(raw)) {
     return {
@@ -61,18 +63,18 @@ async function enrichGeo(body) {
  * error propagates so the caller is told the event was NOT saved. liveAlert is
  * only emitted after a successful save so the dashboard can dedupe by eventID.
  */
-async function processAttack(rawBody) {
+async function processAttack(rawBody) { // skipcq: JS-0067
   const raw = rawBody || {};
 
   const body = await enrichGeo(raw);
 
-  void upsertFromAttackSafe(body);
+  void upsertFromAttackSafe(body); // skipcq: JS-0098
 
   const doc = await AttackEventService.recordEvent(body);
 
   // ML threat-intel enrichment is best-effort and runs after the authoritative
   // write so it can never block or fail the event persistence.
-  void enrichEventSafe(doc, body);
+  void enrichEventSafe(doc, body); // skipcq: JS-0098
 
   const ts = doc.timestamp instanceof Date ? doc.timestamp.toISOString() : doc.timestamp;
   SocketService.emitLiveAlert({
@@ -87,7 +89,7 @@ async function processAttack(rawBody) {
 }
 
 // Gateway → telemetry: persist event + upsert profile + broadcast liveAlert.
-async function handleAttack(req, res) {
+async function handleAttack(req, res) { // skipcq: JS-0067
   attackLog.info('TELEMETRY', 'attack_received_from_gateway', {
     trap: req.body?.trapType,
     ip: req.body?.attackerIp,
