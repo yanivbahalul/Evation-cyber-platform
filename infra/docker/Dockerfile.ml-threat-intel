@@ -1,0 +1,27 @@
+FROM python:3.12-slim AS base
+
+WORKDIR /app
+
+ENV PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PORT=3003 \
+    HF_HOME=/app/.hf-cache
+
+# Only install the heavy ML stack (torch/transformers, ~GBs) when explicitly
+# requested. Default build stays small and fast and runs heuristic-only.
+ARG INSTALL_ML=false
+
+# Install deps first for better layer caching.
+COPY services/ml-threat-intel/requirements.txt ./requirements.txt
+COPY services/ml-threat-intel/requirements-ml.txt ./requirements-ml.txt
+RUN pip install --no-cache-dir -r requirements.txt \
+    && if [ "$INSTALL_ML" = "true" ]; then pip install --no-cache-dir -r requirements-ml.txt; fi
+
+COPY services/ml-threat-intel/ ./
+
+# Persist downloaded model weights across restarts (mount a named volume here).
+RUN mkdir -p /app/.hf-cache
+VOLUME ["/app/.hf-cache"]
+
+EXPOSE 3003
+CMD ["python", "app.py"]

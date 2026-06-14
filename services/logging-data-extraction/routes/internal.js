@@ -11,6 +11,7 @@ const {
   recordScreenResolution,
   getBannedIps,
 } = require('../services/AttackerProfileService');
+const { enrichEventSafe } = require('../services/mlEnrichmentService');
 const { resolveIpGeo, applyGeoToPayload } = require('../services/geoService');
 
 const router = express.Router();
@@ -68,6 +69,10 @@ async function processAttack(rawBody) {
   void upsertFromAttackSafe(body);
 
   const doc = await AttackEventService.recordEvent(body);
+
+  // ML threat-intel enrichment is best-effort and runs after the authoritative
+  // write so it can never block or fail the event persistence.
+  void enrichEventSafe(doc, body);
 
   const ts = doc.timestamp instanceof Date ? doc.timestamp.toISOString() : doc.timestamp;
   SocketService.emitLiveAlert({

@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const { randomUUID } = require('crypto');
 const TRAP_TYPES = require('@evation/shared-constants');
+const MlEnrichmentSchema = require('./mlEnrichment');
 
 const AttackEventSchema = new mongoose.Schema(
   {
@@ -51,6 +52,9 @@ const AttackEventSchema = new mongoose.Schema(
     handoffFrom: String,
     xssTier: String,
     secondaryTraps: [String],
+    // ML threat-intel enrichment (services/ml-threat-intel). Optional: attached
+    // best-effort after the event is persisted, so older rows may lack it.
+    mlEnrichment: { type: MlEnrichmentSchema, default: undefined },
     timestamp: {
       type: Date,
       default: Date.now,

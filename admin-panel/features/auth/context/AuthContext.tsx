@@ -17,7 +17,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     fetch('/api/admin/logout', { method: 'POST' }).catch(() => {
       /* best-effort cookie clear before redirect */
     })
-    window.location.assign('/gateway/')
+    window.location.assign('/gateway/logout')
   }, [])
 
   return <AuthContext.Provider value={{ logout }}>{children}</AuthContext.Provider>

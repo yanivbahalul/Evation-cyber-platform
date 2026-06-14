@@ -557,7 +557,7 @@ Turn **Demo Mode OFF** on the dashboard so events come from the real malicious D
 | **Threat Map** | Live feed shows trap, IP, city, **traceId** (short), and **path**. Click a row → **Investigate** tab opens with that session. |
 | **Attack Events** | Columns: trace, path, bot icon. Click a row → full detail: method, User-Agent, referer, fingerprint, handoff, pretty-printed payload, **Investigate attacker**. |
 | **Attacker Profiles** | Risk score, geo, **traceIds** chips. **Investigate** or click a trace chip. |
-| **Investigate** | Kill-chain timeline (oldest → newest), Δ time between traps, learning notes (e.g. sqlmap UA, full deception chain). |
+| **Investigate** | Kill-chain timeline (oldest → newest), Δ time between traps, learning notes (e.g. sqlmap UA, full deception chain), and **ML threat intel** — per-event severity/attack-type/MITRE technique plus an attacker-level ATT&CK tactic, risk score, and threat-actor profile. |
 
 ### Per trap — what should appear in the UI
 
@@ -654,4 +654,4 @@ Watch logs: `docker compose logs -f gateway telemetry` (from `infra/`).
 
 ## Architecture (one line)
 
-**Gatekeeper** (`getThreatTypes`, primary + secondary) → **decoyReroute** → trap + **`report()`** (Mongo + fingerprint + `traceId`) → HTTP **live alert** → telemetry **profile upsert** + **Socket.IO** `liveAlert` → admin UI timeline.
+**Gatekeeper** (`getThreatTypes`, primary + secondary) → **decoyReroute** → trap + **`report()`** (Mongo + fingerprint + `traceId`) → HTTP **live alert** → telemetry **profile upsert** + **Socket.IO** `liveAlert` → admin UI timeline. Each saved event is also enriched best-effort by the **ML threat-intel service** (`services/ml-threat-intel`, Hugging Face models) and the result is shown in the Investigate tab.

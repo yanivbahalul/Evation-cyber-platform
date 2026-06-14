@@ -22,6 +22,47 @@ export interface AttackerFingerprint {
   screenResolution?: string
 }
 
+export type MlSeverity = 'benign' | 'suspicious' | 'malicious'
+
+export interface MlTechnique {
+  id: string
+  name: string
+  tactic: string
+  score: number
+}
+
+export interface MlEnrichment {
+  riskScore?: number
+  severity?: MlSeverity
+  engine?: 'ml' | 'heuristic' | 'hybrid'
+  payload?: {
+    label?: string
+    attackType?: string
+    confidence?: number
+    model?: string
+  }
+  log?: {
+    label?: string
+    confidence?: number
+    model?: string
+  }
+  mitre?: {
+    tactic?: string
+    tacticConfidence?: number
+    techniques?: MlTechnique[]
+    model?: string
+  }
+  threatActor?: {
+    group?: string
+    confidence?: number
+    candidates?: Array<{ group: string; score: number }>
+    model?: string
+  }
+  styleSignature?: string
+  modelsUsed?: string[]
+  computedAt?: string
+}
+
 export interface AttackEvent {
   eventID: string
   attackerIp: string
@@ -39,6 +80,7 @@ export interface AttackEvent {
   handoffFrom?: string
   xssTier?: string
   secondaryTraps?: string[]
+  mlEnrichment?: MlEnrichment
 }
 
 export interface LiveAlert extends AttackEvent {
@@ -79,6 +121,13 @@ export interface AttackerProfile {
   banned?: boolean
   bannedAt?: string
   bannedBy?: string
+  mlRiskScore?: number
+  mlSeverity?: MlSeverity
+  mlTactics?: string[]
+  mlThreatActor?: string
+  mlThreatActorConfidence?: number
+  mlStyleSignatures?: string[]
+  mlModelsUsed?: string[]
 }
 
 export interface AttackerTimeline {

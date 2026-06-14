@@ -1,0 +1,11 @@
+# Optional ML stack — only needed when ML_ENABLE_MODELS=true (real Hugging Face
+# models). Pinned for reproducible, supply-chain-safe builds. CPU torch is plenty.
+#
+#   pip install -r requirements.txt        # core (always)
+#   pip install -r requirements-ml.txt     # then this, to enable real models
+transformers==4.48.0
+sentence-transformers==3.3.1
+torch==2.5.1
+numpy==2.2.1
+# Force safetensors-only loads (no pickle) for HF supply-chain hygiene.
+safetensors==0.4.5

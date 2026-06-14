@@ -128,6 +128,7 @@ router.post('/register/verify-otp', realController.verifyRegistrationOtp);
 router.get('/login', realController.renderLoginPage);
 router.post('/login', realController.loginUser);
 router.post('/login/verify-otp', realController.verifyLoginOtp);
+router.get('/logout', realController.logoutUser);
 router.post('/logout', realController.logoutUser);
 router.get('/me', requireAuth, realController.renderMePage);
 router.get('/workspace', requireAuth, realController.renderDashboardPage);
@@ -137,6 +138,8 @@ router.get('/documents/:filename', requireAuth, realController.serveDocument);
 router.get('/contact', realController.renderContactPage);
 router.post('/contact', realController.submitContact);
 router.get('/search', realController.renderSearchPage);
+// Legacy alias — nginx catch-all maps /gateway/ops here; redirect to workspace.
+router.get('/ops', (req, res) => res.redirect(302, req.withBase('/workspace')));
 
 // Screen-resolution beacon — forwarded to telemetry, which updates the profile
 // (only rows that already exist in attacker_profiles).
@@ -195,6 +198,7 @@ router.get('/sitemap.xml', (req, res) => {
   );
 });
 router.post(DP.signOut, decoyController.logoutLegacyAdmin);
+router.get(DP.signOut, decoyController.logoutLegacyAdmin);
 
 // Serve landing without 301 when path is exactly /gateway (no trailing slash).
 if (mount && mount !== '/') {
