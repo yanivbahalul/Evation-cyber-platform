@@ -5,57 +5,19 @@ import { useSocket, type HoneyToken } from '@/features/dashboard/context/SocketC
 import { Key, ShieldAlert, ShieldCheck, Clock, Globe, ChevronDown, ChevronRight, Eye, EyeOff } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 
-/**
- * HoneyTokenPanel — renders all HoneyToken documents from the telemetry DB.
- *
- * Each token shows:
- *   - fakeUsername / fakePassword (masked by default)
- *   - isTriggered status
- *   - triggeredLogs[] — additive forensics (who, when, where)
- *     per the HoneyTokenSchema spec.
- */
-const HoneyTokenPanel = () => {
-  const { honeyTokens } = useSocket()
-  const triggered  = honeyTokens.filter(t => t.isTriggered)
-  const untriggered = honeyTokens.filter(t => !t.isTriggered)
-
+const SummaryCard = ({ label, value, color, icon: Icon }: { label: string; value: number; color: string; icon: React.ElementType }) => {
   return (
-    <div className="flex flex-col gap-5 h-full overflow-y-auto">
-      {/* Summary */}
-      <div className="grid grid-cols-3 gap-3">
-        <SummaryCard label="Total Tokens"  value={honeyTokens.length}    color="text-primary"    icon={Key} />
-        <SummaryCard label="Triggered"     value={triggered.length}      color="text-accent"     icon={ShieldAlert} />
-        <SummaryCard label="Intact"        value={untriggered.length}    color="text-success"    icon={ShieldCheck} />
+    <div className="bg-surface border border-border rounded-xl px-4 py-3 flex items-center gap-3">
+      <div className={`p-2 rounded-lg bg-surface-elevated ${color}`}>
+        <Icon className="w-4 h-4" />
       </div>
-
-      {/* Triggered section */}
-      {triggered.length > 0 && (
-        <section>
-          <h3 className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-accent mb-3">
-            <ShieldAlert className="w-3.5 h-3.5" />
-            Triggered Honey Tokens ({triggered.length})
-          </h3>
-          <div className="flex flex-col gap-3">
-            {triggered.map(t => <TokenCard key={t._id} token={t} />)}
-          </div>
-        </section>
-      )}
-
-      {/* Intact section */}
-      <section>
-        <h3 className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-success mb-3">
-          <ShieldCheck className="w-3.5 h-3.5" />
-          Intact Honey Tokens ({untriggered.length})
-        </h3>
-        <div className="flex flex-col gap-3">
-          {untriggered.map(t => <TokenCard key={t._id} token={t} />)}
-        </div>
-      </section>
+      <div>
+        <p className={`text-2xl font-bold ${color} leading-none`}>{value}</p>
+        <p className="text-[10px] font-mono text-muted-foreground mt-0.5">{label}</p>
+      </div>
     </div>
   )
 }
-
-export default HoneyTokenPanel
 
 const TokenCard = ({ token }: { token: HoneyToken }) => {
   const [expanded, setExpanded] = useState(false)
@@ -154,16 +116,54 @@ const TokenCard = ({ token }: { token: HoneyToken }) => {
   )
 }
 
-const SummaryCard = ({ label, value, color, icon: Icon }: { label: string; value: number; color: string; icon: React.ElementType }) => {
+/**
+ * HoneyTokenPanel — renders all HoneyToken documents from the telemetry DB.
+ *
+ * Each token shows:
+ *   - fakeUsername / fakePassword (masked by default)
+ *   - isTriggered status
+ *   - triggeredLogs[] — additive forensics (who, when, where)
+ *     per the HoneyTokenSchema spec.
+ */
+const HoneyTokenPanel = () => {
+  const { honeyTokens } = useSocket()
+  const triggered  = honeyTokens.filter(t => t.isTriggered)
+  const untriggered = honeyTokens.filter(t => !t.isTriggered)
+
   return (
-    <div className="bg-surface border border-border rounded-xl px-4 py-3 flex items-center gap-3">
-      <div className={`p-2 rounded-lg bg-surface-elevated ${color}`}>
-        <Icon className="w-4 h-4" />
+    <div className="flex flex-col gap-5 h-full overflow-y-auto">
+      {/* Summary */}
+      <div className="grid grid-cols-3 gap-3">
+        <SummaryCard label="Total Tokens"  value={honeyTokens.length}    color="text-primary"    icon={Key} />
+        <SummaryCard label="Triggered"     value={triggered.length}      color="text-accent"     icon={ShieldAlert} />
+        <SummaryCard label="Intact"        value={untriggered.length}    color="text-success"    icon={ShieldCheck} />
       </div>
-      <div>
-        <p className={`text-2xl font-bold ${color} leading-none`}>{value}</p>
-        <p className="text-[10px] font-mono text-muted-foreground mt-0.5">{label}</p>
-      </div>
+
+      {/* Triggered section */}
+      {triggered.length > 0 && (
+        <section>
+          <h3 className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-accent mb-3">
+            <ShieldAlert className="w-3.5 h-3.5" />
+            Triggered Honey Tokens ({triggered.length})
+          </h3>
+          <div className="flex flex-col gap-3">
+            {triggered.map(t => <TokenCard key={t._id} token={t} />)}
+          </div>
+        </section>
+      )}
+
+      {/* Intact section */}
+      <section>
+        <h3 className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-success mb-3">
+          <ShieldCheck className="w-3.5 h-3.5" />
+          Intact Honey Tokens ({untriggered.length})
+        </h3>
+        <div className="flex flex-col gap-3">
+          {untriggered.map(t => <TokenCard key={t._id} token={t} />)}
+        </div>
+      </section>
     </div>
   )
 }
+
+export default HoneyTokenPanel

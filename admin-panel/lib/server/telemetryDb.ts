@@ -15,15 +15,15 @@ const ensureConnected = async (conn: any) => {
     return conn
   }
   await new Promise<void>((resolve, reject) => {
-    const cleanup = () => {
+    function cleanup() {
       conn.off?.('connected', onConnected)
       conn.off?.('error', onError)
     }
-    const onConnected = () => {
+    function onConnected() {
       cleanup()
       resolve()
     }
-    const onError = (err: unknown) => {
+    function onError(err: unknown) {
       cleanup()
       reject(err)
     }

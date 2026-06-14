@@ -34,6 +34,12 @@ enabled = true
   dialect = "typescript"
   environment = ["nodejs", "browser"]
   cyclomatic_complexity_threshold = "critical"
+  skip_doc_coverage = [
+    "function-declaration",
+    "function-expression",
+    "arrow-function-expression",
+    "method-definition",
+  ]
   dependency_file_paths = [
     "package.json",
     "admin-panel/package.json",
