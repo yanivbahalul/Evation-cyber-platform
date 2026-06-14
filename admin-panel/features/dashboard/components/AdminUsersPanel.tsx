@@ -11,7 +11,7 @@ type AdminUser = {
   updatedAt?: string
 }
 
-export default function AdminUsersPanel() {
+const AdminUsersPanel = () => {
   const [users, setUsers] = useState<AdminUser[]>([])
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -193,3 +193,4 @@ export default function AdminUsersPanel() {
   )
 }
 
+export default AdminUsersPanel

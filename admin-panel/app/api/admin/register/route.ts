@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { getAdminModels } from '@/lib/server/adminDb'
+import { jsonError } from '@/lib/server/apiResponse'
 import { toDataURL } from 'qrcode'
 import { signJwt } from '@/lib/auth/jwt'
 import { generateSecret, generateURI } from 'otplib'
@@ -11,11 +12,7 @@ const bcrypt = require('bcryptjs')
 
 export const runtime = 'nodejs'
 
-function jsonError(message: string, status = 400) {
-  return NextResponse.json({ success: false, error: message }, { status })
-}
-
-export async function POST(req: NextRequest) {
+export const POST = async (req: NextRequest) => {
   // Disabled by default for safety (enable only in dev/labs).
   const enabled = process.env.ALLOW_ADMIN_SELF_REGISTER === 'true'
   if (!enabled) return jsonError('Registration disabled', 403)

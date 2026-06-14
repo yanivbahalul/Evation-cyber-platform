@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { toDataURL } from 'qrcode'
 import { requireAdmin } from '@/lib/auth/requireAdmin'
+import { jsonError } from '@/lib/server/apiResponse'
 import { getSafezoneModels } from '@/lib/server/safezoneDb'
 import { generateSecret, generateURI } from 'otplib'
 import { crypto } from '@otplib/plugin-crypto-noble'
@@ -8,11 +9,7 @@ import { base32 } from '@otplib/plugin-base32-scure'
 
 export const runtime = 'nodejs'
 
-function jsonError(message: string, status = 400) {
-  return NextResponse.json({ success: false, error: message }, { status })
-}
-
-export async function POST(req: NextRequest) {
+export const POST = async (req: NextRequest) => {
   try {
     await requireAdmin(req)
     const body = (await req.json().catch(() => null)) as { username?: string } | null

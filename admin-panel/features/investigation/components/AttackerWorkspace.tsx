@@ -20,7 +20,80 @@ const TRAP_COLORS: Record<string, string> = {
   SCANNER: '#a855f7',
 }
 
-export default function AttackerWorkspace() {
+/** UI requires a profile object; API may return events without AttackerProfile row. */
+const normalizeTimeline = (data: AttackerTimeline, ip: string): AttackerTimeline => {
+  const events = data.events ?? []
+  if (data.profile) return { profile: data.profile, events }
+  if (events.length === 0) return { profile: null, events }
+  const first = events[0]
+  const fp = first.fingerprint
+  return {
+    profile: {
+      ip,
+      city: 'Unknown',
+      lat: 0,
+      lng: 0,
+      os: fp?.os ?? '—',
+      browser: fp?.browser ?? '—',
+      isBot: Boolean(fp?.isBot),
+      riskScore: fp?.riskScore ?? 0,
+      firstSeen: first.timestamp,
+      lastSeen: events[events.length - 1]?.timestamp ?? first.timestamp,
+      traceIds: [...new Set(events.map(e => e.traceId).filter(Boolean) as string[])],
+    },
+    events,
+  }
+}
+
+const TimelineNode = ({ event, prev }: { event: AttackEvent; prev?: AttackEvent }) => {
+  const color = TRAP_COLORS[event.trapType] ?? '#7a9bb5'
+  const timeDelta = prev ? deltaMs(prev.timestamp, event.timestamp) : null
+
+  return (
+    <div className="relative">
+      <span
+        className="absolute -left-[1.65rem] top-1 w-3 h-3 rounded-full border-2 border-background"
+        style={{ background: color }}
+      />
+      <div className="flex flex-wrap items-center gap-2 mb-1">
+        <span
+          className="text-[10px] font-bold px-2 py-0.5 rounded"
+          style={{ background: `${color}20`, color, border: `1px solid ${color}40` }}
+        >
+          {event.trapType}
+        </span>
+        {event.traceId && (
+          <span className="text-[10px] font-mono text-muted-foreground">trace {shortTrace(event.traceId)}</span>
+        )}
+        {timeDelta && (
+          <span className="text-[10px] font-mono text-accent flex items-center gap-0.5">
+            <Clock className="w-3 h-3" />
+            {timeDelta}
+          </span>
+        )}
+      </div>
+      <p className="text-[11px] text-muted-foreground mb-1">{trapLabel(event.trapType)}</p>
+      <p className="text-[10px] font-mono text-muted-foreground/80">
+        {event.method ?? 'GET'} {event.path ?? '—'} · {formatDistanceToNow(new Date(event.timestamp), { addSuffix: true })}
+      </p>
+      {event.handoffFrom && (
+        <span className="inline-block mt-1 text-[9px] px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">
+          handoff from {event.handoffFrom}
+        </span>
+      )}
+      {event.payload && (
+        <pre className="mt-2 text-[10px] p-2 rounded bg-background border border-border text-accent/80 overflow-x-auto max-h-24">
+          {event.payload.length > 200 ? `${event.payload.slice(0, 200)}…` : event.payload}
+        </pre>
+      )}
+      <p className="mt-1 text-[10px] text-success font-mono">
+        wasted {(event.wasted_time_ms / 1000).toFixed(1)}s · {event.bytes_sent}B
+      </p>
+    </div>
+  )
+}
+
+const AttackerWorkspace = () => {
   const { demoMode, attackEvents, attackerProfiles, getTimelineForIp } = useSocket()
   const { target, openInvestigation, clearInvestigation } = useInvestigation()
   const [ipInput, setIpInput] = useState(target?.ip ?? '')
@@ -77,10 +150,10 @@ export default function AttackerWorkspace() {
         return
       }
 
-      const q = new URLSearchParams()
-      if (traceInput.trim()) q.set('traceId', traceInput.trim())
+      const searchParams = new URLSearchParams()
+      if (traceInput.trim()) searchParams.set('traceId', traceInput.trim())
       const res = await fetch(
-        `/api/admin/attackers/${encodeURIComponent(ip)}/timeline?${q}`,
+        `/api/admin/attackers/${encodeURIComponent(ip)}/timeline?${searchParams}`,
         { method: 'GET', credentials: 'include' },
       )
       const json = (await res.json().catch(() => null)) as
@@ -288,75 +361,4 @@ export default function AttackerWorkspace() {
   )
 }
 
-/** UI requires a profile object; API may return events without AttackerProfile row. */
-function normalizeTimeline(data: AttackerTimeline, ip: string): AttackerTimeline {
-  const events = data.events ?? []
-  if (data.profile) return { profile: data.profile, events }
-  if (events.length === 0) return { profile: null, events }
-  const first = events[0]
-  const fp = first.fingerprint
-  return {
-    profile: {
-      ip,
-      city: 'Unknown',
-      lat: 0,
-      lng: 0,
-      os: fp?.os ?? '—',
-      browser: fp?.browser ?? '—',
-      isBot: Boolean(fp?.isBot),
-      riskScore: fp?.riskScore ?? 0,
-      firstSeen: first.timestamp,
-      lastSeen: events[events.length - 1]?.timestamp ?? first.timestamp,
-      traceIds: [...new Set(events.map(e => e.traceId).filter(Boolean) as string[])],
-    },
-    events,
-  }
-}
-
-function TimelineNode({ event, prev }: { event: AttackEvent; prev?: AttackEvent }) {
-  const color = TRAP_COLORS[event.trapType] ?? '#7a9bb5'
-  const d = prev ? deltaMs(prev.timestamp, event.timestamp) : null
-
-  return (
-    <div className="relative">
-      <span
-        className="absolute -left-[1.65rem] top-1 w-3 h-3 rounded-full border-2 border-background"
-        style={{ background: color }}
-      />
-      <div className="flex flex-wrap items-center gap-2 mb-1">
-        <span
-          className="text-[10px] font-bold px-2 py-0.5 rounded"
-          style={{ background: `${color}20`, color, border: `1px solid ${color}40` }}
-        >
-          {event.trapType}
-        </span>
-        {event.traceId && (
-          <span className="text-[10px] font-mono text-muted-foreground">trace {shortTrace(event.traceId)}</span>
-        )}
-        {d && (
-          <span className="text-[10px] font-mono text-accent flex items-center gap-0.5">
-            <Clock className="w-3 h-3" />
-            {d}
-          </span>
-        )}
-      </div>
-      <p className="text-[11px] text-muted-foreground mb-1">{trapLabel(event.trapType)}</p>
-      <p className="text-[10px] font-mono text-muted-foreground/80">
-        {event.method ?? 'GET'} {event.path ?? '—'} · {formatDistanceToNow(new Date(event.timestamp), { addSuffix: true })}
-      </p>
-      {event.handoffFrom && (
-        <span className="inline-block mt-1 text-[9px] px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">
-          handoff from {event.handoffFrom}
-        </span>
-      )}
-      {event.payload && (
-        <pre className="mt-2 text-[10px] p-2 rounded bg-background border border-border text-accent/80 overflow-x-auto max-h-24">
-          {event.payload.length > 200 ? `${event.payload.slice(0, 200)}…` : event.payload}
-        </pre>
-      )}
-      <p className="mt-1 text-[10px] text-success font-mono">
-        wasted {(event.wasted_time_ms / 1000).toFixed(1)}s · {event.bytes_sent}B
-      </p>
-    </div>
-  )
-}
+export default AttackerWorkspace

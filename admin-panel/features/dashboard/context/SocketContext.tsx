@@ -80,26 +80,26 @@ export type DashboardBootstrap = Omit<DashboardSnapshot, 'savedAt'>
 
 const SocketContext = createContext<SocketContextValue | null>(null)
 
-function applySnapshot(
+const applySnapshot = (
   snapshot: DashboardBootstrap,
   setters: {
     setAttackEvents: (v: AttackEvent[]) => void
     setAttackerProfiles: (v: AttackerProfile[]) => void
     setHoneyTokens: (v: HoneyToken[]) => void
   },
-) {
+) => {
   setters.setAttackEvents(Array.isArray(snapshot.events) ? snapshot.events : [])
   setters.setAttackerProfiles(Array.isArray(snapshot.profiles) ? snapshot.profiles : [])
   setters.setHoneyTokens(Array.isArray(snapshot.honeyTokens) ? snapshot.honeyTokens : [])
 }
 
-export function SocketProvider({
+export const SocketProvider = ({
   children,
   bootstrap,
 }: {
   children: React.ReactNode
   bootstrap?: DashboardBootstrap | null
-}) {
+}) => {
   const [connected, setConnected] = useState(false)
   const [demoMode, setDemoModeState] = useState(false)
   const [liveAlerts, setLiveAlerts] = useState<LiveAlert[]>([])
@@ -210,7 +210,9 @@ export function SocketProvider({
       if (generation === refreshGenerationRef.current) setIsSyncing(false)
       if (refreshPendingRef.current) {
         refreshPendingRef.current = false
-        void refresh(signal)
+        refresh(signal).catch(() => {
+          /* coalesced refresh is best-effort */
+        })
       }
     }
   }, [demoMode, applyDashboardPayload])
@@ -427,7 +429,7 @@ export function SocketProvider({
     const seen = new Set<string>()
     const out: SocketContextValue['displayAlerts'] = []
 
-    const profileByIp = new Map(attackerProfiles.map(p => [p.ip, p]))
+    const profileByIp = new Map(attackerProfiles.map(profile => [profile.ip, profile]))
 
     const accept = (timestamp: string) => {
       const ts = new Date(timestamp).getTime()
@@ -438,8 +440,8 @@ export function SocketProvider({
       if (!a?.eventID || seen.has(a.eventID)) continue
       if (!accept(a.timestamp)) continue
       seen.add(a.eventID)
-      const p = profileByIp.get(a.attackerIp)
-      const geo = mergeEventGeo(a, p)
+      const profile = profileByIp.get(a.attackerIp)
+      const geo = mergeEventGeo(a, profile)
       out.push({
         eventID: a.eventID,
         attackerIp: a.attackerIp,
@@ -451,7 +453,7 @@ export function SocketProvider({
         lng: geo.lng,
         geoPrecision: geo.geoPrecision,
         os: a.os,
-        riskScore: a.riskScore ?? p?.riskScore,
+        riskScore: a.riskScore ?? profile?.riskScore,
         wastedTimeMs: a.wastedTimeMs ?? a.wasted_time_ms ?? 0,
         traceId: a.traceId,
         path: a.path,
@@ -464,8 +466,8 @@ export function SocketProvider({
       if (!e?.eventID || seen.has(e.eventID)) continue
       if (!accept(e.timestamp)) continue
       seen.add(e.eventID)
-      const p = profileByIp.get(e.attackerIp)
-      const geo = mergeEventGeo({}, p)
+      const profile = profileByIp.get(e.attackerIp)
+      const geo = mergeEventGeo({}, profile)
       out.push({
         eventID: e.eventID,
         attackerIp: e.attackerIp,
@@ -476,8 +478,8 @@ export function SocketProvider({
         lat: geo.lat,
         lng: geo.lng,
         geoPrecision: geo.geoPrecision,
-        os: p?.os ?? 'unknown',
-        riskScore: p?.riskScore,
+        os: profile?.os ?? 'unknown',
+        riskScore: profile?.riskScore,
         wastedTimeMs: e.wasted_time_ms ?? 0,
         traceId: e.traceId,
         path: e.path,
@@ -516,7 +518,7 @@ export function SocketProvider({
   )
 }
 
-export function useSocket() {
+export const useSocket = () => {
   const ctx = useContext(SocketContext)
   if (!ctx) throw new Error('useSocket must be used inside SocketProvider')
   return ctx

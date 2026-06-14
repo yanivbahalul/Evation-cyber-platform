@@ -4,11 +4,9 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { Shield, Lock, User, Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react'
 
-function isValidUsername(v: string) {
-  return /^[a-zA-Z0-9._-]{3,64}$/.test(v)
-}
+const isValidUsername = (value: string) => /^[a-zA-Z0-9._-]{3,64}$/.test(value)
 
-export default function RegisterPage() {
+const RegisterPage = () => {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -256,3 +254,4 @@ export default function RegisterPage() {
   )
 }
 
+export default RegisterPage

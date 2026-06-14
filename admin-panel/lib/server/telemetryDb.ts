@@ -5,11 +5,9 @@ type TelemetryGlobal = typeof globalThis & {
   __telemetryDbConn?: any
 }
 
-function getGlobal(): TelemetryGlobal {
-  return globalThis as TelemetryGlobal
-}
+const getGlobal = (): TelemetryGlobal => globalThis as TelemetryGlobal
 
-async function ensureConnected(conn: any) {
+const ensureConnected = async (conn: any) => {
   // readyState: 0 = disconnected, 1 = connected, 2 = connecting, 3 = disconnecting
   if (conn?.readyState === 1) return conn
   if (typeof conn?.asPromise === 'function') {
@@ -17,6 +15,10 @@ async function ensureConnected(conn: any) {
     return conn
   }
   await new Promise<void>((resolve, reject) => {
+    const cleanup = () => {
+      conn.off?.('connected', onConnected)
+      conn.off?.('error', onError)
+    }
     const onConnected = () => {
       cleanup()
       resolve()
@@ -25,28 +27,24 @@ async function ensureConnected(conn: any) {
       cleanup()
       reject(err)
     }
-    const cleanup = () => {
-      conn.off?.('connected', onConnected)
-      conn.off?.('error', onError)
-    }
     conn.on?.('connected', onConnected)
     conn.on?.('error', onError)
   })
   return conn
 }
 
-export async function getTelemetryConn() {
-  const g = getGlobal()
-  if (!g.__telemetryDbConn) {
-    g.__telemetryDbConn = (connectMaliciousDB as any)()
+export const getTelemetryConn = async () => {
+  const telemetryGlobal = getGlobal()
+  if (!telemetryGlobal.__telemetryDbConn) {
+    telemetryGlobal.__telemetryDbConn = (connectMaliciousDB as any)()
   }
-  const conn = g.__telemetryDbConn
+  const conn = telemetryGlobal.__telemetryDbConn
   if (conn?.readyState === 1) return conn
   await ensureConnected(conn)
   return conn
 }
 
-export async function getTelemetryModels() {
+export const getTelemetryModels = async () => {
   const conn = await getTelemetryConn()
   return {
     AttackerProfile: conn.model('AttackerProfile'),

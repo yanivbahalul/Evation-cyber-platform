@@ -12,7 +12,7 @@ const AuthContext = createContext<AuthContextValue | null>(null)
  * Auth on the dashboard is established by the gateway (EJS login + JWT cookie).
  * The dashboard only needs a logout action; sign-in/OTP live in the gateway.
  */
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const logout = useCallback(() => {
     fetch('/api/admin/logout', { method: 'POST' }).catch(() => {
       /* best-effort cookie clear before redirect */
@@ -23,7 +23,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return <AuthContext.Provider value={{ logout }}>{children}</AuthContext.Provider>
 }
 
-export function useAuth() {
+export const useAuth = () => {
   const ctx = useContext(AuthContext)
   if (!ctx) throw new Error('useAuth must be used inside AuthProvider')
   return ctx

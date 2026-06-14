@@ -14,7 +14,7 @@ import { formatDistanceToNow } from 'date-fns'
  *   - triggeredLogs[] — additive forensics (who, when, where)
  *     per the HoneyTokenSchema spec.
  */
-export default function HoneyTokenPanel() {
+const HoneyTokenPanel = () => {
   const { honeyTokens } = useSocket()
   const triggered  = honeyTokens.filter(t => t.isTriggered)
   const untriggered = honeyTokens.filter(t => !t.isTriggered)
@@ -55,7 +55,9 @@ export default function HoneyTokenPanel() {
   )
 }
 
-function TokenCard({ token }: { token: HoneyToken }) {
+export default HoneyTokenPanel
+
+const TokenCard = ({ token }: { token: HoneyToken }) => {
   const [expanded, setExpanded] = useState(false)
   const [showCreds, setShowCreds] = useState(false)
 
@@ -152,7 +154,7 @@ function TokenCard({ token }: { token: HoneyToken }) {
   )
 }
 
-function SummaryCard({ label, value, color, icon: Icon }: { label: string; value: number; color: string; icon: React.ElementType }) {
+const SummaryCard = ({ label, value, color, icon: Icon }: { label: string; value: number; color: string; icon: React.ElementType }) => {
   return (
     <div className="bg-surface border border-border rounded-xl px-4 py-3 flex items-center gap-3">
       <div className={`p-2 rounded-lg bg-surface-elevated ${color}`}>

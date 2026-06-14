@@ -7,7 +7,7 @@ import { base32 } from '@otplib/plugin-base32-scure'
 
 export const runtime = 'nodejs'
 
-export async function GET(req: NextRequest) {
+export const GET = async (req: NextRequest) => {
   if (process.env.NODE_ENV === 'production') return NextResponse.json({ success: false }, { status: 404 })
   if (process.env.DEBUG_TOTP !== 'true') return NextResponse.json({ success: false }, { status: 404 })
 
