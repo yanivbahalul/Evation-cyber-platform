@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Build, lint & test
+    runs-on: ubuntu-latest
+    env:
+      JWT_SECRET: ci-dummy-jwt-secret-for-build-only
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.0.8
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint admin panel
+        run: pnpm --dir admin-panel lint
+
+      - name: Run unit tests
+        run: |
+          pnpm --dir packages/shared-utils test
+          node services/logging-data-extraction/tests/geoService.test.js
+
+      - name: Build admin panel
+        run: pnpm --dir admin-panel build
+
+  terraform:
+    name: Terraform validate
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infra/terraform
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform init
+        run: terraform init -backend=false
+
+      - name: Terraform validate
+        run: terraform validate
