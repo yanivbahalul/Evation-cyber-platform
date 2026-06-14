@@ -3,7 +3,7 @@ import { clearedAuthCookies } from '@/lib/auth/cookiePolicy'
 
 export const runtime = 'nodejs'
 
-export async function POST() {
+export function POST() {
   const res = NextResponse.json({ success: true })
   for (const cookie of clearedAuthCookies()) {
     res.cookies.set(cookie)

@@ -39,7 +39,9 @@ export default function AdminUsersPanel() {
   }
 
   useEffect(() => {
-    refresh().catch(() => {})
+    refresh().catch(() => {
+      /* initial load is best-effort */
+    })
   }, [])
 
   const updateUser = async (username: string, patch: Partial<Pick<AdminUser, 'role' | 'isActive'>>) => {

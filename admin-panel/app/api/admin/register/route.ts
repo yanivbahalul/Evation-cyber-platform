@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { getAdminModels } from '@/lib/server/adminDb'
-import * as QRCode from 'qrcode'
+import { toDataURL } from 'qrcode'
 import { signJwt } from '@/lib/auth/jwt'
 import { generateSecret, generateURI } from 'otplib'
 import { crypto } from '@otplib/plugin-crypto-noble'
@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
   )
   const issuer = process.env.TOTP_ISSUER_NAME || 'InnoTech HoneyNet'
   const otpauth = generateURI({ strategy: 'totp', issuer, label: username, secret })
-  const qrDataUrl = await QRCode.toDataURL(otpauth, { margin: 1, scale: 6 })
+  const qrDataUrl = await toDataURL(otpauth, { margin: 1, scale: 6 })
 
   const res = NextResponse.json({ success: true, data: { qrDataUrl, secret } })
   res.cookies.set({

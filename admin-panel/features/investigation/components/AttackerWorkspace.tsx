@@ -249,9 +249,9 @@ export default function AttackerWorkspace() {
                 Learning notes
               </p>
               <ul className="space-y-2">
-                {hints.map((h, i) => (
-                  <li key={i} className="text-[11px] font-mono text-muted-foreground leading-relaxed">
-                    • {h}
+                {hints.map((hint) => (
+                  <li key={hint} className="text-[11px] font-mono text-muted-foreground leading-relaxed">
+                    • {hint}
                   </li>
                 ))}
               </ul>

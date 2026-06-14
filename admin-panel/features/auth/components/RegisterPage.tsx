@@ -26,8 +26,8 @@ export default function RegisterPage() {
     setSuccess(null)
     if (phase !== 'register') return
 
-    const u = username.trim()
-    if (!isValidUsername(u)) {
+    const trimmedUsername = username.trim()
+    if (!isValidUsername(trimmedUsername)) {
       setError('Username must be 3–64 chars (letters, numbers, ., _, -)')
       return
     }
@@ -41,7 +41,7 @@ export default function RegisterPage() {
       const res = await fetch('/api/admin/register', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ username: u, password }),
+        body: JSON.stringify({ username: trimmedUsername, password }),
       })
       const json = (await res.json().catch(() => null)) as
         | { success: true; data?: { qrDataUrl: string; secret: string } }

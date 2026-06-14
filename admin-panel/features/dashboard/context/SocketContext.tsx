@@ -330,13 +330,16 @@ export function SocketProvider({
 
     const abort = new AbortController()
     refreshGenerationRef.current += 1
+    const swallowRefreshError = () => {
+      /* background dashboard sync is best-effort */
+    }
 
     const restartPoll = () => {
       if (pollRef.current) clearInterval(pollRef.current)
       const ms = connectedRef.current ? 15_000 : 5_000
       pollRef.current = setInterval(() => {
         if (document.visibilityState === 'visible') {
-          refresh(abort.signal).catch(() => {})
+          refresh(abort.signal).catch(swallowRefreshError)
         }
       }, ms)
     }
@@ -381,16 +384,16 @@ export function SocketProvider({
           refreshAfterAlertRef.current = null
           // Bypass the 3s coalesce window so polled attackEvents catch up quickly.
           lastRefreshAtRef.current = 0
-          refresh(abort.signal).catch(() => {})
+          refresh(abort.signal).catch(swallowRefreshError)
         }, 300)
       })
     }
 
-    refresh(abort.signal).catch(() => {})
+    refresh(abort.signal).catch(swallowRefreshError)
     restartPoll()
 
     const onVisible = () => {
-      if (document.visibilityState === 'visible') refresh(abort.signal).catch(() => {})
+      if (document.visibilityState === 'visible') refresh(abort.signal).catch(swallowRefreshError)
     }
     document.addEventListener('visibilitychange', onVisible)
 

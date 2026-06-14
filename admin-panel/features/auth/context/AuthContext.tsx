@@ -14,7 +14,9 @@ const AuthContext = createContext<AuthContextValue | null>(null)
  */
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(() => {
-    fetch('/api/admin/logout', { method: 'POST' }).catch(() => {})
+    fetch('/api/admin/logout', { method: 'POST' }).catch(() => {
+      /* best-effort cookie clear before redirect */
+    })
     window.location.assign('/gateway/')
   }, [])
 

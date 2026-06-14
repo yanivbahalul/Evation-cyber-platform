@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import * as QRCode from 'qrcode'
+import { toDataURL } from 'qrcode'
 import { verifyJwt } from '@/lib/auth/jwt'
 import { getAdminModels } from '@/lib/server/adminDb'
 import { generateSecret, generateURI } from 'otplib'
@@ -71,7 +71,7 @@ export async function GET(req: NextRequest) {
     label: payload.sub,
     secret,
   })
-  const qrDataUrl = await QRCode.toDataURL(otpauth, { margin: 1, scale: 6 })
+  const qrDataUrl = await toDataURL(otpauth, { margin: 1, scale: 6 })
 
   return NextResponse.json({
     success: true,

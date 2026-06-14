@@ -15,20 +15,20 @@ export async function GET(req: NextRequest) {
   if (!username) return NextResponse.json({ success: false, error: 'Missing username' }, { status: 400 })
 
   const { AdminUser } = await getAdminModels()
-  const u = await AdminUser.findOne({ username, isActive: true }).select(
+  const adminUser = await AdminUser.findOne({ username, isActive: true }).select(
     '+totpSecretEnc +totpSecretIv +totpSecretTag'
   )
-  if (!u || !u.totpEnabled) {
+  if (!adminUser || !adminUser.totpEnabled) {
     return NextResponse.json({ success: false, error: 'User not found or 2FA not enabled' }, { status: 404 })
   }
-  if (!u.totpSecretEnc || !u.totpSecretIv || !u.totpSecretTag) {
+  if (!adminUser.totpSecretEnc || !adminUser.totpSecretIv || !adminUser.totpSecretTag) {
     return NextResponse.json({ success: false, error: '2FA not enrolled' }, { status: 400 })
   }
 
   const secret = await decryptTotpSecret({
-    ctB64: u.totpSecretEnc,
-    ivB64: u.totpSecretIv,
-    tagB64: u.totpSecretTag,
+    ctB64: adminUser.totpSecretEnc,
+    ivB64: adminUser.totpSecretIv,
+    tagB64: adminUser.totpSecretTag,
   })
   const code = await generate({ strategy: 'totp', secret, window: 1, crypto, base32 })
   const check = await verify({ strategy: 'totp', token: code, secret, window: 1, crypto, base32 })

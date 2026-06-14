@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import * as QRCode from 'qrcode'
+import { toDataURL } from 'qrcode'
 import { requireAdmin } from '@/lib/auth/requireAdmin'
 import { getSafezoneModels } from '@/lib/server/safezoneDb'
 import { generateSecret, generateURI } from 'otplib'
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
 
     const issuer = process.env.TOTP_ISSUER_NAME || 'InnoTech HoneyNet'
     const otpauth = generateURI({ strategy: 'totp', issuer, label: username, secret })
-    const qrDataUrl = await QRCode.toDataURL(otpauth, { margin: 1, scale: 6 })
+    const qrDataUrl = await toDataURL(otpauth, { margin: 1, scale: 6 })
 
     return NextResponse.json({ success: true, data: { qrDataUrl, secret } })
   } catch (e: any) {

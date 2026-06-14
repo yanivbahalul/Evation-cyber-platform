@@ -1,0 +1,45 @@
+version = 1
+
+test_patterns = [
+  "**/*.test.js",
+  "**/*.test.ts",
+  "**/*.test.tsx",
+  "**/tests/**",
+]
+
+exclude_patterns = [
+  "**/node_modules/**",
+  "**/.next/**",
+  "**/dist/**",
+  "**/build/**",
+  "**/coverage/**",
+  "admin-panel/next-env.d.ts",
+]
+
+[[analyzers]]
+name = "terraform"
+enabled = true
+
+[[analyzers]]
+name = "shell"
+enabled = true
+
+[[analyzers]]
+name = "javascript"
+enabled = true
+
+  [analyzers.meta]
+  plugins = ["react"]
+  module_system = "es-modules"
+  dialect = "typescript"
+  environment = ["nodejs", "browser"]
+  cyclomatic_complexity_threshold = "very-high"
+  dependency_file_paths = [
+    "package.json",
+    "admin-panel/package.json",
+    "packages/db-schemas/package.json",
+    "packages/shared-constants/package.json",
+    "packages/shared-utils/package.json",
+    "services/innotech-gateway/package.json",
+    "services/logging-data-extraction/package.json",
+  ]
