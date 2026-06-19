@@ -9,6 +9,7 @@ const PATHS = Object.freeze({
   legacySignIn: '/internal/auth/legacy',
   database: '/internal/services/database',
   apiKeys: '/internal/integrations/keys',
+  hrExport: '/internal/api/v1/hr/export',
   archiveExport: '/internal/exports/archive',
   fileViewer: '/internal/services/files',
   fetchStatus: '/internal/services/fetch-status',
@@ -59,6 +60,11 @@ function isFetchStatusPath(path) {
   return p === PATHS.fetchStatus;
 }
 
+function isHoneyTokenApiExportPath(path) {
+  const p = normalizePath(path);
+  return p === PATHS.hrExport;
+}
+
 function isInternalZonePath(path) {
   const p = normalizePath(path);
   return (
@@ -77,5 +83,6 @@ module.exports = {
   isEmployeeLoginPath,
   isFileViewerPath,
   isFetchStatusPath,
+  isHoneyTokenApiExportPath,
   isInternalZonePath,
 };

@@ -229,9 +229,38 @@ exports.serveHoneyToken = async (req, res) => {
       user: token.user,
       legacyUser: legacyBreachSession.readBreachUser(req),
       withBase: req.withBase || ((p) => p),
+      dp: DP,
     });
   }
   res.json({ success: true, apiKey: token.apiKey, user: token.user });
+};
+
+/** Fake HR export — realistic API exfil when a stolen integration key is used. */
+exports.serveHoneyTokenApiExport = async (req, res) => {
+  const startTime = Date.now();
+  const rows = buildFakeCredentialRows();
+  const employees = rows.map(({ id, username, password, role, hash }) => ({
+    id,
+    username,
+    password,
+    role,
+    passwordHash: hash,
+  }));
+
+  await report(TRAP_TYPES.HONEY_TOKEN, req, {
+    startTime,
+    wasted_time_ms: Date.now() - startTime,
+    bytes_sent: JSON.stringify(employees).length,
+    payload: JSON.stringify({ action: 'api_hr_export', rows: employees.length }),
+  });
+
+  return res.json({
+    success: true,
+    exportedAt: new Date().toISOString(),
+    source: 'hr_read_replica',
+    count: employees.length,
+    employees,
+  });
 };
 
 exports.renderSandboxXSS = async (req, res) => {

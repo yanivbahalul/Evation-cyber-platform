@@ -10,6 +10,7 @@ const {
   isLegacySignInPath,
   isFileViewerPath,
   isFetchStatusPath,
+  isHoneyTokenApiExportPath,
 } = require('../config/deceptionPaths');
 
 module.exports = async function decoyReroute(req, res, next) {
@@ -84,6 +85,9 @@ module.exports = async function decoyReroute(req, res, next) {
       case TRAP_TYPES.SCANNER:
         return decoyController.serveScannerTarpit(req, res);
       case TRAP_TYPES.HONEY_TOKEN:
+        if (isHoneyTokenApiExportPath(req.path)) {
+          return decoyController.serveHoneyTokenApiExport(req, res);
+        }
         await decoyController.report(TRAP_TYPES.HONEY_TOKEN, req, {
           payload: JSON.stringify({ action: 'token_used', path: req.originalUrl || req.path }),
           wasted_time_ms: 0,

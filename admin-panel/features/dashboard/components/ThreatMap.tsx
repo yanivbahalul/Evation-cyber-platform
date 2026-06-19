@@ -5,7 +5,7 @@ import { useSocket, type LiveAlert } from '@/features/dashboard/context/SocketCo
 import { useInvestigation } from '@/features/investigation/context/InvestigationContext'
 import { shortTrace } from '@/lib/attackIntel'
 import { geoLocationLabel } from '@/lib/geoDisplay'
-import { AlertTriangle, MapPin, Zap, Clock } from 'lucide-react'
+import { AlertTriangle, MapPin, Zap, Clock, RefreshCw } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 
 const LeafletMap = dynamic(() => import('./LeafletMap'), { ssr: false })
@@ -29,7 +29,7 @@ interface ThreatMapProps {
 }
 
 export default function ThreatMap({ onNavigateInvestigate }: ThreatMapProps) {
-  const { displayAlerts, connected, clearScreen } = useSocket()
+  const { displayAlerts, connected, refresh, isSyncing } = useSocket()
   const latest = displayAlerts.slice(0, 8) as unknown as LiveAlert[]
 
   return (
@@ -47,30 +47,16 @@ export default function ThreatMap({ onNavigateInvestigate }: ThreatMapProps) {
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => clearScreen()}
+              onClick={() => {
+                refresh({ force: true }).catch(() => {
+                  /* best-effort */
+                })
+              }}
               className="p-1.5 rounded-md hover:bg-surface-elevated transition-colors"
-              aria-label="Clear screen"
-              title="Clear screen"
+              aria-label="Refresh dashboard"
+              title="Refresh dashboard"
             >
-              {/* icon lives in TopBar too; keep inline to avoid new dependency */}
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="text-muted-foreground"
-                aria-hidden="true"
-              >
-                <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
-                <path d="M21 3v5h-5" />
-                <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
-                <path d="M8 16H3v5" />
-              </svg>
+              <RefreshCw className={`w-4 h-4 text-muted-foreground ${isSyncing ? 'animate-spin' : ''}`} />
             </button>
             <span className="text-[10px] font-mono text-muted-foreground/60">
               {displayAlerts.length} events

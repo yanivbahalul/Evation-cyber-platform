@@ -1,5 +1,6 @@
 <% const title = 'InnoTech — API Integration Keys' %>
 <% const wb = typeof withBase === 'function' ? withBase : (p) => p %>
+<% const exportPath = (typeof dp !== 'undefined' && dp.hrExport) ? dp.hrExport : '/internal/api/v1/hr/export' %>
 <%- include('../partials/head', { title, withBase: wb }) %>
 
 <div class="container">
@@ -30,13 +31,28 @@
           <div class="value" style="font-size: 14px; font-family: ui-monospace, monospace; word-break: break-all;"><%= apiKey %></div>
         </div>
 
-        <div class="muted2" style="font-size: 13px; line-height: 1.6;">
-          Service account: <strong style="color: var(--text);"><%= user %></strong><br />
-          Any gateway request carrying this key is logged as a honey-token hit.
+        <div class="muted2" style="font-size: 13px; line-height: 1.6; margin-bottom: 14px;">
+          Service account: <strong style="color: var(--text);"><%= user.email || user %></strong><br />
+          Export HR records via the internal API (automation / curl).
+        </div>
+
+        <div class="stat" style="margin-bottom: 14px;">
+          <div class="label">HR export endpoint</div>
+          <div class="value" style="font-size: 13px; font-family: ui-monospace, monospace; word-break: break-all;">
+            GET <%= wb(exportPath) %>
+          </div>
+        </div>
+
+        <pre class="input" style="font-size: 12px; line-height: 1.5; white-space: pre-wrap; margin: 0 0 14px;">curl -s \
+  -H "Authorization: Bearer <%= apiKey %>" \
+  "<%= wb(exportPath) %>" | jq .</pre>
+
+        <div class="muted2" style="font-size: 12px; line-height: 1.5;">
+          Any request with this key is logged. The export returns JSON employee credentials from the read replica.
         </div>
 
         <div class="btn-row" style="margin-top: 16px;">
-          <a class="btn primary" href="<%= wb((typeof dp !== 'undefined' && dp.console) || '/internal/console') %>">← Administrator console</a>
+          <a class="btn" href="<%= wb((typeof dp !== 'undefined' && dp.console) || '/internal/console') %>">Administrator console</a>
           <a class="btn" href="<%= wb('/') %>">Public portal</a>
         </div>
       </div>

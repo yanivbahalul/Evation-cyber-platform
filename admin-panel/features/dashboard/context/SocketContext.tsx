@@ -146,6 +146,10 @@ export const SocketProvider = ({
 
   const refresh = useCallback(async (options?: { force?: boolean; signal?: AbortSignal }) => {
     if (demoMode) return
+    if (options?.force) {
+      setClearedAtMs(0)
+      lastRefreshAtRef.current = 0
+    }
     const signal = options?.signal
     // Avoid UI flicker + excessive refresh storms when live alerts stream in.
     // We still allow refreshPendingRef to coalesce requests if one is in-flight.
@@ -517,7 +521,7 @@ export const SocketProvider = ({
         lastRefreshError,
         getTimelineForIp,
         clearScreen,
-        refresh: () => refresh(),
+        refresh,
       }}
     >
       {children}

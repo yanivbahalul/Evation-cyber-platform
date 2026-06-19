@@ -26,7 +26,7 @@ export default function TopBar({ active }: TopBarProps) {
     displayAlerts,
     demoMode,
     setDemoMode,
-    clearScreen,
+    refresh,
     isSyncing,
     hasDashboardData,
   } = useSocket()
@@ -163,14 +163,16 @@ export default function TopBar({ active }: TopBarProps) {
         {/* Refresh */}
         <button
           onClick={() => {
-            // Clear the map/feed/notifications view (doesn't re-fetch).
-            clearScreen()
+            refresh({ force: true }).catch(() => {
+              /* best-effort */
+            })
           }}
-          className="p-2 rounded-lg hover:bg-surface-elevated transition-colors"
-          aria-label="Clear screen"
-          title="Clear screen"
+          className="p-2 rounded-lg hover:bg-surface-elevated transition-colors disabled:opacity-50"
+          aria-label="Refresh dashboard"
+          title="Refresh dashboard"
+          disabled={isSyncing && !hasDashboardData}
         >
-          <RefreshCw className="w-4 h-4 text-muted-foreground" />
+          <RefreshCw className={`w-4 h-4 text-muted-foreground ${isSyncing ? 'animate-spin' : ''}`} />
         </button>
       </div>
     </header>
