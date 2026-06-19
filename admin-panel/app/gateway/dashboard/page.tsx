@@ -36,14 +36,14 @@ export default function GatewayDashboardPage() {
   useEffect(() => {
     let cancelled = false
 
-    const dashboardWarm = fetch('/api/admin/dashboard?limit=200', {
+    const dashboardWarm = fetch('/api/admin/dashboard/?limit=200', {
       method: 'GET',
       credentials: 'include',
     })
 
     ;(async () => {
       try {
-        const res = await fetch('/api/portal/session', { method: 'GET', credentials: 'include' })
+        const res = await fetch('/api/portal/session/', { method: 'GET', credentials: 'include' })
         const json = (await res.json().catch(() => null)) as PortalSession | null
         if (cancelled) return
 

@@ -13,12 +13,7 @@ interface MaintenanceStats {
   bannedProfiles: number
 }
 
-type MaintenanceAction =
-  | 'events'
-  | 'profiles'
-  | 'honeytokens'
-  | 'honeytokens_delete'
-  | 'all'
+type MaintenanceAction = 'events' | 'profiles' | 'honeytokens' | 'honeytokens_delete' | 'all'
 
 const ACTIONS: {
   id: MaintenanceAction
@@ -86,7 +81,7 @@ export default function MaintenancePanel() {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch('/api/admin/maintenance', { credentials: 'include' })
+      const res = await fetch('/api/admin/maintenance/', { credentials: 'include' })
       const json = await res.json()
       if (!res.ok || !json.success) throw new Error(json.error || 'Failed to load stats')
       setStats(json.data)
@@ -111,7 +106,7 @@ export default function MaintenancePanel() {
     setError(null)
     setSuccess(null)
     try {
-      const res = await fetch('/api/admin/maintenance', {
+      const res = await fetch('/api/admin/maintenance/', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },

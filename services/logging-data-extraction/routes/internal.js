@@ -134,8 +134,17 @@ router.get('/internal/honey-token/check', requireToken, async (req, res) => {
 
 router.post('/internal/honey-token/usage', requireToken, async (req, res) => {
   try {
-    const { value, attackerIp, networkContext } = req.body || {};
-    await honeyTokenService.recordUsage(value, { attackerIp, networkContext });
+    const { value, attackerIp, networkContext, method, path, userAgent, outcome, traceId } =
+      req.body || {};
+    await honeyTokenService.recordUsage(value, {
+      attackerIp,
+      networkContext,
+      method,
+      path,
+      userAgent,
+      outcome,
+      traceId,
+    });
     return res.json({ success: true });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });

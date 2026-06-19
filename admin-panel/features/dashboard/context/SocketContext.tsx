@@ -123,6 +123,8 @@ export const SocketProvider = ({
   const hasDashboardDataRef = useRef(false)
   const lastRefreshAtRef = useRef(0)
   const connectedRef = useRef(false)
+  const bootstrapRef = useRef(bootstrap)
+  bootstrapRef.current = bootstrap
 
   const setDemoMode = useCallback((enabled: boolean) => {
     refreshGenerationRef.current += 1
@@ -181,7 +183,7 @@ export const SocketProvider = ({
     }
 
     try {
-      const res = await fetch('/api/admin/dashboard?limit=200', { method: 'GET', signal })
+      const res = await fetch('/api/admin/dashboard/?limit=200', { method: 'GET', signal })
 
       if (signal?.aborted || generation !== refreshGenerationRef.current) return
 
@@ -402,7 +404,12 @@ export const SocketProvider = ({
       })
     }
 
-    refresh({ signal: abort.signal }).catch(swallowRefreshError)
+    if (!bootstrapRef.current) {
+      refresh({ signal: abort.signal }).catch(swallowRefreshError)
+    } else {
+      lastRefreshAtRef.current = Date.now()
+      setIsSyncing(false)
+    }
     restartPoll()
 
     const onVisible = () => {

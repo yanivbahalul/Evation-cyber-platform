@@ -1,77 +1,57 @@
 'use strict';
 
 /**
- * Honey Token Trap — hands out trackable fake credentials.
+ * Honey Token Trap — recognizes planted bait credentials.
  *
- * The HoneyToken collection lives in the malicious DB, which only the telemetry
- * service touches. This trap persists/looks-up/records via telemetry HTTP and
- * keeps an in-process cache so the hot-path detector avoids a network round-trip
- * for tokens issued during this process lifetime.
+ * The fixed catalog (shared-constants) is the source of truth for what is
+ * planted in the leaked artifacts (.env, .git/config, SQLi dump). The malicious
+ * DB (owned by telemetry) mirrors the catalog for the SOC panel and stores
+ * forensic usage. The gateway resolves provenance in-process from the catalog
+ * and falls back to telemetry for any legacy/minted tokens.
  */
 
-const { faker } = require('@faker-js/faker');
-const crypto = require('crypto');
-const { getAttackerIp } = require('@evation/shared-utils');
+const { findHoneyToken } = require('@evation/shared-constants/honeyTokens');
 const telemetry = require('../utils/telemetryClient');
 
-// apiKey OR jwt → fakeUsername. Telemetry remains the source of truth across restarts.
-const memCache = new Map();
+/**
+ * Resolve a presented value to its honey-token provenance.
+ * @returns {Promise<null | {catalogId, fakeUsername, tokenType, service, scopes, leakSource, value}>}
+ */
+exports.resolve = async (value) => {
+  if (!value) return null;
 
-function fakeJwt(user) {
-  const b64 = (obj) => Buffer.from(JSON.stringify(obj)).toString('base64url');
-  const header = b64({ alg: 'HS256', typ: 'JWT' });
-  const payload = b64({
-    sub: user.id,
-    name: user.name,
-    role: 'admin',
-    iat: Math.floor(Date.now() / 1000),
-    exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24,
-  });
-  const sig = crypto.randomBytes(32).toString('base64url');
-  return `${header}.${payload}.${sig}`;
-}
-
-/** Generate a new bait credential bundle and persist it via telemetry. */
-exports.generate = async (req) => {
-  const user = {
-    id: faker.string.uuid(),
-    name: faker.person.fullName(),
-    email: faker.internet.email({ provider: 'innotech.io' }),
-    department: faker.commerce.department(),
-  };
-
-  const apiKey = `itc_${faker.string.alphanumeric({ length: 32 })}`;
-  const jwt = fakeJwt(user);
-
-  await telemetry.generateHoneyToken({ fakeUsername: user.email, fakePassword: apiKey });
-  memCache.set(apiKey, user.email);
-  memCache.set(jwt, user.email);
-
-  return {
-    user,
-    apiKey,
-    jwt,
-    issuedAt: new Date().toISOString(),
-    expiresIn: 86400,
-    honey: true,
-    sourceIP: getAttackerIp(req),
-  };
-};
-
-/** @returns {Promise<boolean>} true if this value was previously issued as a honey-token. */
-exports.isHoney = async (value) => {
-  if (!value) return false;
-  if (memCache.has(value)) return true;
-
-  const { hit, fakeUsername } = await telemetry.checkHoneyToken(value);
-  if (hit) {
-    memCache.set(value, fakeUsername);
-    return true;
+  const entry = findHoneyToken(value);
+  if (entry) {
+    return {
+      catalogId: entry.catalogId,
+      fakeUsername: entry.email,
+      tokenType: entry.tokenType,
+      service: entry.service,
+      scopes: entry.scopes || [],
+      leakSource: entry.leakSource,
+      value: entry.value,
+    };
   }
-  return false;
+
+  const hit = await telemetry.checkHoneyToken(value);
+  if (hit.hit) {
+    return {
+      catalogId: hit.catalogId,
+      fakeUsername: hit.fakeUsername,
+      tokenType: hit.tokenType,
+      service: hit.service,
+      scopes: hit.scopes || [],
+      leakSource: hit.leakSource,
+      value,
+    };
+  }
+  return null;
 };
 
-/** Record usage of a honey-token value. */
+/** @returns {Promise<boolean>} true if this value is a planted/issued honey-token. */
+exports.isHoney = async (value) => Boolean(await exports.resolve(value));
+
+/** Record usage of a honey-token value with forensic context. */
 exports.recordUsage = async (value, ctx = {}) => {
   await telemetry.recordHoneyUsage(value, ctx);
 };

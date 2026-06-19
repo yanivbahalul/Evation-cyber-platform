@@ -10,10 +10,15 @@ const PATHS = Object.freeze({
   database: '/internal/services/database',
   apiKeys: '/internal/integrations/keys',
   hrExport: '/internal/api/v1/hr/export',
+  storageList: '/internal/api/v1/storage/list',
   archiveExport: '/internal/exports/archive',
   fileViewer: '/internal/services/files',
   fetchStatus: '/internal/services/fetch-status',
   signOut: '/internal/auth/signout',
+  // Planted "leaked" artifacts that carry the honey-token catalog values.
+  envLeak: '/.env',
+  envLeakInternal: '/internal/.env',
+  gitConfigLeak: '/.git/config',
 });
 
 const ALIASES = Object.freeze({
@@ -65,6 +70,27 @@ function isHoneyTokenApiExportPath(path) {
   return p === PATHS.hrExport;
 }
 
+function isStorageListPath(path) {
+  const p = normalizePath(path);
+  return p === PATHS.storageList;
+}
+
+/** Any decoy API endpoint that a stolen honey token is "meant" to call. */
+function isHoneyApiPath(path) {
+  return isHoneyTokenApiExportPath(path) || isStorageListPath(path);
+}
+
+/** Planted leaked artifacts (served as raw text to look like exposed files). */
+function isLeakedArtifactPath(path) {
+  const p = normalizePath(path);
+  return p === PATHS.envLeak || p === PATHS.envLeakInternal || p === PATHS.gitConfigLeak;
+}
+
+function isConsolePath(path) {
+  const p = normalizePath(path);
+  return p === PATHS.console || p === ALIASES.console;
+}
+
 function isInternalZonePath(path) {
   const p = normalizePath(path);
   return (
@@ -84,5 +110,9 @@ module.exports = {
   isFileViewerPath,
   isFetchStatusPath,
   isHoneyTokenApiExportPath,
+  isStorageListPath,
+  isHoneyApiPath,
+  isLeakedArtifactPath,
+  isConsolePath,
   isInternalZonePath,
 };

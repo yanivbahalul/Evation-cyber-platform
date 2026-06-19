@@ -23,13 +23,23 @@ export async function GET(req: NextRequest) {
       .limit(DASHBOARD_HONEY_TOKENS_LIMIT)
     const data = tokens.map((t: any) => ({
       _id: String(t._id),
+      catalogId: t.catalogId,
       fakeUsername: t.fakeUsername,
       fakePassword: t.fakePassword,
+      tokenType: t.tokenType,
+      service: t.service,
+      scopes: Array.isArray(t.scopes) ? t.scopes : [],
+      leakSource: t.leakSource,
       isTriggered: Boolean(t.isTriggered),
       triggeredLogs: (t.triggeredLogs ?? []).map((l: any) => ({
         attackerIp: l.attackerIp,
         timestamp: (l.timestamp instanceof Date ? l.timestamp : new Date(l.timestamp)).toISOString(),
         networkContext: l.networkContext,
+        method: l.method,
+        path: l.path,
+        userAgent: l.userAgent,
+        outcome: typeof l.outcome === 'number' ? l.outcome : undefined,
+        traceId: l.traceId,
       })),
     }))
 

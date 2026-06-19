@@ -1,5 +1,6 @@
 // Ban check + regex threat detection. Sets req.threatInfo for decoyReroute.
 const detectionService = require('../services/detectionService');
+const TRAP_TYPES = require('@evation/shared-constants');
 const { getAttackerIp, attackLog } = require('@evation/shared-utils');
 const httpTrickle = require('../traps/httpTrickle');
 
@@ -36,14 +37,19 @@ module.exports = (req, res, next) => {
 
     if (types.length) {
         const [primary, ...secondary] = types;
+        const honeyActive = req.threatInfo?.type === TRAP_TYPES.HONEY_TOKEN;
+        const trap = honeyActive ? TRAP_TYPES.HONEY_TOKEN : primary;
+        const secondaryTraps = honeyActive ? [...secondary, primary] : secondary;
         attackLog.info('GATEWAY', 'threat_detected_routing_to_trap', {
-            trap: primary,
-            trap_label: attackLog.trapLabel(primary),
-            secondary_traps: secondary.length ? secondary.join(',') : undefined,
+            trap,
+            trap_label: attackLog.trapLabel(trap),
+            secondary_traps: secondaryTraps.length ? secondaryTraps.join(',') : undefined,
             ip: clientIP,
             ...attackLog.requestFields(req),
         });
-        req.threatInfo = { type: primary, secondary, originIP: clientIP };
+        req.threatInfo = honeyActive
+            ? { type: TRAP_TYPES.HONEY_TOKEN, secondary: secondaryTraps, originIP: clientIP }
+            : { type: primary, secondary, originIP: clientIP };
         return next();
     }
 

@@ -137,12 +137,22 @@ export interface AttackerTimeline {
 
 export interface HoneyToken {
   _id: string
+  catalogId?: string
   fakeUsername: string
   fakePassword: string
+  tokenType?: string
+  service?: string
+  scopes?: string[]
+  leakSource?: string
   isTriggered: boolean
   triggeredLogs: Array<{
     attackerIp: string
     timestamp: string
     networkContext: string
+    method?: string
+    path?: string
+    userAgent?: string
+    outcome?: number
+    traceId?: string
   }>
 }

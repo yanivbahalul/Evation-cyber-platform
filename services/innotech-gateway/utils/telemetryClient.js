@@ -93,18 +93,35 @@ async function checkHoneyToken(value) {
   try {
     const res = await telemetryFetch('/internal/honey-token/check', { method: 'GET', query: { value } });
     const data = await res.json();
-    return { hit: !!data.hit, fakeUsername: data.fakeUsername };
+    return {
+      hit: !!data.hit,
+      catalogId: data.catalogId,
+      fakeUsername: data.fakeUsername,
+      tokenType: data.tokenType,
+      service: data.service,
+      scopes: Array.isArray(data.scopes) ? data.scopes : [],
+      leakSource: data.leakSource,
+    };
   } catch (err) {
     attackLog.warn('TRAP', 'honey_token_check_failed', { error: err.message });
     return { hit: false };
   }
 }
 
-/** Record usage of an issued honey-token. */
+/** Record usage of an issued honey-token with forensic context. */
 async function recordHoneyUsage(value, ctx = {}) {
   try {
     await telemetryFetch('/internal/honey-token/usage', {
-      body: { value, attackerIp: ctx.attackerIp, networkContext: ctx.networkContext },
+      body: {
+        value,
+        attackerIp: ctx.attackerIp,
+        networkContext: ctx.networkContext,
+        method: ctx.method,
+        path: ctx.path,
+        userAgent: ctx.userAgent,
+        outcome: ctx.outcome,
+        traceId: ctx.traceId,
+      },
     });
   } catch (err) {
     attackLog.warn('TRAP', 'honey_token_usage_failed', { error: err.message });

@@ -2,8 +2,18 @@
 
 import { useState } from 'react'
 import { useSocket, type HoneyToken } from '@/features/dashboard/context/SocketContext'
-import { Key, ShieldAlert, ShieldCheck, Clock, Globe, ChevronDown, ChevronRight, Eye, EyeOff } from 'lucide-react'
+import { Key, ShieldAlert, ShieldCheck, Clock, Globe, ChevronDown, ChevronRight, Eye, EyeOff, MapPin, Tag } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
+
+/** Color an HTTP outcome like a real API client would: 2xx ok, 4xx warn, 429 hot. */
+const outcomeClasses = (outcome?: number) => {
+  if (outcome == null) return 'bg-muted/20 text-muted-foreground border-border'
+  if (outcome >= 200 && outcome < 300) return 'bg-success/15 text-success border-success/25'
+  if (outcome === 429) return 'bg-accent/20 text-accent border-accent/30'
+  if (outcome >= 400) return 'bg-danger/15 text-danger border-danger/25'
+  if (outcome >= 300) return 'bg-primary/15 text-primary border-primary/20'
+  return 'bg-muted/20 text-muted-foreground border-border'
+}
 
 const SummaryCard = ({ label, value, color, icon: Icon }: { label: string; value: number; color: string; icon: React.ElementType }) => {
   return (
@@ -39,8 +49,13 @@ const TokenCard = ({ token }: { token: HoneyToken }) => {
         </div>
 
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-mono font-bold text-foreground">{token.fakeUsername}</span>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm font-mono font-bold text-foreground">{token.service || token.fakeUsername}</span>
+            {token.tokenType && (
+              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-primary/15 text-primary border border-primary/20 uppercase">
+                {token.tokenType}
+              </span>
+            )}
             <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
               token.isTriggered
                 ? 'bg-accent/20 text-accent border border-accent/30'
@@ -49,8 +64,10 @@ const TokenCard = ({ token }: { token: HoneyToken }) => {
               {token.isTriggered ? 'TRIGGERED' : 'INTACT'}
             </span>
           </div>
-          <p className="text-[10px] font-mono text-muted-foreground mt-0.5">
-            {token.triggeredLogs.length} forensic log{token.triggeredLogs.length !== 1 ? 's' : ''}
+          <p className="text-[10px] font-mono text-muted-foreground mt-0.5 truncate">
+            {token.fakeUsername}
+            {token.leakSource ? ` · leaked from ${token.leakSource}` : ''}
+            {` · ${token.triggeredLogs.length} use${token.triggeredLogs.length !== 1 ? 's' : ''}`}
           </p>
         </div>
 
@@ -69,17 +86,39 @@ const TokenCard = ({ token }: { token: HoneyToken }) => {
         )}
       </div>
 
-      {/* Credentials row */}
+      {/* Credentials + provenance row */}
       {showCreds && (
         <div className="mx-4 mb-3 bg-surface-elevated border border-border rounded-lg p-3 text-xs font-mono">
           <div className="flex gap-4">
-            <span className="text-muted-foreground/60 shrink-0">fakeUsername:</span>
-            <span className="text-primary">{token.fakeUsername}</span>
+            <span className="text-muted-foreground/60 shrink-0 w-24">identity:</span>
+            <span className="text-primary break-all">{token.fakeUsername}</span>
           </div>
           <div className="flex gap-4 mt-1">
-            <span className="text-muted-foreground/60 shrink-0">fakePassword:</span>
-            <span className="text-accent">{token.fakePassword}</span>
+            <span className="text-muted-foreground/60 shrink-0 w-24">secret:</span>
+            <span className="text-accent break-all">{token.fakePassword}</span>
           </div>
+          {token.service && (
+            <div className="flex gap-4 mt-1">
+              <span className="text-muted-foreground/60 shrink-0 w-24">service:</span>
+              <span className="text-foreground">{token.service}</span>
+            </div>
+          )}
+          {token.scopes && token.scopes.length > 0 && (
+            <div className="flex gap-4 mt-1 items-center">
+              <span className="text-muted-foreground/60 shrink-0 w-24 flex items-center gap-1"><Tag className="w-3 h-3" />scopes:</span>
+              <span className="flex flex-wrap gap-1">
+                {token.scopes.map((s) => (
+                  <span key={s} className="text-[9px] px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">{s}</span>
+                ))}
+              </span>
+            </div>
+          )}
+          {token.leakSource && (
+            <div className="flex gap-4 mt-1 items-center">
+              <span className="text-muted-foreground/60 shrink-0 w-24 flex items-center gap-1"><MapPin className="w-3 h-3" />leaked from:</span>
+              <span className="text-accent">{token.leakSource}</span>
+            </div>
+          )}
         </div>
       )}
 
@@ -100,7 +139,17 @@ const TokenCard = ({ token }: { token: HoneyToken }) => {
                     <span className="text-[9px] px-1.5 py-0.5 rounded bg-primary/15 text-primary border border-primary/20">
                       {log.networkContext}
                     </span>
+                    {log.outcome != null && (
+                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${outcomeClasses(log.outcome)}`}>
+                        {log.outcome}
+                      </span>
+                    )}
                   </div>
+                  {(log.method || log.path) && (
+                    <div className="mt-1 text-muted-foreground/80 break-all">
+                      <span className="text-primary font-bold">{log.method || 'GET'}</span> {log.path}
+                    </div>
+                  )}
                   <div className="flex items-center gap-1 mt-1 text-muted-foreground/70">
                     <Clock className="w-3 h-3 shrink-0" />
                     {formatDistanceToNow(new Date(log.timestamp), { addSuffix: true })}

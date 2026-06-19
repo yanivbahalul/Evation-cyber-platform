@@ -86,6 +86,14 @@ async function startServer() {
     process.exit(1);
   }
 
+  // Plant the fixed honey-token catalog so the SOC panel always reflects the
+  // tokens that leak through the gateway artifacts. Best-effort: never blocks boot.
+  try {
+    await require('./services/honeyTokenService').seedCatalog();
+  } catch (err) {
+    attackLog.warn('TELEMETRY', 'honey_token_seed_failed', { error: err?.message || String(err) });
+  }
+
   server.listen(PORT, '0.0.0.0', () => {
     startupLog.logServiceReady('telemetry');
     if (startupLog.isVerbose()) {

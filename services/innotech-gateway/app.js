@@ -179,6 +179,15 @@ onBothPaths(DP.database, DP_ALIAS.database, (p) => {
 });
 onBothPaths(DP.archiveExport, DP_ALIAS.archiveExport, (p) => router.get(p, decoyController.serveDataBomb));
 onBothPaths(DP.apiKeys, DP_ALIAS.apiKeys, (p) => router.get(p, decoyController.serveHoneyToken));
+// Realistic honey-token APIs — registered so requests WITHOUT a valid stolen key
+// return a real 401 (not Express's "Cannot GET" 404). Valid keys are short-
+// circuited earlier by decoyReroute; these routes cover the unauthenticated case.
+router.all(DP.hrExport, decoyController.serveHoneyTokenApiExport);
+router.all(DP.storageList, decoyController.serveHoneyTokenStorageList);
+// Planted leaked artifacts carrying the honey-token catalog values.
+router.get(DP.envLeak, decoyController.serveEnvLeak);
+router.get(DP.envLeakInternal, decoyController.serveEnvLeak);
+router.get(DP.gitConfigLeak, decoyController.serveGitConfigLeak);
 router.get(DP.fileViewer, decoyController.renderFileViewer);
 // Infinite redirect labyrinth — scrapers follow forever; humans give up.
 router.get(/^\/internal\/archives(\/.*)?$/, decoyController.serveInfiniteRedirect);
@@ -187,7 +196,7 @@ router.all(DP.fetchStatus, decoyController.renderFetchStatus);
 router.get('/robots.txt', (req, res) => {
   const base = BASE_PATH || '';
   res.type('text/plain').send(
-    `User-agent: *\nDisallow: ${base}/internal/\nDisallow: ${base}/decoy-portal/\n\n# Legacy IT paths (scanner hints)\n# ${base}/internal/console\n# ${base}/internal/services/database\n# ${base}/internal/integrations/keys\n# ${base}/internal/exports/archive\n`
+    `User-agent: *\nDisallow: ${base}/internal/\nDisallow: ${base}/decoy-portal/\nDisallow: ${base}/.env\nDisallow: ${base}/.git/\n\n# Legacy IT paths (scanner hints)\n# ${base}/internal/console\n# ${base}/internal/services/database\n# ${base}/internal/integrations/keys\n# ${base}/internal/exports/archive\n# ${base}/internal/api/v1/hr/export\n# ${base}/.env\n# ${base}/.git/config\n`
   );
 });
 router.get('/sitemap.xml', (req, res) => {
