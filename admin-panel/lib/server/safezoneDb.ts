@@ -46,6 +46,7 @@ export async function getSafezoneConn() {
       bufferCommands: false,
     })
     cachedConn.model('RealEmployee', require('@evation/db-schemas').RealEmployeeSchema)
+    cachedConn.model('HrTicket', require('@evation/db-schemas').HrTicketSchema)
   }
 
   if (!cachedConnPromise) cachedConnPromise = ensureConnected(cachedConn)
@@ -56,6 +57,7 @@ export async function getSafezoneConn() {
 export async function getSafezoneModels() {
   const conn = await getSafezoneConn()
   const RealEmployee = conn.model('RealEmployee')
-  return { RealEmployee, User: RealEmployee }
+  const HrTicket = conn.model('HrTicket')
+  return { RealEmployee, User: RealEmployee, HrTicket }
 }
 

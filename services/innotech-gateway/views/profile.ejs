@@ -32,7 +32,7 @@
         <div style="height: 12px;"></div>
 
         <div class="btn-row">
-          <button class="btn" type="button" onclick="alert('Changes require HR approval. Please open an IT ticket.')">Edit details</button>
+          <button class="btn" type="button" id="edit-profile-btn">Edit details</button>
           <a class="btn primary" href="<%= withBase('/workspace') %>">Back to dashboard</a>
         </div>
       </div>
@@ -40,5 +40,16 @@
   </div>
 </div>
 
-<%- include('partials/foot') %>
+<script>
+  (function () {
+    var btn = document.getElementById('edit-profile-btn');
+    if (!btn) return;
+    var ticketUrl = '<%= withBase('/contact') %>?subject=' + encodeURIComponent('Profile update request') + '&source=profile_edit';
+    btn.addEventListener('click', function () {
+      alert('Changes require HR approval. Please open an IT ticket.');
+      window.location.href = ticketUrl;
+    });
+  })();
+</script>
 
+<%- include('partials/foot') %>

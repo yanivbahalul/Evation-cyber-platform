@@ -14,6 +14,7 @@ const TAB_TITLES: Record<ActiveTab, string> = {
   tokens:   'Honey Token Status',
   adminUsers: 'Safe Zone Users',
   bans: 'IP Ban Management',
+  maintenance: 'Telemetry Data Maintenance',
 }
 
 interface TopBarProps {

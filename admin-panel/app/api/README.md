@@ -12,6 +12,7 @@ Next.js App Router handlers. Everything under [`admin/`](admin/) requires a vali
 | [`admin/events/`](admin/events/) | Paginated attack events |
 | [`admin/attackers/`](admin/attackers/) | Attacker profiles + per-IP timeline |
 | [`admin/ban/`](admin/ban/) | List / ban / unban IPs |
+| [`admin/maintenance/`](admin/maintenance/) | Wipe / reset malicious DB telemetry data |
 | [`admin/honeytokens/`](admin/honeytokens/) | Honey token management |
 | [`admin/users/`](admin/users/) | Admin user management + 2FA reset |
 | [`admin/2fa/`](admin/2fa/) | 2FA enrollment |

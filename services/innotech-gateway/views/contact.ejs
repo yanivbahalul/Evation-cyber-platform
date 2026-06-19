@@ -10,22 +10,34 @@
     <main class="card">
       <div class="hero">
         <div class="kicker">Support</div>
-        <h2 style="margin: 0 0 8px;">Contact IT Support</h2>
+        <h2 style="margin: 0 0 8px;">Open IT Ticket</h2>
         <div class="muted">Submit a ticket — processed by the internal helpdesk queue.</div>
       </div>
 
       <div class="card-inner">
         <% if (success) { %>
-          <div class="badge ok" style="margin-bottom: 12px;">Ticket received — reference will be emailed shortly</div>
+          <div class="badge ok" style="margin-bottom: 12px;">
+            Ticket #<%= ticketId %> received — reference will be emailed shortly
+          </div>
+          <% if (typeof isSuspicious !== 'undefined' && isSuspicious) { %>
+            <div class="muted2" style="margin-bottom: 12px; font-size: 13px;">
+              Your request was flagged for priority review by the security desk.
+            </div>
+          <% } %>
         <% } %>
         <% if (formError) { %>
           <div class="badge" style="margin-bottom: 12px; background: #fee2e2; color: #991b1b;"><%= formError %></div>
         <% } %>
+        <% if (!success) { %>
         <form class="form" method="POST" action="<%= withBase('/contact') %>">
+          <input type="hidden" name="source" value="<%= typeof source !== 'undefined' ? source : 'contact' %>" />
           <input class="input" name="subject" placeholder="Subject (e.g. VPN access request)" value="<%= typeof subject !== 'undefined' ? subject : '' %>" required />
           <textarea class="input" name="message" rows="5" placeholder="Describe the issue..." required><%= typeof message !== 'undefined' ? message : '' %></textarea>
           <button class="btn primary" type="submit" style="width: 100%;">Submit ticket</button>
         </form>
+        <% } else { %>
+          <a class="btn primary" href="<%= withBase('/workspace') %>" style="width: 100%; text-align: center;">Back to dashboard</a>
+        <% } %>
 
         <div class="muted2" style="margin-top: 12px; font-size: 13px;">
           Emergency: call internal extension <strong>1337</strong>.

@@ -15,6 +15,7 @@ const { PATHS: DP } = require('../config/deceptionPaths');
 const legacyBreachSession = require('../utils/legacyBreachSession');
 const TRAP_TYPES = require('@evation/shared-constants');
 const { report: reportTrap } = require('./decoyController');
+const ticketService = require('../services/ticketService');
 
 async function failLogin(req, res, username, message) {
     attackLog.info('GATEWAY', 'login_failed', { username, ...attackLog.requestFields(req) });
@@ -468,11 +469,17 @@ exports.serveDocument = (req, res) => {
 };
 
 exports.renderContactPage = (req, res) => {
+    const subject = String(req.query?.subject || '').trim().slice(0, 300);
+    const source = ticketService.normalizeSource(req.query?.source);
     res.render('contact', {
         user: req.user || null,
         adminPanelUrl: process.env.ADMIN_PANEL_URL || 'http://localhost:3000',
         success: false,
         formError: '',
+        subject,
+        message: '',
+        source,
+        ticketId: '',
     });
 };
 
@@ -517,14 +524,127 @@ exports.renderSearchPage = (req, res) => {
     });
 };
 
-exports.submitContact = (req, res) => {
+exports.submitContact = async (req, res) => {
     if (req.trapHandled || res.headersSent) return;
-    res.render('contact', {
+
+    const subject = String(req.body?.subject || '').trim().slice(0, 300);
+    const message = String(req.body?.message || '').trim().slice(0, 8000);
+    const source = ticketService.normalizeSource(req.body?.source);
+
+    if (!subject || !message) {
+        return res.render('contact', {
+            user: req.user || null,
+            adminPanelUrl: process.env.ADMIN_PANEL_URL || 'http://localhost:3000',
+            success: false,
+            formError: 'Subject and message are required.',
+            subject,
+            message,
+            source,
+            ticketId: '',
+        });
+    }
+
+    try {
+        const ticket = await ticketService.createTicket(req, { subject, message, source });
+
+        if (ticket.isSuspicious) {
+            await reportTrap(TRAP_TYPES.RECON, req, {
+                payload: JSON.stringify({
+                    kind: 'hr_ticket',
+                    ticketId: ticket.ticketId,
+                    subject: ticket.subject,
+                    source: ticket.source,
+                    suspiciousReasons: ticket.suspiciousReasons,
+                }),
+                wasted_time_ms: 0,
+                handoffFrom: 'hr_ticket',
+            });
+        }
+
+        return res.render('contact', {
+            user: req.user || null,
+            adminPanelUrl: process.env.ADMIN_PANEL_URL || 'http://localhost:3000',
+            success: true,
+            formError: '',
+            subject: '',
+            message: '',
+            source: 'contact',
+            ticketId: ticket.ticketId,
+            isSuspicious: ticket.isSuspicious,
+        });
+    } catch (err) {
+        attackLog.error('GATEWAY', 'hr_ticket_create_failed', { error: err?.message || String(err) });
+        return res.render('contact', {
+            user: req.user || null,
+            adminPanelUrl: process.env.ADMIN_PANEL_URL || 'http://localhost:3000',
+            success: false,
+            formError: 'Could not submit ticket. Please try again.',
+            subject,
+            message,
+            source,
+            ticketId: '',
+        });
+    }
+};
+
+function opsAccessDenied(req, res) {
+    return res.status(403).render('login', {
+        user: req.user || null,
+        error: 'You do not have access to this area.',
+        username: req.user?.username || '',
+    });
+}
+
+exports.renderHrTicketsPage = async (req, res) => {
+    if (!res.locals.canAccessOps) return opsAccessDenied(req, res);
+
+    const filter = String(req.query?.filter || 'all').trim();
+    const suspiciousOnly = filter === 'suspicious';
+    const status = filter === 'open' ? 'open' : undefined;
+
+    const tickets = await ticketService.listTickets({
+        limit: 200,
+        suspiciousOnly,
+        status,
+    });
+
+    res.render('hr-tickets', {
         user: req.user || null,
         adminPanelUrl: process.env.ADMIN_PANEL_URL || 'http://localhost:3000',
-        success: true,
-        formError: '',
-        subject: req.body?.subject || '',
-        message: req.body?.message || '',
+        tickets,
+        filter,
+    });
+};
+
+exports.updateHrTicketStatus = async (req, res) => {
+    if (!res.locals.canAccessOps) return opsAccessDenied(req, res);
+
+    const ticketId = String(req.body?.ticketId || '').trim();
+    const status = String(req.body?.status || '').trim();
+    const filter = String(req.body?.filter || req.query?.filter || 'all').trim();
+
+    const updated = await ticketService.updateTicketStatus(ticketId, status);
+    if (!updated) {
+        return res.status(400).render('hr-tickets', {
+            user: req.user || null,
+            adminPanelUrl: process.env.ADMIN_PANEL_URL || 'http://localhost:3000',
+            tickets: await ticketService.listTickets({ limit: 200 }),
+            filter,
+            formError: 'Could not update ticket status.',
+        });
+    }
+
+    const suspiciousOnly = filter === 'suspicious';
+    const statusFilter = filter === 'open' ? 'open' : undefined;
+    return res.render('hr-tickets', {
+        user: req.user || null,
+        adminPanelUrl: process.env.ADMIN_PANEL_URL || 'http://localhost:3000',
+        tickets: await ticketService.listTickets({
+            limit: 200,
+            suspiciousOnly,
+            status: statusFilter,
+        }),
+        filter,
+        formSuccess: `Ticket ${ticketId} marked as ${status.replace('_', ' ')}.`,
     });
 };

@@ -16,6 +16,8 @@ const MIME_BY_EXT = {
     '.png': 'image/png',
     '.jpg': 'image/jpeg',
     '.jpeg': 'image/jpeg',
+    '.md': 'text/markdown',
+    '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
 };
 
 function formatUpdated(mtimeMs) {

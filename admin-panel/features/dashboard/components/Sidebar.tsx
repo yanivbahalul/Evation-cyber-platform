@@ -1,11 +1,11 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { Shield, Map, Activity, Users, Key, Ban, Wifi, WifiOff, LogOut, UserCog, Search } from 'lucide-react'
+import { Shield, Map, Activity, Users, Key, Ban, Wifi, WifiOff, LogOut, UserCog, Search, Database } from 'lucide-react'
 import { useSocket } from '@/features/dashboard/context/SocketContext'
 import { useAuth } from '@/features/auth/context/AuthContext'
 
-export type ActiveTab = 'map' | 'events' | 'profiles' | 'investigate' | 'tokens' | 'adminUsers' | 'bans'
+export type ActiveTab = 'map' | 'events' | 'profiles' | 'investigate' | 'tokens' | 'adminUsers' | 'bans' | 'maintenance'
 
 interface SidebarProps {
   active: ActiveTab
@@ -86,6 +86,21 @@ export default function Sidebar({ active, onSelect }: SidebarProps) {
           <p className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-widest px-2 mb-2">
             Actions
           </p>
+          <button
+            type="button"
+            onClick={() => {
+              onSelect('maintenance')
+              router.push('/gateway/dashboard/?tab=maintenance')
+            }}
+            className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-all mb-1 ${
+              active === 'maintenance'
+                ? 'bg-primary/15 text-primary border border-primary/25'
+                : 'text-muted-foreground hover:text-foreground hover:bg-surface-elevated'
+            }`}
+          >
+            <Database className="w-4 h-4 shrink-0" />
+            Data maintenance
+          </button>
           <button
             type="button"
             onClick={() => {

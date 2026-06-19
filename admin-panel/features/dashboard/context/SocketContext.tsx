@@ -73,7 +73,7 @@ interface SocketContextValue {
   getTimelineForIp: (ip: string, traceId?: string) => AttackerTimeline | null
   /** Clears realtime alerts + hides older polled events from the UI. */
   clearScreen: () => void
-  refresh: () => Promise<void>
+  refresh: (options?: { force?: boolean; signal?: AbortSignal }) => Promise<void>
 }
 
 export type DashboardBootstrap = Omit<DashboardSnapshot, 'savedAt'>
@@ -144,12 +144,19 @@ export const SocketProvider = ({
     setLastRefreshError(null)
   }, [])
 
-  const refresh = useCallback(async (signal?: AbortSignal) => {
+  const refresh = useCallback(async (options?: { force?: boolean; signal?: AbortSignal }) => {
     if (demoMode) return
+    const signal = options?.signal
     // Avoid UI flicker + excessive refresh storms when live alerts stream in.
     // We still allow refreshPendingRef to coalesce requests if one is in-flight.
     const now = Date.now()
-    if (now - lastRefreshAtRef.current < 3_000 && !refreshInFlightRef.current) return
+    if (
+      !options?.force &&
+      now - lastRefreshAtRef.current < 3_000 &&
+      !refreshInFlightRef.current
+    ) {
+      return
+    }
     if (refreshInFlightRef.current) {
       refreshPendingRef.current = true
       return
@@ -210,7 +217,7 @@ export const SocketProvider = ({
       if (generation === refreshGenerationRef.current) setIsSyncing(false)
       if (refreshPendingRef.current) {
         refreshPendingRef.current = false
-        refresh(signal).catch(() => {
+        refresh({ force: options?.force, signal }).catch(() => {
           /* coalesced refresh is best-effort */
         })
       }
@@ -341,7 +348,7 @@ export const SocketProvider = ({
       const ms = connectedRef.current ? 15_000 : 5_000
       pollRef.current = setInterval(() => {
         if (document.visibilityState === 'visible') {
-          refresh(abort.signal).catch(swallowRefreshError)
+          refresh({ signal: abort.signal }).catch(swallowRefreshError)
         }
       }, ms)
     }
@@ -386,16 +393,16 @@ export const SocketProvider = ({
           refreshAfterAlertRef.current = null
           // Bypass the 3s coalesce window so polled attackEvents catch up quickly.
           lastRefreshAtRef.current = 0
-          refresh(abort.signal).catch(swallowRefreshError)
+          refresh({ signal: abort.signal }).catch(swallowRefreshError)
         }, 300)
       })
     }
 
-    refresh(abort.signal).catch(swallowRefreshError)
+    refresh({ signal: abort.signal }).catch(swallowRefreshError)
     restartPoll()
 
     const onVisible = () => {
-      if (document.visibilityState === 'visible') refresh(abort.signal).catch(swallowRefreshError)
+      if (document.visibilityState === 'visible') refresh({ signal: abort.signal }).catch(swallowRefreshError)
     }
     document.addEventListener('visibilitychange', onVisible)
 

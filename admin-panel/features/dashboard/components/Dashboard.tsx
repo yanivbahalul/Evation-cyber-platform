@@ -11,9 +11,10 @@ import AttackerWorkspace from '@/features/investigation/components/AttackerWorks
 import HoneyTokenPanel from './HoneyTokenPanel'
 import AdminUsersPanel from './AdminUsersPanel'
 import BanManagementPanel from './BanManagementPanel'
+import MaintenancePanel from './MaintenancePanel'
 import { InvestigationProvider } from '@/features/investigation/context/InvestigationContext'
 
-const TAB_IDS: ActiveTab[] = ['map', 'events', 'profiles', 'investigate', 'tokens', 'adminUsers', 'bans']
+const TAB_IDS: ActiveTab[] = ['map', 'events', 'profiles', 'investigate', 'tokens', 'adminUsers', 'bans', 'maintenance']
 
 function tabFromQuery(raw: string | null): ActiveTab {
   if (raw && TAB_IDS.includes(raw as ActiveTab)) return raw as ActiveTab
@@ -48,6 +49,7 @@ export default function Dashboard() {
             {activeTab === 'tokens' && <HoneyTokenPanel />}
             {activeTab === 'adminUsers' && <AdminUsersPanel />}
             {activeTab === 'bans' && <BanManagementPanel />}
+            {activeTab === 'maintenance' && <MaintenancePanel />}
           </div>
         </main>
       </div>

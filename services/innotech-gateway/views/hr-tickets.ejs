@@ -1,0 +1,99 @@
+<% const title = 'InnoTech — IT Tickets' %>
+<%- include('partials/head', { title }) %>
+
+<div class="container">
+  <%- include('partials/topbar', { user }) %>
+
+  <div class="layout">
+    <%- include('partials/sidebar', { user, active: 'hrTickets', adminPanelUrl }) %>
+
+    <main class="card">
+      <div class="hero">
+        <div class="kicker">Helpdesk</div>
+        <h2 style="margin: 0 0 8px;">IT Tickets</h2>
+        <div class="muted">Internal queue — profile edits, IT support, and flagged submissions.</div>
+      </div>
+
+      <div class="card-inner">
+        <% if (typeof formSuccess !== 'undefined' && formSuccess) { %>
+          <div class="badge ok" style="margin-bottom: 12px;"><%= formSuccess %></div>
+        <% } %>
+        <% if (typeof formError !== 'undefined' && formError) { %>
+          <div class="badge" style="margin-bottom: 12px; background: #fee2e2; color: #991b1b;"><%= formError %></div>
+        <% } %>
+
+        <div class="btn-row" style="margin-bottom: 16px;">
+          <a class="btn <%= filter === 'all' ? 'primary' : '' %>" href="<%= withBase('/hr-tickets') %>">All</a>
+          <a class="btn <%= filter === 'open' ? 'primary' : '' %>" href="<%= withBase('/hr-tickets?filter=open') %>">Open</a>
+          <a class="btn <%= filter === 'suspicious' ? 'primary' : '' %>" href="<%= withBase('/hr-tickets?filter=suspicious') %>">Suspicious</a>
+        </div>
+
+        <div class="table-scroll">
+          <table class="table table-tickets">
+            <thead>
+              <tr>
+                <th class="col-ticket">Ticket</th>
+                <th class="col-subject">Subject</th>
+                <th class="col-from">From</th>
+                <th class="col-source">Source</th>
+                <th class="col-status">Status</th>
+                <th class="col-flags">Flags</th>
+                <th class="col-submitted">Submitted</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if (!tickets.length) { %>
+                <tr>
+                  <td colspan="7" class="muted2">No tickets in this view yet.</td>
+                </tr>
+              <% } %>
+              <% tickets.forEach(t => { %>
+                <tr<% if (t.isSuspicious) { %> style="background: rgba(249,115,22,0.06);"<% } %>>
+                  <td class="cell-break"><strong><%= t.ticketId %></strong></td>
+                  <td class="cell-break">
+                    <div class="ticket-subject"><%= t.subject %></div>
+                    <% if (t.message) { %>
+                      <div class="ticket-message muted2"><%= t.message %></div>
+                    <% } %>
+                  </td>
+                  <td class="muted2 cell-break">
+                    <%= t.submittedBy ? t.submittedBy : 'Anonymous' %><br />
+                    <span style="font-size: 11px;"><%= t.submitterIp %></span>
+                  </td>
+                  <td><span class="badge"><%= t.source.replace('_', ' ') %></span></td>
+                  <td>
+                    <form method="POST" action="<%= withBase('/hr-tickets/status') %>" class="ticket-status-form">
+                      <input type="hidden" name="ticketId" value="<%= t.ticketId %>" />
+                      <input type="hidden" name="filter" value="<%= filter %>" />
+                      <select class="input" name="status">
+                        <option value="open" <%= t.status === 'open' ? 'selected' : '' %>>Open</option>
+                        <option value="in_review" <%= t.status === 'in_review' ? 'selected' : '' %>>In review</option>
+                        <option value="closed" <%= t.status === 'closed' ? 'selected' : '' %>>Closed</option>
+                      </select>
+                      <button class="btn" type="submit">Save</button>
+                    </form>
+                  </td>
+                  <td class="cell-break">
+                    <% if (t.isSuspicious) { %>
+                      <span class="badge" style="background: rgba(249,115,22,0.15); color: var(--danger);">Suspicious</span>
+                      <% if (t.suspiciousReasons && t.suspiciousReasons.length) { %>
+                        <div class="muted2" style="font-size: 11px; margin-top: 4px;"><%= t.suspiciousReasons.join(', ') %></div>
+                      <% } %>
+                    <% } else { %>
+                      <span class="badge ok">Normal</span>
+                    <% } %>
+                  </td>
+                  <td class="muted2 cell-break" style="font-size: 12px;">
+                    <%= t.createdAt ? new Date(t.createdAt).toLocaleString() : '—' %>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<%- include('partials/foot') %>

@@ -54,3 +54,31 @@ export async function PATCH(req: NextRequest) {
   }
 }
 
+export async function DELETE(req: NextRequest) {
+  try {
+    const auth = await requireAdmin(req)
+    const body = (await req.json().catch(() => null)) as { username?: string } | null
+    if (!body) return jsonError('Invalid JSON body')
+
+    const username = (body.username ?? '').trim()
+    if (!username) return jsonError('Missing username')
+    if (auth.sub === username) return jsonError('Cannot delete your own account', 403)
+
+    const { User } = await getSafezoneModels()
+    const target = await User.findOne({ username }).lean()
+    if (!target) return jsonError('User not found', 404)
+
+    if ((target as { role?: string }).role === 'admin') {
+      const adminCount = await User.countDocuments({ role: 'admin' })
+      if (adminCount <= 1) return jsonError('Cannot delete the last admin account', 403)
+    }
+
+    await User.deleteOne({ username })
+    return NextResponse.json({ success: true })
+  } catch (e: any) {
+    if (e?.message === 'missing_auth') return jsonError('Unauthorized', 401)
+    if (String(e?.message).includes('forbidden')) return jsonError('Forbidden', 403)
+    return jsonError('Failed to delete user', 500)
+  }
+}
+

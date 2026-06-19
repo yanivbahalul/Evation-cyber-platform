@@ -137,6 +137,8 @@ router.get('/documents', requireAuth, realController.renderDocumentsPage);
 router.get('/documents/:filename', requireAuth, realController.serveDocument);
 router.get('/contact', realController.renderContactPage);
 router.post('/contact', realController.submitContact);
+router.get('/hr-tickets', requireAuth, realController.renderHrTicketsPage);
+router.post('/hr-tickets/status', requireAuth, realController.updateHrTicketStatus);
 router.get('/search', realController.renderSearchPage);
 // Legacy alias — nginx catch-all maps /gateway/ops here; redirect to workspace.
 router.get('/ops', (req, res) => res.redirect(302, req.withBase('/workspace')));

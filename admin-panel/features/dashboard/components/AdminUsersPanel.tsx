@@ -18,9 +18,10 @@ type UserRowProps = {
   onActiveChange: (isActive: boolean) => void
   onResetFa: () => void
   onSave: () => void
+  onDelete: () => void
 }
 
-const UserRow = ({ user, saving, onRoleChange, onActiveChange, onResetFa, onSave }: UserRowProps) => (
+const UserRow = ({ user, saving, onRoleChange, onActiveChange, onResetFa, onSave, onDelete }: UserRowProps) => (
   <tr className="border-t border-border/60">
     <td className="px-3 py-2 font-mono text-foreground">{user.username}</td>
     <td className="px-3 py-2">
@@ -37,12 +38,22 @@ const UserRow = ({ user, saving, onRoleChange, onActiveChange, onResetFa, onSave
       <input type="checkbox" checked={user.isActive} onChange={e => onActiveChange(e.target.checked)} />
     </td>
     <td className="px-3 py-2 text-right">
-      <RowActions saving={saving} onResetFa={onResetFa} onSave={onSave} />
+      <RowActions saving={saving} onResetFa={onResetFa} onSave={onSave} onDelete={onDelete} />
     </td>
   </tr>
 )
 
-const RowActions = ({ saving, onResetFa, onSave }: { saving: boolean; onResetFa: () => void; onSave: () => void }) => (
+const RowActions = ({
+  saving,
+  onResetFa,
+  onSave,
+  onDelete,
+}: {
+  saving: boolean
+  onResetFa: () => void
+  onSave: () => void
+  onDelete: () => void
+}) => (
   <div className="flex items-center justify-end gap-2">
     <button
       onClick={onResetFa}
@@ -58,6 +69,14 @@ const RowActions = ({ saving, onResetFa, onSave }: { saving: boolean; onResetFa:
       className="text-xs font-mono px-2.5 py-1 rounded-md bg-primary/15 border border-primary/25 text-primary hover:bg-primary/20 transition-colors disabled:opacity-60"
     >
       {saving ? 'Saving…' : 'Save'}
+    </button>
+    <button
+      onClick={onDelete}
+      disabled={saving}
+      className="text-xs font-mono px-2.5 py-1 rounded-md bg-danger/15 border border-danger/30 text-danger hover:bg-danger/25 transition-colors disabled:opacity-60"
+      title="Permanently delete this user"
+    >
+      Delete
     </button>
   </div>
 )
@@ -109,6 +128,31 @@ const AdminUsersPanel = () => {
         setError(json?.error || 'Update failed')
         return
       }
+      await refresh()
+    } catch {
+      setError('Network error')
+    } finally {
+      setSavingUser(null)
+    }
+  }
+
+  const deleteUser = async (username: string) => {
+    if (!window.confirm(`Delete user "${username}"? This cannot be undone.`)) return
+
+    setSavingUser(username)
+    setError(null)
+    try {
+      const res = await fetch('/api/admin/users', {
+        method: 'DELETE',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ username }),
+      })
+      const json = (await res.json().catch(() => null)) as any
+      if (!res.ok || !json?.success) {
+        setError(json?.error || 'Delete failed')
+        return
+      }
+      if (resetFor?.username === username) setResetFor(null)
       await refresh()
     } catch {
       setError('Network error')
@@ -198,6 +242,7 @@ const AdminUsersPanel = () => {
                 onActiveChange={isActive => setUsers(prev => prev.map(x => (x._id === u._id ? { ...x, isActive } : x)))}
                 onResetFa={() => reset2fa(u.username)}
                 onSave={() => updateUser(u.username, { role: u.role, isActive: u.isActive })}
+                onDelete={() => deleteUser(u.username)}
               />
             ))}
             {!sorted.length && (
