@@ -77,11 +77,11 @@ function listHoneyTokens() {
  */
 function findHoneyToken(presented) {
   if (!presented) return null;
-  const v = String(presented).trim();
-  if (!v) return null;
+  const presentedValue = String(presented).trim();
+  if (!presentedValue) return null;
   for (const entry of HONEY_TOKENS) {
-    if (entry.value === v) return entry;
-    if (entry.secret && entry.secret === v) return entry;
+    if (entry.value === presentedValue) return entry;
+    if (entry.secret && entry.secret === presentedValue) return entry;
   }
   return null;
 }

@@ -30,49 +30,49 @@ const ALIASES = Object.freeze({
 });
 
 function normalizePath(path = '') {
-  const p = String(path);
-  return p.length > 1 && p.endsWith('/') ? p.slice(0, -1) : p;
+  const normalized = String(path);
+  return normalized.length > 1 && normalized.endsWith('/') ? normalized.slice(0, -1) : normalized;
 }
 
 function isDatabaseTrapPath(path) {
-  const p = normalizePath(path);
-  return p === PATHS.database || p === ALIASES.database;
+  const normalized = normalizePath(path);
+  return normalized === PATHS.database || normalized === ALIASES.database;
 }
 
 function isLegacySignInPath(path) {
-  const p = normalizePath(path);
+  const normalized = normalizePath(path);
   return (
-    p === PATHS.legacySignIn ||
-    p === ALIASES.legacySignIn ||
-    p.endsWith('/auth/legacy')
+    normalized === PATHS.legacySignIn ||
+    normalized === ALIASES.legacySignIn ||
+    normalized.endsWith('/auth/legacy')
   );
 }
 
 /** Employee HR login (not legacy admin sign-in). Works with `/login` and `/gateway/login`. */
 function isEmployeeLoginPath(path) {
-  const p = normalizePath(path);
-  if (isLegacySignInPath(p)) return false;
-  return p === '/login' || p.endsWith('/login');
+  const normalized = normalizePath(path);
+  if (isLegacySignInPath(normalized)) return false;
+  return normalized === '/login' || normalized.endsWith('/login');
 }
 
 function isFileViewerPath(path) {
-  const p = normalizePath(path);
-  return p === PATHS.fileViewer;
+  const normalized = normalizePath(path);
+  return normalized === PATHS.fileViewer;
 }
 
 function isFetchStatusPath(path) {
-  const p = normalizePath(path);
-  return p === PATHS.fetchStatus;
+  const normalized = normalizePath(path);
+  return normalized === PATHS.fetchStatus;
 }
 
 function isHoneyTokenApiExportPath(path) {
-  const p = normalizePath(path);
-  return p === PATHS.hrExport;
+  const normalized = normalizePath(path);
+  return normalized === PATHS.hrExport;
 }
 
 function isStorageListPath(path) {
-  const p = normalizePath(path);
-  return p === PATHS.storageList;
+  const normalized = normalizePath(path);
+  return normalized === PATHS.storageList;
 }
 
 /** Any decoy API endpoint that a stolen honey token is "meant" to call. */
@@ -82,21 +82,21 @@ function isHoneyApiPath(path) {
 
 /** Planted leaked artifacts (served as raw text to look like exposed files). */
 function isLeakedArtifactPath(path) {
-  const p = normalizePath(path);
-  return p === PATHS.envLeak || p === PATHS.envLeakInternal || p === PATHS.gitConfigLeak;
+  const normalized = normalizePath(path);
+  return normalized === PATHS.envLeak || normalized === PATHS.envLeakInternal || normalized === PATHS.gitConfigLeak;
 }
 
 function isConsolePath(path) {
-  const p = normalizePath(path);
-  return p === PATHS.console || p === ALIASES.console;
+  const normalized = normalizePath(path);
+  return normalized === PATHS.console || normalized === ALIASES.console;
 }
 
 function isInternalZonePath(path) {
-  const p = normalizePath(path);
+  const normalized = normalizePath(path);
   return (
-    Object.values(PATHS).includes(p) ||
-    Object.values(ALIASES).includes(p) ||
-    p.startsWith('/internal/')
+    Object.values(PATHS).includes(normalized) ||
+    Object.values(ALIASES).includes(normalized) ||
+    normalized.startsWith('/internal/')
   );
 }
 

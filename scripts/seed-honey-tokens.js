@@ -30,7 +30,7 @@ async function main() {
 
   const uri = process.env.MALICIOUS_DB_URI;
   if (!uri) {
-    console.error('Missing MALICIOUS_DB_URI');
+    console.error('Missing MALICIOUS_DB_URI'); // skipcq: JS-0002 — Node CLI script, stderr is intended
     process.exit(1);
   }
 
@@ -59,14 +59,14 @@ async function main() {
       { upsert: true },
     );
     upserts += 1;
-    console.log(`  • ${entry.catalogId.padEnd(16)} ${entry.tokenType.padEnd(8)} ${entry.email}`);
+    console.log(`  • ${entry.catalogId.padEnd(16)} ${entry.tokenType.padEnd(8)} ${entry.email}`); // skipcq: JS-0002 — Node CLI script, stdout is intended
   }
 
-  console.log(`Seeded ${upserts} honey token(s) from the catalog (idempotent).`);
+  console.log(`Seeded ${upserts} honey token(s) from the catalog (idempotent).`); // skipcq: JS-0002 — Node CLI script, stdout is intended
   await conn.close();
 }
 
 main().catch((err) => {
-  console.error(err);
+  console.error(err); // skipcq: JS-0002 — Node CLI script, stderr is intended
   process.exit(1);
 });

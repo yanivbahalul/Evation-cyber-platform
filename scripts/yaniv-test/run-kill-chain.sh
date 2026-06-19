@@ -42,7 +42,10 @@ step "7" "RECON console" \
   gw_curl -o /dev/null -w "    HTTP %{http_code}\n" "${BASE}/internal/console/"
 
 echo "[8] HONEY_TOKEN"
-KEY=$(gw_curl "${BASE}/internal/integrations/keys/" | grep -oE 'itc_[A-Za-z0-9]{20,}' | head -1 || true)
+KEY=$(gw_curl "${BASE}/.env" | grep -oE 'HR_API_KEY=itc_[A-Za-z0-9_]+' | head -1 | cut -d= -f2 || true)
+if [[ -z "$KEY" ]]; then
+  KEY=$(gw_curl "${BASE}/internal/integrations/keys/" | grep -oE 'itc_[A-Za-z0-9]{20,}' | head -1 || true)
+fi
 if [[ -n "$KEY" ]]; then
   gw_curl -o /dev/null -w "    Bearer → HTTP %{http_code}\n" \
     -H "Authorization: Bearer ${KEY}" "${BASE}/"

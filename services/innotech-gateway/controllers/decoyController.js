@@ -64,8 +64,8 @@ function buildFakeCredentialRows() {
 /** Masked integrations list for the (non-minting) integrations page. */
 function maskedIntegrations() {
   return listHoneyTokens().map((t) => {
-    const v = String(t.value);
-    const masked = v.length > 8 ? `${v.slice(0, 8)}…${v.slice(-4)}` : '••••';
+    const value = String(t.value);
+    const masked = value.length > 8 ? `${value.slice(0, 8)}…${value.slice(-4)}` : '••••';
     return {
       service: t.service,
       owner: t.email,
@@ -90,7 +90,7 @@ function buildLeakedEnv() {
     '',
     '# HR integration API',
     `HR_API_KEY=${hrKey ? hrKey.value : ''}`,
-    `HR_API_BASE=https://hr.innotech.io/internal/api/v1`,
+    'HR_API_BASE=https://hr.innotech.io/internal/api/v1',
     '',
     '# Read replica (reporting/exports)',
     `DATABASE_URL=${dbUri ? dbUri.value : ''}`,
@@ -166,7 +166,7 @@ function buildEventFields(req, opts = {}) {
     method: req.method,
     path: req.originalUrl || req.path,
     userAgent: req.headers['user-agent'],
-    referer: req.headers['referer'] || req.headers['referrer'],
+    referer: req.headers.referer || req.headers.referrer,
     fingerprint: req.attackerFingerprint || {},
     handoffFrom: opts.handoffFrom,
     xssTier: opts.xssTier,
