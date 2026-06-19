@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Bell, RefreshCw } from 'lucide-react'
+import { Bell } from 'lucide-react'
 import { useSocket } from '@/features/dashboard/context/SocketContext'
 import type { ActiveTab } from './Sidebar'
 
@@ -26,7 +26,6 @@ export default function TopBar({ active }: TopBarProps) {
     displayAlerts,
     demoMode,
     setDemoMode,
-    refresh,
     isSyncing,
     hasDashboardData,
   } = useSocket()
@@ -159,21 +158,6 @@ export default function TopBar({ active }: TopBarProps) {
             document.body
           )}
         </div>
-
-        {/* Refresh */}
-        <button
-          onClick={() => {
-            refresh({ force: true }).catch(() => {
-              /* best-effort */
-            })
-          }}
-          className="p-2 rounded-lg hover:bg-surface-elevated transition-colors disabled:opacity-50"
-          aria-label="Refresh dashboard"
-          title="Refresh dashboard"
-          disabled={isSyncing && !hasDashboardData}
-        >
-          <RefreshCw className={`w-4 h-4 text-muted-foreground ${isSyncing ? 'animate-spin' : ''}`} />
-        </button>
       </div>
     </header>
   )

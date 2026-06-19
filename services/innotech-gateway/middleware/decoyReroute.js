@@ -88,6 +88,11 @@ module.exports = async function decoyReroute(req, res, next) {
         if (isHoneyTokenApiExportPath(req.path)) {
           return decoyController.serveHoneyTokenApiExport(req, res);
         }
+        // Bearer tokens persist across redirect follows (curl -L, API clients). Once the
+        // console acknowledges the token, serve the dashboard instead of re-reporting.
+        if (req.query?.token_ack === '1') {
+          return decoyController.renderAdminDashboard(req, res);
+        }
         await decoyController.report(TRAP_TYPES.HONEY_TOKEN, req, {
           payload: JSON.stringify({ action: 'token_used', path: req.originalUrl || req.path }),
           wasted_time_ms: 0,

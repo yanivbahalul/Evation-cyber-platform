@@ -5,7 +5,7 @@ import { useSocket, type LiveAlert } from '@/features/dashboard/context/SocketCo
 import { useInvestigation } from '@/features/investigation/context/InvestigationContext'
 import { shortTrace } from '@/lib/attackIntel'
 import { geoLocationLabel } from '@/lib/geoDisplay'
-import { AlertTriangle, MapPin, Zap, Clock, RefreshCw } from 'lucide-react'
+import { AlertTriangle, MapPin, Zap, Clock } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 
 const LeafletMap = dynamic(() => import('./LeafletMap'), { ssr: false })
@@ -29,7 +29,7 @@ interface ThreatMapProps {
 }
 
 export default function ThreatMap({ onNavigateInvestigate }: ThreatMapProps) {
-  const { displayAlerts, connected, refresh, isSyncing } = useSocket()
+  const { displayAlerts, connected } = useSocket()
   const latest = displayAlerts.slice(0, 8) as unknown as LiveAlert[]
 
   return (
@@ -44,24 +44,9 @@ export default function ThreatMap({ onNavigateInvestigate }: ThreatMapProps) {
             <Zap className="w-3 h-3 text-accent" />
             {connected ? 'Live Alert Feed' : 'Recent Attack Feed'}
           </h3>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                refresh({ force: true }).catch(() => {
-                  /* best-effort */
-                })
-              }}
-              className="p-1.5 rounded-md hover:bg-surface-elevated transition-colors"
-              aria-label="Refresh dashboard"
-              title="Refresh dashboard"
-            >
-              <RefreshCw className={`w-4 h-4 text-muted-foreground ${isSyncing ? 'animate-spin' : ''}`} />
-            </button>
-            <span className="text-[10px] font-mono text-muted-foreground/60">
-              {displayAlerts.length} events
-            </span>
-          </div>
+          <span className="text-[10px] font-mono text-muted-foreground/60">
+            {displayAlerts.length} events
+          </span>
         </div>
 
         <div className="flex flex-col gap-1.5 max-h-52 overflow-y-auto">
