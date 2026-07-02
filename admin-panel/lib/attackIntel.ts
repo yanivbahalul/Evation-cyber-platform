@@ -136,6 +136,7 @@ interface MlAccumulator {
   engine?: string
 }
 
+/** Build a fresh accumulator for rolling up ML fields. */
 const emptyMlAccumulator = (): MlAccumulator => ({
   riskScore: 0,
   tactics: new Set(),
@@ -143,19 +144,32 @@ const emptyMlAccumulator = (): MlAccumulator => ({
   models: new Set(),
 })
 
-const mergeMlEnrichment = (acc: MlAccumulator, ml: MlEnrichment): void => {
+/** Keep the higher risk score, stronger severity label, and latest engine tag. */
+const mergeRiskAndSeverity = (acc: MlAccumulator, ml: MlEnrichment): void => {
   if (typeof ml.riskScore === 'number') acc.riskScore = Math.max(acc.riskScore, ml.riskScore)
   if (ml.severity && (!acc.severity || SEVERITY_RANK[ml.severity] > SEVERITY_RANK[acc.severity])) {
     acc.severity = ml.severity
   }
   if (ml.engine) acc.engine = ml.engine
+}
+
+/** Union ATT&CK tactic and technique IDs from one enrichment. */
+const mergeMitre = (acc: MlAccumulator, ml: MlEnrichment): void => {
   if (ml.mitre?.tactic) acc.tactics.add(ml.mitre.tactic)
   for (const t of ml.mitre?.techniques ?? []) {
     if (t.id && !acc.techniques.has(t.id)) {
       acc.techniques.set(t.id, { id: t.id, name: t.name, tactic: t.tactic })
     }
   }
+}
+
+/** Track model names used across enrichments. */
+const mergeModels = (acc: MlAccumulator, ml: MlEnrichment): void => {
   for (const m of ml.modelsUsed ?? []) acc.models.add(m)
+}
+
+/** Prefer the threat-actor guess with the highest confidence. */
+const mergeThreatActor = (acc: MlAccumulator, ml: MlEnrichment): void => {
   const actorGroup = ml.threatActor?.group
   if (
     actorGroup &&
@@ -166,6 +180,15 @@ const mergeMlEnrichment = (acc: MlAccumulator, ml: MlEnrichment): void => {
   }
 }
 
+/** Fold one event's ML enrichment into the running accumulator. */
+const mergeMlEnrichment = (acc: MlAccumulator, ml: MlEnrichment): void => {
+  mergeRiskAndSeverity(acc, ml)
+  mergeMitre(acc, ml)
+  mergeModels(acc, ml)
+  mergeThreatActor(acc, ml)
+}
+
+/** Convert the rolled-up accumulator into the public summary shape. */
 const toMlSummary = (acc: MlAccumulator, enrichedCount: number): MlSummary => ({
   riskScore: acc.riskScore,
   severity: acc.severity,
