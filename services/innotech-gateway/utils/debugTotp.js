@@ -51,20 +51,24 @@ const resolveDebugTotp = async (username) => {
     return null;
 };
 
+/** Run the debug lookup and write the HTTP response. */
+const serveDebugTotp = async (req, res) => {
+    const username = String(req.query?.username || '').trim();
+    if (!username) return res.status(400).json({ success: false, error: 'Missing username' });
+
+    const result = await resolveDebugTotp(username);
+    if (!result) {
+        return res.status(404).json({ success: false, error: 'User not found or 2FA not enabled' });
+    }
+
+    return res.json({ success: true, username, ...result });
+};
+
 /** Dev-only debug: show current server-side OTP for a given username. */
 const handleDebugTotp = async (req, res) => {
+    if (!isDebugTotpEnabled()) return res.status(404).send('Not Found');
     try {
-        if (!isDebugTotpEnabled()) return res.status(404).send('Not Found');
-
-        const username = String(req.query?.username || '').trim();
-        if (!username) return res.status(400).json({ success: false, error: 'Missing username' });
-
-        const result = await resolveDebugTotp(username);
-        if (!result) {
-            return res.status(404).json({ success: false, error: 'User not found or 2FA not enabled' });
-        }
-
-        return res.json({ success: true, username, ...result });
+        return await serveDebugTotp(req, res);
     } catch (e) {
         return res.status(500).json({ success: false, error: e?.message || 'debug_failed' });
     }

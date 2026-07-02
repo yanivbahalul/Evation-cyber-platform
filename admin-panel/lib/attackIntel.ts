@@ -1,4 +1,4 @@
-import type { AttackEvent, MlEnrichment, MlSeverity, TrapType } from '@/lib/types/telemetry'
+import type { AttackEvent, MlEnrichment, MlSeverity, MlTechnique, TrapType } from '@/lib/types/telemetry'
 
 /** Normalize raw/legacy trap-type strings to the canonical TrapType enum. */
 export function normalizeTrapType(raw: string): TrapType { // skipcq: JS-0067
@@ -144,23 +144,36 @@ const emptyMlAccumulator = (): MlAccumulator => ({
   models: new Set(),
 })
 
+/** Pick the higher-ranked severity between the current value and a candidate. */
+const pickHigherSeverity = (current: MlSeverity | undefined, candidate: MlSeverity): MlSeverity => {
+  if (!current) return candidate
+  return SEVERITY_RANK[candidate] > SEVERITY_RANK[current] ? candidate : current
+}
+
 /** Keep the higher risk score, stronger severity label, and latest engine tag. */
 const mergeRiskAndSeverity = (acc: MlAccumulator, ml: MlEnrichment): void => {
   if (typeof ml.riskScore === 'number') acc.riskScore = Math.max(acc.riskScore, ml.riskScore)
-  if (ml.severity && (!acc.severity || SEVERITY_RANK[ml.severity] > SEVERITY_RANK[acc.severity])) {
-    acc.severity = ml.severity
-  }
+  if (ml.severity) acc.severity = pickHigherSeverity(acc.severity, ml.severity)
   if (ml.engine) acc.engine = ml.engine
+}
+
+/** Add one ATT&CK technique when its ID is new to the accumulator. */
+const addMitreTechnique = (
+  techniques: MlAccumulator['techniques'],
+  technique: MlTechnique,
+): void => {
+  if (!technique.id || techniques.has(technique.id)) return
+  techniques.set(technique.id, {
+    id: technique.id,
+    name: technique.name,
+    tactic: technique.tactic,
+  })
 }
 
 /** Union ATT&CK tactic and technique IDs from one enrichment. */
 const mergeMitre = (acc: MlAccumulator, ml: MlEnrichment): void => {
   if (ml.mitre?.tactic) acc.tactics.add(ml.mitre.tactic)
-  for (const t of ml.mitre?.techniques ?? []) {
-    if (t.id && !acc.techniques.has(t.id)) {
-      acc.techniques.set(t.id, { id: t.id, name: t.name, tactic: t.tactic })
-    }
-  }
+  for (const technique of ml.mitre?.techniques ?? []) addMitreTechnique(acc.techniques, technique)
 }
 
 /** Track model names used across enrichments. */
@@ -168,16 +181,21 @@ const mergeModels = (acc: MlAccumulator, ml: MlEnrichment): void => {
   for (const m of ml.modelsUsed ?? []) acc.models.add(m)
 }
 
+/** True when the enrichment names a non-unknown threat-actor group. */
+const isKnownActorGroup = (group?: string): group is string => Boolean(group && group !== 'Unknown')
+
+/** True when the candidate confidence beats the current actor guess. */
+const hasHigherActorConfidence = (
+  current: { confidence?: number } | undefined,
+  confidence?: number,
+): boolean => !current || (confidence ?? 0) > (current.confidence ?? 0)
+
 /** Prefer the threat-actor guess with the highest confidence. */
 const mergeThreatActor = (acc: MlAccumulator, ml: MlEnrichment): void => {
   const actorGroup = ml.threatActor?.group
-  if (
-    actorGroup &&
-    actorGroup !== 'Unknown' &&
-    (!acc.actor || (ml.threatActor?.confidence ?? 0) > (acc.actor.confidence ?? 0))
-  ) {
-    acc.actor = { group: actorGroup, confidence: ml.threatActor?.confidence }
-  }
+  if (!isKnownActorGroup(actorGroup)) return
+  if (!hasHigherActorConfidence(acc.actor, ml.threatActor?.confidence)) return
+  acc.actor = { group: actorGroup, confidence: ml.threatActor?.confidence }
 }
 
 /** Fold one event's ML enrichment into the running accumulator. */
