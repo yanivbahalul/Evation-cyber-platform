@@ -597,6 +597,8 @@ Expect five success lines and exit code `0`.
 
 ---
 
+**Video narration scripts (Parts 1–7):** [docs/VIDEO_NARRATION_SCRIPTS.md](docs/VIDEO_NARRATION_SCRIPTS.md)
+
 ## Presentation flow (suggested order)
 
 1. Log in as `admin` → lands on workspace; open **Attack monitor** from the sidebar → http://localhost:3000/gateway/dashboard/ — Live + map.  

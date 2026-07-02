@@ -17,9 +17,7 @@ const cookieParser = require('cookie-parser');
 const realController = require('./controllers/realController');
 const gatekeeper = require('./middleware/gatekeeper');
 const { authOptional, requireAuth } = require('./middleware/auth');
-const { generate, verify, NobleCryptoPlugin, ScureBase32Plugin } = require('otplib');
-const AdminUser = require('./models/AdminUser');
-const { decryptTotpSecret } = require('./utils/adminTotpCrypto');
+const { handleDebugTotp } = require('./utils/debugTotp');
 const decoyController = require('./controllers/decoyController');
 const honeyTokenDetector = require('./middleware/honeyTokenDetector');
 const decoyReroute = require('./middleware/decoyReroute');
@@ -80,46 +78,9 @@ router.use((req, res, next) => {
 router.use(gatekeeper);
 router.use(decoyReroute);
 
-const debugCrypto = new NobleCryptoPlugin();
-const debugBase32 = new ScureBase32Plugin();
-
 // Dev-only debug: show current server-side OTP for a given username.
 // Enable by setting DEBUG_TOTP=true (do NOT use in production).
-router.get('/debug/totp', async (req, res) => { // skipcq: JS-R1005
-    try {
-        if (process.env.NODE_ENV === 'production') return res.status(404).send('Not Found');
-        if (process.env.DEBUG_TOTP !== 'true') return res.status(404).send('Not Found');
-        const username = String(req.query?.username || '').trim();
-        if (!username) return res.status(400).json({ success: false, error: 'Missing username' });
-
-        // Prefer admin_users (encrypted secret)
-        const admin = await AdminUser.findOne({ username, isActive: true }).select(
-            '+totpSecretEnc +totpSecretIv +totpSecretTag'
-        );
-        if (admin?.totpEnabled && admin.totpSecretEnc && admin.totpSecretIv && admin.totpSecretTag) {
-            const secret = decryptTotpSecret({
-                ctB64: admin.totpSecretEnc,
-                ivB64: admin.totpSecretIv,
-                tagB64: admin.totpSecretTag,
-            });
-            const code = await generate({ strategy: 'totp', secret, window: 1, crypto: debugCrypto, base32: debugBase32 });
-            const check = await verify({ strategy: 'totp', token: code, secret, window: 1, crypto: debugCrypto, base32: debugBase32 });
-            return res.json({ success: true, source: 'admin_users', username, code, valid: check?.valid === true });
-        }
-
-        // Fallback: real_employees collection (plaintext secret)
-        const user = await require('./models/RealEmployee').findOne({ username, isActive: true }).select('+totpSecret');
-        if (!user || !user.totpEnabled || !user.totpSecret) {
-            return res.status(404).json({ success: false, error: 'User not found or 2FA not enabled' });
-        }
-        const secret = String(user.totpSecret || '').trim();
-        const code = await generate({ strategy: 'totp', secret, window: 1, crypto: debugCrypto, base32: debugBase32 });
-        const check = await verify({ strategy: 'totp', token: code, secret, window: 1, crypto: debugCrypto, base32: debugBase32 });
-        return res.json({ success: true, source: 'users', username, code, valid: check?.valid === true });
-    } catch (e) {
-        return res.status(500).json({ success: false, error: e?.message || 'debug_failed' });
-    }
-});
+router.get('/debug/totp', handleDebugTotp);
 
 router.get('/', realController.renderLandingPage);
 router.get('/register', realController.renderRegisterPage);

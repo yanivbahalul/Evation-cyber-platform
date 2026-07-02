@@ -1,4 +1,4 @@
-import type { AttackEvent, MlSeverity, TrapType } from '@/lib/types/telemetry'
+import type { AttackEvent, MlEnrichment, MlSeverity, TrapType } from '@/lib/types/telemetry'
 
 /** Normalize raw/legacy trap-type strings to the canonical TrapType enum. */
 export function normalizeTrapType(raw: string): TrapType { // skipcq: JS-0067
@@ -126,48 +126,67 @@ export interface MlSummary {
   engine?: string
 }
 
+interface MlAccumulator {
+  riskScore: number
+  severity?: MlSeverity
+  tactics: Set<string>
+  techniques: Map<string, { id: string; name: string; tactic: string }>
+  models: Set<string>
+  actor?: { group: string; confidence?: number }
+  engine?: string
+}
+
+const emptyMlAccumulator = (): MlAccumulator => ({
+  riskScore: 0,
+  tactics: new Set(),
+  techniques: new Map(),
+  models: new Set(),
+})
+
+const mergeMlEnrichment = (acc: MlAccumulator, ml: MlEnrichment): void => {
+  if (typeof ml.riskScore === 'number') acc.riskScore = Math.max(acc.riskScore, ml.riskScore)
+  if (ml.severity && (!acc.severity || SEVERITY_RANK[ml.severity] > SEVERITY_RANK[acc.severity])) {
+    acc.severity = ml.severity
+  }
+  if (ml.engine) acc.engine = ml.engine
+  if (ml.mitre?.tactic) acc.tactics.add(ml.mitre.tactic)
+  for (const t of ml.mitre?.techniques ?? []) {
+    if (t.id && !acc.techniques.has(t.id)) {
+      acc.techniques.set(t.id, { id: t.id, name: t.name, tactic: t.tactic })
+    }
+  }
+  for (const m of ml.modelsUsed ?? []) acc.models.add(m)
+  const actorGroup = ml.threatActor?.group
+  if (
+    actorGroup &&
+    actorGroup !== 'Unknown' &&
+    (!acc.actor || (ml.threatActor?.confidence ?? 0) > (acc.actor.confidence ?? 0))
+  ) {
+    acc.actor = { group: actorGroup, confidence: ml.threatActor?.confidence }
+  }
+}
+
+const toMlSummary = (acc: MlAccumulator, enrichedCount: number): MlSummary => ({
+  riskScore: acc.riskScore,
+  severity: acc.severity,
+  tactics: [...acc.tactics],
+  techniques: [...acc.techniques.values()],
+  threatActor: acc.actor,
+  modelsUsed: [...acc.models],
+  enrichedCount,
+  engine: acc.engine,
+})
+
 /** Roll the per-event ML enrichment up into a single attacker-level summary. */
-export function summarizeMl(events: AttackEvent[]): MlSummary | null { // skipcq: JS-0067, JS-R1005
+export const summarizeMl = (events: AttackEvent[]): MlSummary | null => {
   const enriched = events.filter(e => e.mlEnrichment)
   if (enriched.length === 0) return null
 
-  let riskScore = 0
-  let severity: MlSeverity | undefined
-  const tactics = new Set<string>()
-  const techniques = new Map<string, { id: string; name: string; tactic: string }>()
-  const models = new Set<string>()
-  let actor: { group: string; confidence?: number } | undefined
-  let engine: string | undefined
-
+  const acc = emptyMlAccumulator()
   for (const e of enriched) {
-    const ml = e.mlEnrichment
-    if (!ml) continue
-    if (typeof ml.riskScore === 'number') riskScore = Math.max(riskScore, ml.riskScore)
-    if (ml.severity && (!severity || SEVERITY_RANK[ml.severity] > SEVERITY_RANK[severity])) {
-      severity = ml.severity
-    }
-    if (ml.engine) engine = ml.engine
-    if (ml.mitre?.tactic) tactics.add(ml.mitre.tactic)
-    ml.mitre?.techniques?.forEach(t => {
-      if (t.id && !techniques.has(t.id)) techniques.set(t.id, { id: t.id, name: t.name, tactic: t.tactic })
-    })
-    ml.modelsUsed?.forEach(m => models.add(m))
-    const actorGroup = ml.threatActor?.group
-    if (actorGroup && actorGroup !== 'Unknown' && (!actor || (ml.threatActor?.confidence ?? 0) > (actor.confidence ?? 0))) {
-      actor = { group: actorGroup, confidence: ml.threatActor?.confidence }
-    }
+    if (e.mlEnrichment) mergeMlEnrichment(acc, e.mlEnrichment)
   }
-
-  return {
-    riskScore,
-    severity,
-    tactics: [...tactics],
-    techniques: [...techniques.values()],
-    threatActor: actor,
-    modelsUsed: [...models],
-    enrichedCount: enriched.length,
-    engine,
-  }
+  return toMlSummary(acc, enriched.length)
 }
 
 /** Extra learning notes derived from the ML enrichment (kept separate from regex hints). */
