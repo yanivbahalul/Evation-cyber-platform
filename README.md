@@ -2,7 +2,9 @@
 # Honny Shield - Cyber Security Platform
 
 Monorepo for the InnoTech HR honeypot: deceptive gateway traps, air-gapped telemetry, and the Blue Team admin dashboard.
+
 **Youtube video** : https://www.youtube.com/watch?v=Cex21CGAxOY
+
 **Codebase map:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — traps, telemetry, admin API, shared packages.
 
 Every folder has a **README.md** with what it contains and which student owns it (from [docs/Responsibilities.docx](docs/Responsibilities.docx)).
