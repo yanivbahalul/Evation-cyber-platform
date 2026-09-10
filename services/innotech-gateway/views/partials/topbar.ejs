@@ -17,11 +17,11 @@
       <% } %>
     <% } else if (user) { %>
       <span class="account-label">Welcome, <strong><%= user.username %></strong></span>
+      <a class="top-link" href="<%= withBase('/workspace') %>">Dashboard</a>
+      <a class="top-link" href="<%= withBase('/contact') %>">Support</a>
       <% if (user.role === 'admin' && typeof canAccessOps !== 'undefined' && canAccessOps === true) { %>
         <a class="top-link primary" href="<%= withBase('/dashboard/') %>">HoneyShield</a>
       <% } %>
-      <a class="top-link" href="<%= withBase('/workspace') %>">Dashboard</a>
-      <a class="top-link" href="<%= withBase('/contact') %>">Support</a>
       <form action="<%= withBase('/logout') %>" method="POST" style="margin:0;">
         <button class="top-link primary" type="submit" style="border:0;">Sign out</button>
       </form>
