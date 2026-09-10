@@ -64,7 +64,7 @@ function safeNext(next) {
     return next;
 }
 
-/** Issue gateway + Blue Team cookies and redirect to Next /api/admin/exchange → /ops */
+/** Issue gateway + Blue Team cookies and redirect to the attack monitor. */
 function finishBlueTeamOperatorLogin(req, res, { username, gatewaySub, gatewayRole = 'admin' }) {
     const jwtSecret = process.env.JWT_SECRET;
     if (!jwtSecret) return { error: 'Server misconfiguration. Please contact IT.' };
@@ -80,7 +80,7 @@ function finishBlueTeamOperatorLogin(req, res, { username, gatewaySub, gatewayRo
         role: gatewayRole,
     });
     res.cookie('auth', gatewayAuth, authCookieOptions('lax'));
-    const homePath = '/gateway/workspace/';
+    const homePath = '/gateway/dashboard/';
     return {
         // Use a relative redirect so we stay on the current origin (works behind nginx, LAN IPs, and ngrok).
         redirect: `/api/admin/exchange?token=${encodeURIComponent(exchange)}&next=${encodeURIComponent(homePath)}`,
