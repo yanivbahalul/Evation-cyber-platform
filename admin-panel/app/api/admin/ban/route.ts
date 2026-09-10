@@ -31,9 +31,9 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: profiles.map((p) => ({
+      data: profiles.map((p: Record<string, unknown>) => ({
         ip: String(p.ip),
-        bannedAt: p.bannedAt ? new Date(p.bannedAt).toISOString() : null,
+        bannedAt: p.bannedAt ? new Date(String(p.bannedAt)).toISOString() : null,
         bannedBy: p.bannedBy != null ? String(p.bannedBy) : null,
         riskScore: Number(p.riskScore ?? 0),
         city: p.city != null ? String(p.city) : '—',

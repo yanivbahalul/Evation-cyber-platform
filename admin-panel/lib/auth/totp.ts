@@ -40,7 +40,6 @@ export async function createEnrollment(username: string) {
 
 export async function verifyTotp(code: string) {
   const secret = await getTotpSecret()
-  const result = await verify({ strategy: 'totp', token: code, secret, window: 1, crypto, base32 })
+  const result = await verify({ strategy: 'totp', token: code, secret, epochTolerance: 30, crypto, base32 })
   return result.valid === true
 }
-

@@ -9,7 +9,7 @@ import { formatDistanceToNow } from 'date-fns'
 const outcomeClasses = (outcome?: number) => {
   if (outcome == null) return 'bg-muted/20 text-muted-foreground border-border'
   if (outcome >= 200 && outcome < 300) return 'bg-success/15 text-success border-success/25'
-  if (outcome === 429) return 'bg-accent/20 text-accent border-accent/30'
+  if (outcome === 429) return 'bg-warning/10 text-warning border-warning/30'
   if (outcome >= 400) return 'bg-danger/15 text-danger border-danger/25'
   if (outcome >= 300) return 'bg-primary/15 text-primary border-primary/20'
   return 'bg-muted/20 text-muted-foreground border-border'
@@ -35,7 +35,7 @@ const TokenCard = ({ token }: { token: HoneyToken }) => {
 
   return (
     <div className={`bg-surface border rounded-xl overflow-hidden transition-all ${
-      token.isTriggered ? 'border-accent/40' : 'border-border'
+      token.isTriggered ? 'border-warning/40' : 'border-border'
     }`}>
       {/* Card header */}
       <div
@@ -43,9 +43,9 @@ const TokenCard = ({ token }: { token: HoneyToken }) => {
         onClick={() => setExpanded(v => !v)}
       >
         <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-          token.isTriggered ? 'bg-accent/15 border border-accent/30' : 'bg-success/10 border border-success/20'
+          token.isTriggered ? 'bg-warning/10 border border-warning/30' : 'bg-success/10 border border-success/20'
         }`}>
-          <Key className={`w-4 h-4 ${token.isTriggered ? 'text-accent' : 'text-success'}`} />
+          <Key className={`w-4 h-4 ${token.isTriggered ? 'text-warning' : 'text-success'}`} />
         </div>
 
         <div className="flex-1 min-w-0">
@@ -58,7 +58,7 @@ const TokenCard = ({ token }: { token: HoneyToken }) => {
             )}
             <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
               token.isTriggered
-                ? 'bg-accent/20 text-accent border border-accent/30'
+                ? 'bg-warning/10 text-warning border border-warning/30'
                 : 'bg-success/10 text-success border border-success/20'
             }`}>
               {token.isTriggered ? 'TRIGGERED' : 'INTACT'}
@@ -184,14 +184,14 @@ const HoneyTokenPanel = () => {
       {/* Summary */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <SummaryCard label="Total Tokens"  value={honeyTokens.length}    color="text-primary"    icon={Key} />
-        <SummaryCard label="Triggered"     value={triggered.length}      color="text-accent"     icon={ShieldAlert} />
+        <SummaryCard label="Triggered"     value={triggered.length}      color="text-warning"    icon={ShieldAlert} />
         <SummaryCard label="Intact"        value={untriggered.length}    color="text-success"    icon={ShieldCheck} />
       </div>
 
       {/* Triggered section */}
       {triggered.length > 0 && (
         <section>
-          <h3 className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-accent mb-3">
+          <h3 className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-warning mb-3">
             <ShieldAlert className="w-3.5 h-3.5" />
             Triggered Honey Tokens ({triggered.length})
           </h3>

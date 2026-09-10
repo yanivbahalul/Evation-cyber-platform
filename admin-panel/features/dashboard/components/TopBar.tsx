@@ -7,14 +7,15 @@ import { useSocket } from '@/features/dashboard/context/SocketContext'
 import type { ActiveTab } from './Sidebar'
 
 const TAB_TITLES: Record<ActiveTab, string> = {
-  map:      'Geographic Threat Map',
-  events:   'Attack Event Log',
-  profiles: 'Attacker Profiles',
-  investigate: 'Attacker Investigation Workspace',
-  tokens:   'Honey Token Status',
+  overview: 'Security Overview',
+  map:      'Threat Map',
+  events:   'Attack Events',
+  profiles: 'Attackers',
+  investigate: 'Investigation',
+  tokens:   'Honey Tokens',
   adminUsers: 'Safe Zone Users',
-  bans: 'IP Ban Management',
-  maintenance: 'Telemetry Data Maintenance',
+  bans: 'Blocked IPs',
+  maintenance: 'Data Maintenance',
 }
 
 interface TopBarProps {
@@ -47,6 +48,7 @@ export default function TopBar({ active }: TopBarProps) {
         minute: '2-digit',
         second: '2-digit',
         hour12: false,
+        timeZone: 'UTC',
       })
     setNow(format())
     const id = setInterval(format, 1000)
@@ -54,11 +56,10 @@ export default function TopBar({ active }: TopBarProps) {
   }, [])
 
   return (
-    <header className="relative z-50 flex min-h-16 shrink-0 items-center justify-between gap-3 border-b border-border bg-background px-4 py-3 sm:px-6">
+    <header className="relative z-50 flex min-h-[72px] shrink-0 items-center justify-between gap-3 border-b border-border bg-surface px-4 py-3 sm:px-6">
       <div>
-        <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">Blue Team / {active}</p>
         <h2 className="text-base font-semibold text-foreground">{TAB_TITLES[active]}</h2>
-        <p className="hidden text-[10px] font-mono text-muted-foreground sm:block" suppressHydrationWarning>
+        <p className="mt-1 hidden text-[10px] font-mono text-muted-foreground sm:block" suppressHydrationWarning>
           {now ? `${now} UTC` : '—'}
         </p>
       </div>
@@ -68,13 +69,13 @@ export default function TopBar({ active }: TopBarProps) {
         <div
           className={`flex items-center gap-1.5 rounded border px-2 py-1 text-[10px] font-semibold tracking-wider ${
             demoMode
-              ? 'border-accent/30 bg-accent/10 text-accent'
+              ? 'border-warning/30 bg-warning/10 text-warning'
               : 'border-success/30 bg-success/10 text-success'
           }`}
         >
           <span
             className={`w-1.5 h-1.5 rounded-full animate-pulse ${
-              demoMode ? 'bg-accent' : 'bg-success'
+              demoMode ? 'bg-warning' : 'bg-success'
             }`}
           />
           {demoMode ? 'DEMO' : isSyncing ? 'SYNC' : 'LIVE'}
@@ -93,7 +94,7 @@ export default function TopBar({ active }: TopBarProps) {
           aria-label="Toggle demo mode"
           title="Toggle demo mode (mock data vs real DB)"
         >
-          Demo Mode: <span className={demoMode ? 'text-accent' : 'text-muted-foreground'}>{demoMode ? 'ON' : 'OFF'}</span>
+          Demo Mode: <span className={demoMode ? 'text-warning' : 'text-muted-foreground'}>{demoMode ? 'ON' : 'OFF'}</span>
         </button>
 
         {/* Alert bell */}
@@ -106,7 +107,7 @@ export default function TopBar({ active }: TopBarProps) {
           >
             <Bell className="w-4 h-4 text-muted-foreground" />
             {notificationCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-accent text-[9px] font-bold text-white flex items-center justify-center pulse-orange">
+              <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-danger text-[9px] font-bold text-white">
                 {notificationCount > 9 ? '9+' : notificationCount}
               </span>
             )}
@@ -136,7 +137,7 @@ export default function TopBar({ active }: TopBarProps) {
                   {latest.map(a => (
                     <div key={a.eventID} className="px-3 py-2 border-b border-border/50 last:border-b-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-accent/10 text-accent border border-accent/20 font-mono">
+                        <span className="rounded border border-border bg-surface-elevated px-2 py-0.5 font-mono text-[10px] font-bold text-muted-foreground">
                           {a.trapType}
                         </span>
                         <span className="text-xs font-mono text-foreground">{a.attackerIp}</span>
@@ -148,7 +149,7 @@ export default function TopBar({ active }: TopBarProps) {
                       </div>
                       {'payload' in a && a.payload && (
                         <div className="mt-1 text-[11px] font-mono text-muted-foreground truncate">
-                          payload: <span className="text-accent/80">{a.payload}</span>
+                          payload: <span className="text-foreground">{a.payload}</span>
                         </div>
                       )}
                     </div>

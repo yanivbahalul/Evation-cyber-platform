@@ -1,4 +1,4 @@
-<% const title = 'InnoTech — Internal Search' %>
+<% const title = 'Meet Our Teams — InnoTech Careers' %>
 <%- include('partials/head', { title }) %>
 
 <div class="container">
@@ -9,9 +9,9 @@
 
     <main class="card">
       <div class="hero">
-        <div class="kicker">Directory</div>
-        <h2 style="margin: 0 0 8px;">Search Employee Database</h2>
-        <div class="muted">Lookup colleagues by name, email or department.</div>
+        <div class="kicker">People at InnoTech</div>
+        <h2>Meet Our Teams</h2>
+        <div class="muted">Find team contacts by name or department.</div>
       </div>
 
       <div class="card-inner">
@@ -28,7 +28,7 @@
 
           <% if (results.length === 0) { %>
             <div class="muted" style="margin-top: 18px;">
-              No employees matched your query. Try a partial name or department.
+              No team members matched your query. Try a partial name or department.
             </div>
           <% } else { %>
             <table class="table" style="margin-top: 14px;">
@@ -49,7 +49,7 @@
           <% } %>
         <% } else { %>
           <div class="muted" style="margin-top: 18px;">
-            Tip: use partial names. Search runs against the live HR directory.
+            Tip: use a partial name or department.
           </div>
         <% } %>
       </div>

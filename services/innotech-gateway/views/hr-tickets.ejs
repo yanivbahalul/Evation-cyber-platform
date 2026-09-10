@@ -1,4 +1,4 @@
-<% const title = 'InnoTech — IT Tickets' %>
+<% const title = 'Recruiting Support Requests — InnoTech Careers' %>
 <%- include('partials/head', { title }) %>
 
 <div class="container">
@@ -9,9 +9,9 @@
 
     <main class="card">
       <div class="hero">
-        <div class="kicker">Helpdesk</div>
-        <h2 style="margin: 0 0 8px;">IT Tickets</h2>
-        <div class="muted">Internal queue — profile edits, IT support, and flagged submissions.</div>
+        <div class="kicker">Recruiting team</div>
+        <h2>Support Requests</h2>
+        <div class="muted">Review candidate questions and profile update requests.</div>
       </div>
 
       <div class="card-inner">
@@ -25,7 +25,7 @@
         <div class="btn-row" style="margin-bottom: 16px;">
           <a class="btn <%= filter === 'all' ? 'primary' : '' %>" href="<%= withBase('/hr-tickets') %>">All</a>
           <a class="btn <%= filter === 'open' ? 'primary' : '' %>" href="<%= withBase('/hr-tickets?filter=open') %>">Open</a>
-          <a class="btn <%= filter === 'suspicious' ? 'primary' : '' %>" href="<%= withBase('/hr-tickets?filter=suspicious') %>">Suspicious</a>
+          <a class="btn <%= filter === 'suspicious' ? 'primary' : '' %>" href="<%= withBase('/hr-tickets?filter=suspicious') %>">Priority review</a>
         </div>
 
         <div class="table-scroll">
@@ -75,7 +75,7 @@
                   </td>
                   <td class="cell-break">
                     <% if (t.isSuspicious) { %>
-                      <span class="badge" style="background: rgba(249,115,22,0.15); color: var(--danger);">Suspicious</span>
+                      <span class="badge warn">Priority review</span>
                       <% if (t.suspiciousReasons && t.suspiciousReasons.length) { %>
                         <div class="muted2" style="font-size: 11px; margin-top: 4px;"><%= t.suspiciousReasons.join(', ') %></div>
                       <% } %>

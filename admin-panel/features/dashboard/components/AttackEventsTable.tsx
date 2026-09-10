@@ -13,13 +13,13 @@ const TRAP_COLORS: Partial<Record<TrapType, string>> = {
   SQLI: '#ef4444',
   HONEY_TOKEN: '#f97316',
   DATA_BOMB: '#f59e0b',
-  PATH_TRAVERSAL: '#8b5cf6',
-  BRUTE_FORCE: '#ec4899',
-  XSS_PROBE: '#06b6d4',
-  XSS: '#06b6d4',
+  PATH_TRAVERSAL: '#3f6df6',
+  BRUTE_FORCE: '#dc2626',
+  XSS_PROBE: '#0f8fa1',
+  XSS: '#0f8fa1',
   RECON: '#64748b',
-  SSRF: '#14b8a6',
-  SCANNER: '#a855f7',
+  SSRF: '#64748b',
+  SCANNER: '#64748b',
 }
 
 export default function AttackEventsTable() {
@@ -138,7 +138,7 @@ export default function AttackEventsTable() {
                   </td>
                   <td className="px-3 py-2.5 text-muted-foreground truncate max-w-[100px]">
                     {evt.payload ? (
-                      <code className="text-accent/80">{evt.payload.slice(0, 40)}</code>
+                      <code className="text-muted-foreground">{evt.payload.slice(0, 40)}</code>
                     ) : (
                       <span className="text-muted-foreground/40">—</span>
                     )}

@@ -2,20 +2,20 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'EVATION — Blue Team Operations',
+  title: 'HoneyShield — Active Cyber Deception Platform',
   description:
-    'Blue Team operations workspace for real-time monitoring, investigation, and deception telemetry.',
+    'HoneyShield analyst console for deception telemetry, attacker investigation, and response.',
 }
 
 export const viewport: Viewport = {
-  themeColor: '#0a0d12',
+  themeColor: '#f6f8fb',
 }
 
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className="bg-background" style={{ colorScheme: 'dark' }}>
+    <html lang="en" className="bg-background" style={{ colorScheme: 'light' }}>
       <body className="font-sans antialiased">
         {children}
       </body>

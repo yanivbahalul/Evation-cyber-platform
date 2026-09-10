@@ -1,61 +1,49 @@
 <% const user = typeof locals !== 'undefined' ? (locals.user || null) : (typeof user !== 'undefined' ? user : null); %>
-<% const adminPanelUrl = typeof locals !== 'undefined' ? (locals.adminPanelUrl || '') : (typeof adminPanelUrl !== 'undefined' ? adminPanelUrl : ''); %>
-<% const title = 'InnoTech People — Recruitment Safe Zone' %>
+<% const title = 'InnoTech Careers' %>
 <%- include('partials/head', { title }) %>
 
 <div class="container">
   <%- include('partials/topbar', { user }) %>
-
-  <div class="layout">
-    <%- include('partials/sidebar', { user, active: 'home', adminPanelUrl }) %>
-
-    <main class="card">
-      <div class="hero">
-        <div class="kicker">Recruitment & people operations</div>
-        <h2 style="margin: 0 0 8px;">A safe place to start and grow your career</h2>
-        <div class="muted" style="max-width: 60ch;">
-          Apply, complete onboarding, and access employee services from one protected workspace. Your personal information
-          stays separate from the security operations that protect this environment.
-        </div>
-      </div>
-
-      <div class="card-inner">
-        <div class="grid-3">
-          <div class="stat">
-            <div class="label">Candidate privacy</div>
-            <div class="value">Protected</div>
-            <div class="muted2" style="margin-top: 6px;">Secure account and MFA support</div>
-          </div>
-          <div class="stat">
-            <div class="label">Application process</div>
-            <div class="value">One place</div>
-            <div class="muted2" style="margin-top: 6px;">Profile, tasks, and documents</div>
-          </div>
-          <div class="stat">
-            <div class="label">People support</div>
-            <div class="value">Available</div>
-            <div class="muted2" style="margin-top: 6px;">Help throughout your journey</div>
-          </div>
-        </div>
-
-        <div style="height: 14px;"></div>
-
-        <% if (user) { %>
-          <div class="btn-row">
-            <a class="btn primary" href="<%= withBase('/workspace') %>">Open my workspace</a>
-            <a class="btn" href="<%= withBase('/documents') %>">Browse documents</a>
-            <a class="btn" href="<%= withBase('/profile') %>">My profile</a>
-          </div>
-        <% } else { %>
-          <div class="btn-row">
+  <main class="layout public-layout">
+    <section class="landing-hero">
+      <div class="landing-copy">
+        <div class="kicker">Careers at InnoTech</div>
+        <h1>Build what’s next with InnoTech.</h1>
+        <p>Explore meaningful work, create your candidate profile, and manage your application journey in one place.</p>
+        <div class="btn-row" style="margin-top:30px;">
+          <% if (user) { %>
+            <a class="btn primary" href="<%= withBase('/workspace') %>">Open candidate dashboard</a>
+            <a class="btn" href="<%= withBase('/profile') %>">View profile</a>
+          <% } else { %>
             <a class="btn primary" href="<%= withBase('/register') %>">Create candidate profile</a>
-            <a class="btn" href="<%= withBase('/login') %>">Sign in</a>
-            <a class="btn" href="<%= withBase('/contact') %>">Contact support</a>
-          </div>
-        <% } %>
+            <a class="btn" href="<%= withBase('/login') %>">Candidate sign in</a>
+          <% } %>
+        </div>
       </div>
-    </main>
-  </div>
+    </section>
+
+    <section class="landing-section">
+      <div class="kicker">Find your place</div>
+      <h2>Work with great teams on meaningful products.</h2>
+      <p>Our teams bring together practical engineering, thoughtful product work, and dependable operations.</p>
+      <div class="feature-grid">
+        <article class="feature"><div class="feature-icon">E</div><h3>Engineering</h3><p>Build reliable products and the systems that support them.</p></article>
+        <article class="feature"><div class="feature-icon">P</div><h3>Product</h3><p>Turn real customer needs into focused product experiences.</p></article>
+        <article class="feature"><div class="feature-icon">D</div><h3>Data</h3><p>Help teams make clearer decisions with useful insight.</p></article>
+        <article class="feature"><div class="feature-icon">O</div><h3>Operations</h3><p>Keep our people, processes, and customer work moving.</p></article>
+      </div>
+    </section>
+
+    <section class="landing-section alt">
+      <div class="kicker">Candidate experience</div>
+      <h2>A clear process from first step to next conversation.</h2>
+      <div class="process">
+        <div class="process-item"><h3>Create your profile</h3><p>Set up your account and keep your candidate details together.</p></div>
+        <div class="process-item"><h3>Complete your tasks</h3><p>Review requested information and available candidate resources.</p></div>
+        <div class="process-item"><h3>Stay updated</h3><p>Follow updates and contact our recruiting support team when needed.</p></div>
+      </div>
+    </section>
+  </main>
 </div>
 
 <%- include('partials/foot') %>

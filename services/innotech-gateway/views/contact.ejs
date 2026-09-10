@@ -1,50 +1,24 @@
-<% const title = 'InnoTech — IT Support' %>
+<% const title = 'Candidate Support — InnoTech Careers' %>
 <%- include('partials/head', { title }) %>
-
 <div class="container">
   <%- include('partials/topbar', { user }) %>
-
   <div class="layout">
-    <%- include('partials/sidebar', { user, active: 'home', adminPanelUrl }) %>
-
+    <%- include('partials/sidebar', { user, active: 'contact', adminPanelUrl }) %>
     <main class="card">
-      <div class="hero">
-        <div class="kicker">Support</div>
-        <h2 style="margin: 0 0 8px;">Open IT Ticket</h2>
-        <div class="muted">Submit a ticket — processed by the internal helpdesk queue.</div>
-      </div>
-
-      <div class="card-inner">
-        <% if (success) { %>
-          <div class="badge ok" style="margin-bottom: 12px;">
-            Ticket #<%= ticketId %> received — reference will be emailed shortly
-          </div>
-          <% if (typeof isSuspicious !== 'undefined' && isSuspicious) { %>
-            <div class="muted2" style="margin-bottom: 12px; font-size: 13px;">
-              Your request was flagged for priority review by the security desk.
-            </div>
-          <% } %>
-        <% } %>
-        <% if (formError) { %>
-          <div class="badge" style="margin-bottom: 12px; background: #fee2e2; color: #991b1b;"><%= formError %></div>
-        <% } %>
+      <div class="hero"><div class="kicker">Candidate Support</div><h2>How can we help?</h2><div class="muted">Send a message to our recruiting support team.</div></div>
+      <div class="card-inner" style="max-width:760px;">
+        <% if (success) { %><div class="alert success" role="status">Request #<%= ticketId %> has been received. Keep this number for reference.</div><% } %>
+        <% if (formError) { %><div class="alert" role="alert"><%= formError %></div><% } %>
         <% if (!success) { %>
-        <form class="form" method="POST" action="<%= withBase('/contact') %>">
-          <input type="hidden" name="source" value="<%= typeof source !== 'undefined' ? source : 'contact' %>" />
-          <input class="input" name="subject" placeholder="Subject (e.g. VPN access request)" value="<%= typeof subject !== 'undefined' ? subject : '' %>" required />
-          <textarea class="input" name="message" rows="5" placeholder="Describe the issue..." required><%= typeof message !== 'undefined' ? message : '' %></textarea>
-          <button class="btn primary" type="submit" style="width: 100%;">Submit ticket</button>
-        </form>
-        <% } else { %>
-          <a class="btn primary" href="<%= withBase('/workspace') %>" style="width: 100%; text-align: center;">Back to dashboard</a>
-        <% } %>
-
-        <div class="muted2" style="margin-top: 12px; font-size: 13px;">
-          Emergency: call internal extension <strong>1337</strong>.
-        </div>
+          <form class="form" method="POST" action="<%= withBase('/contact') %>">
+            <input type="hidden" name="source" value="<%= typeof source !== 'undefined' ? source : 'contact' %>" />
+            <label>Subject<input class="input" name="subject" placeholder="What can we help with?" value="<%= typeof subject !== 'undefined' ? subject : '' %>" required /></label>
+            <label>Message<textarea class="input" name="message" rows="6" placeholder="Share the details of your request" required><%= typeof message !== 'undefined' ? message : '' %></textarea></label>
+            <button class="btn primary" type="submit">Send request</button>
+          </form>
+        <% } else { %><a class="btn primary" href="<%= withBase('/workspace') %>">Back to dashboard</a><% } %>
       </div>
     </main>
   </div>
 </div>
-
 <%- include('partials/foot') %>

@@ -2,54 +2,60 @@
 
 import {
   Activity,
-  Ban,
-  ChevronRight,
+  CircleCheck,
   Database,
-  Key,
+  Globe2,
+  KeyRound,
+  LayoutDashboard,
   LogOut,
-  Map,
-  Search,
+  ScanSearch,
   Shield,
-  UserCog,
-  Users,
+  ShieldBan,
+  UserRoundSearch,
+  UsersRound,
 } from 'lucide-react'
 import { useSocket } from '@/features/dashboard/context/SocketContext'
 import { useAuth } from '@/features/auth/context/AuthContext'
 
-export type ActiveTab = 'map' | 'events' | 'profiles' | 'investigate' | 'tokens' | 'adminUsers' | 'bans' | 'maintenance'
+export type ActiveTab =
+  | 'overview'
+  | 'map'
+  | 'events'
+  | 'profiles'
+  | 'investigate'
+  | 'tokens'
+  | 'adminUsers'
+  | 'bans'
+  | 'maintenance'
 
 interface SidebarProps {
   active: ActiveTab
   onSelect: (tab: ActiveTab) => void
 }
 
-const NAV_GROUPS: {
+const NAV_GROUPS: Array<{
   label: string
-  items: { id: ActiveTab; label: string; icon: React.ElementType; danger?: boolean }[]
-}[] = [
+  items: Array<{ id: ActiveTab; label: string; icon: React.ElementType; danger?: boolean }>
+}> = [
   {
-    label: 'Observe',
+    label: 'HoneyShield',
     items: [
-      { id: 'map', label: 'Threat overview', icon: Map },
-      { id: 'events', label: 'Event stream', icon: Activity },
+      { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+      { id: 'map', label: 'Threat Map', icon: Globe2 },
+      { id: 'events', label: 'Attack Events', icon: Activity },
+      { id: 'profiles', label: 'Attackers', icon: UserRoundSearch },
+      { id: 'investigate', label: 'Investigation', icon: ScanSearch },
     ],
   },
+  { label: 'Deception', items: [{ id: 'tokens', label: 'Honey Tokens', icon: KeyRound }] },
   {
-    label: 'Investigate',
+    label: 'Management',
     items: [
-      { id: 'profiles', label: 'Threat actors', icon: Users },
-      { id: 'investigate', label: 'Case workspace', icon: Search },
-      { id: 'tokens', label: 'Honey tokens', icon: Key },
+      { id: 'adminUsers', label: 'Safe Zone Users', icon: UsersRound },
+      { id: 'bans', label: 'Blocked IPs', icon: ShieldBan, danger: true },
     ],
   },
-  {
-    label: 'Administration',
-    items: [
-      { id: 'adminUsers', label: 'Safe Zone access', icon: UserCog },
-      { id: 'maintenance', label: 'Data maintenance', icon: Database },
-      { id: 'bans', label: 'Network blocks', icon: Ban, danger: true },
-    ],
-  },
+  { label: 'System', items: [{ id: 'maintenance', label: 'Data Maintenance', icon: Database }] },
 ]
 
 export default function Sidebar({ active, onSelect }: SidebarProps) {
@@ -57,30 +63,30 @@ export default function Sidebar({ active, onSelect }: SidebarProps) {
   const { logout } = useAuth()
 
   return (
-    <aside className="soc-sidebar flex min-h-0 w-full shrink-0 flex-col border-b border-border bg-surface lg:min-h-screen lg:w-60 lg:border-b-0 lg:border-r">
-      <div className="flex h-16 items-center gap-3 border-b border-border px-4 lg:px-5">
-        <div className="flex h-8 w-8 items-center justify-center rounded-md border border-primary/35 bg-primary/10">
-          <Shield className="h-4 w-4 text-primary" />
+    <aside className="soc-sidebar flex min-h-0 w-full shrink-0 flex-col border-b border-border bg-surface lg:min-h-screen lg:w-64 lg:border-b-0 lg:border-r">
+      <div className="flex h-[72px] items-center gap-3 border-b border-border px-4 lg:px-5">
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-white shadow-sm">
+          <Shield className="h-5 w-5" />
         </div>
         <div className="min-w-0">
-          <p className="text-sm font-semibold tracking-[0.16em] text-foreground">EVATION</p>
-          <p className="mt-0.5 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">Blue Team Operations</p>
+          <p className="text-sm font-semibold text-foreground">HoneyShield</p>
+          <p className="mt-0.5 text-[10px] text-muted-foreground">Cyber Deception Platform</p>
         </div>
       </div>
 
       <div className="soc-connection border-b border-border px-4 py-3">
         <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
           <span className={`h-1.5 w-1.5 rounded-full ${connected ? 'bg-success' : 'bg-muted-foreground'}`} />
-          <span>{connected ? 'Telemetry connected' : 'Telemetry offline'}</span>
+          <span>{connected ? 'Live connection' : 'Connection offline'}</span>
           {displayAlerts.length > 0 && (
-            <span className="ml-auto rounded-sm bg-accent/15 px-1.5 py-0.5 font-mono text-[10px] text-accent">
+            <span className="ml-auto rounded bg-primary/10 px-1.5 py-0.5 font-mono text-[10px] text-primary">
               {displayAlerts.length} new
             </span>
           )}
         </div>
       </div>
 
-      <nav className="soc-nav flex flex-1 gap-5 overflow-x-auto px-3 py-3 lg:flex-col lg:gap-5 lg:overflow-y-auto lg:py-5">
+      <nav className="soc-nav flex flex-1 gap-5 overflow-x-auto px-3 py-3 lg:flex-col lg:overflow-y-auto lg:py-5">
         {NAV_GROUPS.map(group => (
           <div key={group.label} className="soc-nav-group shrink-0">
             <p className="soc-nav-label mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
@@ -95,16 +101,16 @@ export default function Sidebar({ active, onSelect }: SidebarProps) {
                     key={item.id}
                     type="button"
                     onClick={() => onSelect(item.id)}
-                    className={`relative flex w-full items-center gap-2.5 whitespace-nowrap rounded-md px-2.5 py-2 text-left text-[13px] transition-colors ${
+                    className={`flex w-full items-center gap-2.5 whitespace-nowrap rounded-lg px-2.5 py-2 text-left text-[13px] transition-colors ${
                       isActive
-                        ? 'bg-surface-elevated font-medium text-foreground before:absolute before:inset-y-1.5 before:left-0 before:w-0.5 before:rounded-full before:bg-primary'
+                        ? 'bg-primary/10 font-medium text-primary'
                         : item.danger
-                          ? 'text-muted-foreground hover:bg-danger/10 hover:text-danger'
+                          ? 'text-muted-foreground hover:bg-danger/5 hover:text-danger'
                           : 'text-muted-foreground hover:bg-surface-elevated hover:text-foreground'
                     }`}
                     aria-current={isActive ? 'page' : undefined}
                   >
-                    <Icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-primary' : ''}`} />
+                    <Icon className="h-4 w-4 shrink-0" />
                     {item.label}
                   </button>
                 )
@@ -115,23 +121,17 @@ export default function Sidebar({ active, onSelect }: SidebarProps) {
       </nav>
 
       <div className="soc-sidebar-footer border-t border-border p-4">
-        <a
-          href="/gateway/workspace/"
-          className="mb-3 flex items-center justify-between rounded-md border border-border bg-background px-3 py-2.5 text-xs text-foreground transition-colors hover:border-primary/40"
-        >
-          <span>
-            <span className="block font-medium">Safe Zone</span>
-            <span className="mt-0.5 block text-[10px] text-muted-foreground">Recruitment & people</span>
-          </span>
-          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
-        </a>
+        <div className="mb-3 flex items-center gap-2 text-[11px] text-muted-foreground">
+          <CircleCheck className="h-3.5 w-3.5 text-success" />
+          Analyst services operational
+        </div>
         <button
           type="button"
           onClick={logout}
           className="flex items-center gap-2 text-xs text-muted-foreground transition-colors hover:text-foreground"
         >
           <LogOut className="h-3.5 w-3.5" />
-          Sign out
+          Sign Out
         </button>
       </div>
     </aside>

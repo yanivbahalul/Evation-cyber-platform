@@ -1,92 +1,32 @@
-<% const title = 'InnoTech People — My Workspace' %>
+<% const title = 'Candidate Dashboard — InnoTech Careers' %>
 <%- include('partials/head', { title }) %>
-
 <div class="container">
   <%- include('partials/topbar', { user }) %>
-
   <div class="layout">
     <%- include('partials/sidebar', { user, active: 'dashboard', adminPanelUrl }) %>
-
     <main class="card">
-      <div class="hero">
-        <div class="kicker">Recruitment & employee safe zone</div>
-        <h2 style="margin: 0 0 8px;">My workspace</h2>
-        <div class="muted">Your tasks, company updates, and onboarding documents in one place.</div>
-      </div>
-
+      <div class="hero"><div class="kicker">Candidate Dashboard</div><h2>Welcome back, <%= user.username %></h2><div class="muted">Review your application tasks, updates, and candidate resources.</div></div>
       <div class="card-inner">
         <div class="grid-3">
-          <div class="stat">
-            <div class="label">Open tasks</div>
-            <div class="value"><%= tasks.length %></div>
-            <div class="muted2" style="margin-top: 6px;">This week</div>
-          </div>
-          <div class="stat">
-            <div class="label">Announcements</div>
-            <div class="value"><%= announcements.length %></div>
-            <div class="muted2" style="margin-top: 6px;">Latest updates</div>
-          </div>
-          <div class="stat">
-            <div class="label">Documents</div>
-            <div class="value"><%= documents.length %></div>
-            <div class="muted2" style="margin-top: 6px;">Available files</div>
-          </div>
+          <div class="stat"><div class="label">Application tasks</div><div class="value"><%= tasks.length %></div><div class="muted2" style="margin-top:6px;">Available tasks</div></div>
+          <div class="stat"><div class="label">Updates</div><div class="value"><%= announcements.length %></div><div class="muted2" style="margin-top:6px;">Current messages</div></div>
+          <div class="stat"><div class="label">Documents</div><div class="value"><%= documents.length %></div><div class="muted2" style="margin-top:6px;">Available resources</div></div>
         </div>
-
-        <div style="height: 14px;"></div>
-
-        <div class="grid-3">
-          <section class="card" style="box-shadow:none;">
-            <div class="card-inner">
-              <h3 style="margin: 0 0 10px;">My Tasks</h3>
-              <table class="table">
-                <thead>
-                  <tr><th>Task</th><th>Status</th></tr>
-                </thead>
-                <tbody>
-                  <% tasks.forEach(t => { %>
-                    <tr>
-                      <td><%= t.title %></td>
-                      <td>
-                        <span class="badge <%= t.status === 'Done' ? 'ok' : (t.status === 'Pending' ? 'warn' : '') %>">
-                          <%= t.status %>
-                        </span>
-                      </td>
-                    </tr>
-                  <% }) %>
-                </tbody>
-              </table>
-            </div>
+        <div class="content-grid">
+          <section class="panel">
+            <h3>Application Tasks</h3>
+            <div class="table-scroll"><table class="table"><thead><tr><th>Task</th><th>Status</th></tr></thead><tbody>
+              <% if (!tasks.length) { %><tr><td colspan="2" class="muted2">No application tasks are available.</td></tr><% } %>
+              <% tasks.forEach(t => { %><tr><td><%= t.title %></td><td><span class="badge <%= t.status === 'Done' ? 'ok' : (t.status === 'Pending' ? 'warn' : '') %>"><%= t.status %></span></td></tr><% }) %>
+            </tbody></table></div>
           </section>
-
-          <section class="card" style="box-shadow:none;">
-            <div class="card-inner">
-              <h3 style="margin: 0 0 10px;">Announcements</h3>
-              <div class="muted2" style="font-size: 13px; margin-bottom: 8px;">Company-wide notices</div>
-              <div style="display:grid; gap:10px;">
-                <% announcements.forEach(a => { %>
-                  <div class="notice">
-                    <div style="font-weight: 650;"><%= a.title %></div>
-                    <div class="muted2" style="margin-top: 4px; font-size: 13px;"><%= a.body %></div>
-                  </div>
-                <% }) %>
-              </div>
-            </div>
-          </section>
-
-          <section class="card" style="box-shadow:none;">
-            <div class="card-inner">
-              <h3 style="margin: 0 0 10px;">Quick Links</h3>
-              <div class="btn-row">
-                <a class="btn primary" href="<%= withBase('/documents') %>">Onboarding documents</a>
-                <a class="btn" href="<%= withBase('/contact') %>?source=dashboard">Contact support</a>
-              </div>
-            </div>
-          </section>
+          <div class="stack">
+            <section class="panel"><h3>Updates</h3><% if (!announcements.length) { %><p class="muted2">No updates right now.</p><% } %><% announcements.forEach(a => { %><div class="notice"><strong><%= a.title %></strong><div class="muted2" style="margin-top:4px;font-size:13px;"><%= a.body %></div></div><% }) %></section>
+            <section class="panel"><h3>Quick links</h3><div class="btn-row"><a class="btn primary" href="<%= withBase('/documents') %>">View documents</a><a class="btn" href="<%= withBase('/contact') %>?source=dashboard">Candidate support</a></div></section>
+          </div>
         </div>
       </div>
     </main>
   </div>
 </div>
-
 <%- include('partials/foot') %>

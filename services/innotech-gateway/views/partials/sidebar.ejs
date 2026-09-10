@@ -1,67 +1,33 @@
 <aside class="sidebar">
   <div class="section">
-    <h4>Safe Zone</h4>
-    <nav class="nav">
-      <a class="<%= active === 'home' ? 'active' : '' %>" href="<%= withBase('/') %>">
-        <span>Overview</span><span class="muted2">↗</span>
-      </a>
+    <h4>Candidate Portal</h4>
+    <nav class="nav" aria-label="Candidate navigation">
+      <a class="<%= active === 'home' ? 'active' : '' %>" href="<%= withBase('/') %>"><span>Home</span><span>›</span></a>
       <% if (user) { %>
-        <a class="<%= active === 'dashboard' ? 'active' : '' %>" href="<%= withBase('/workspace') %>">
-          <span>My workspace</span><span class="muted2">›</span>
-        </a>
-        <a class="<%= active === 'profile' ? 'active' : '' %>" href="<%= withBase('/profile') %>">
-          <span>My profile</span><span class="muted2">›</span>
-        </a>
-        <a class="<%= active === 'documents' ? 'active' : '' %>" href="<%= withBase('/documents') %>">
-          <span>Onboarding documents</span><span class="muted2">›</span>
-        </a>
-        <a class="<%= active === 'search' ? 'active' : '' %>" href="<%= withBase('/search') %>">
-          <span>People directory</span><span class="muted2">›</span>
-        </a>
+        <a class="<%= active === 'dashboard' ? 'active' : '' %>" href="<%= withBase('/workspace') %>"><span>Dashboard</span><span>›</span></a>
+        <a class="<%= active === 'profile' ? 'active' : '' %>" href="<%= withBase('/profile') %>"><span>My Profile</span><span>›</span></a>
+        <a class="<%= active === 'documents' ? 'active' : '' %>" href="<%= withBase('/documents') %>"><span>Documents</span><span>›</span></a>
+        <a class="<%= active === 'contact' ? 'active' : '' %>" href="<%= withBase('/contact') %>"><span>Candidate Support</span><span>›</span></a>
       <% } else { %>
-        <a class="<%= active === 'login' ? 'active' : '' %>" href="<%= withBase('/login') %>">
-          <span>Sign in</span><span class="muted2">→</span>
-        </a>
-        <a class="<%= active === 'register' ? 'active' : '' %>" href="<%= withBase('/register') %>">
-          <span>Create candidate profile</span><span class="muted2">→</span>
-        </a>
+        <a class="<%= active === 'login' ? 'active' : '' %>" href="<%= withBase('/login') %>"><span>Candidate Sign In</span><span>→</span></a>
+        <a class="<%= active === 'register' ? 'active' : '' %>" href="<%= withBase('/register') %>"><span>Create Account</span><span>→</span></a>
       <% } %>
     </nav>
   </div>
 
   <% if (user && user.role === 'admin' && canAccessOps === true) { %>
     <div class="section">
-      <h4>People operations</h4>
+      <h4>Recruiting Team</h4>
       <nav class="nav">
-        <a class="<%= active === 'hrTickets' ? 'active' : '' %>" href="<%= withBase('/hr-tickets') %>">
-          <span>Support requests</span><span class="muted2">›</span>
-        </a>
-      </nav>
-    </div>
-
-    <div class="section">
-      <h4>Protected operations</h4>
-      <nav class="nav">
-        <a href="/gateway/dashboard/">
-          <span>Open Blue Team</span><span class="muted2">↗</span>
-        </a>
+        <a class="<%= active === 'hrTickets' ? 'active' : '' %>" href="<%= withBase('/hr-tickets') %>"><span>Support Requests</span><span>›</span></a>
       </nav>
     </div>
   <% } %>
 
-  <div class="section">
-    <h4>Status</h4>
-    <div class="muted" style="font-size: 13px; line-height: 1.5;">
-      Environment: <span class="badge ok">Protected</span><br />
-      Service status: <span class="badge ok">Available</span>
-    </div>
-  </div>
-
   <% if (user) { %>
     <div class="section">
-      <h4>Account</h4>
       <form action="<%= withBase('/logout') %>" method="POST" style="margin:0;">
-        <button class="btn danger" type="submit" style="width: 100%;">Logout</button>
+        <button class="btn" type="submit" style="width:100%;">Sign out</button>
       </form>
     </div>
   <% } %>

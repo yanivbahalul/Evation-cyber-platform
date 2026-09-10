@@ -12,13 +12,14 @@ import HoneyTokenPanel from './HoneyTokenPanel'
 import AdminUsersPanel from './AdminUsersPanel'
 import BanManagementPanel from './BanManagementPanel'
 import MaintenancePanel from './MaintenancePanel'
+import Overview from './Overview'
 import { InvestigationProvider } from '@/features/investigation/context/InvestigationContext'
 
-const TAB_IDS: ActiveTab[] = ['map', 'events', 'profiles', 'investigate', 'tokens', 'adminUsers', 'bans', 'maintenance']
+const TAB_IDS: ActiveTab[] = ['overview', 'map', 'events', 'profiles', 'investigate', 'tokens', 'adminUsers', 'bans', 'maintenance']
 
 function tabFromQuery(raw: string | null): ActiveTab {
   if (raw && TAB_IDS.includes(raw as ActiveTab)) return raw as ActiveTab
-  return 'map'
+  return 'overview'
 }
 
 export default function Dashboard() {
@@ -45,7 +46,8 @@ export default function Dashboard() {
         <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
           <TopBar active={activeTab} />
 
-          <div className="flex-1 overflow-auto p-3 sm:p-5">
+          <div className="flex-1 overflow-auto p-4 sm:p-6">
+            {activeTab === 'overview' && <Overview onSelectTab={selectTab} />}
             {activeTab === 'map' && <ThreatMap onNavigateInvestigate={goInvestigate} />}
             {activeTab === 'events' && <AttackEventsTable />}
             {activeTab === 'profiles' && (

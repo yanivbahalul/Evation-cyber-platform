@@ -1,48 +1,23 @@
-<% const title = 'InnoTech — Set up 2FA' %>
+<% const title = 'Set Up Account Verification — InnoTech Careers' %>
 <%- include('partials/head', { title }) %>
 <% const error = typeof locals !== 'undefined' ? (locals.error || '') : (typeof error !== 'undefined' ? error : ''); %>
-
 <div class="container">
   <%- include('partials/topbar', { user: null }) %>
-
-  <div class="layout">
-    <%- include('partials/sidebar', { user: null, active: 'register' }) %>
-
-    <main class="card">
-      <div class="hero">
-        <div class="kicker">Two‑Factor Authentication</div>
-        <h2 style="margin: 0 0 8px;">Set up 2FA</h2>
-        <div class="muted">User: <strong><%= username %></strong> · Scan QR, then enter the 6‑digit code.</div>
-      </div>
-
-      <div class="card-inner">
-        <% if (error) { %>
-          <div style="border:1px solid rgba(249,115,22,0.35); background: rgba(249,115,22,0.10); padding: 10px 12px; border-radius: 12px; margin-bottom: 12px;">
-            <div style="font-weight:650;">Verification failed</div>
-            <div class="muted2" style="margin-top: 4px;"><%= error %></div>
-          </div>
-        <% } %>
-
-        <div style="display:flex; justify-content:center; margin: 10px 0 14px;">
-          <img src="<%= qrDataUrl %>" alt="2FA QR" style="width:220px; height:220px; border-radius:14px; border:1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.02); padding: 10px;">
-        </div>
-
-        <details>
-          <summary class="muted2">Can’t scan? Use manual entry</summary>
-          <div style="margin-top: 10px; padding: 12px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.10); background: rgba(0,0,0,0.22);">
-            <div class="muted2" style="font-size: 12px; margin-bottom: 8px;">OTPAuth URI</div>
-            <div style="font-size: 12px; word-break: break-all; color: rgba(255,255,255,0.80);"><%= otpauth %></div>
-          </div>
-        </details>
-
-        <form class="form" action="<%= withBase('/register/verify-otp') %>" method="POST" style="margin-top: 14px;">
-          <input class="input" name="otp" placeholder="123456" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required />
-          <button class="btn primary" type="submit" style="width:100%;">Verify & Continue</button>
+  <main class="layout auth-layout">
+    <div class="auth-wrap">
+      <section class="auth-aside"><div class="kicker">Account setup</div><h1>Secure your candidate account.</h1><p>Scan the QR code with your authenticator app, then enter the 6-digit verification code.</p></section>
+      <section class="auth-panel">
+        <h2>Set up account verification</h2>
+        <p class="muted">Account: <strong><%= username %></strong></p>
+        <% if (error) { %><div class="alert" role="alert"><%= error %></div><% } %>
+        <div class="qr-card"><img src="<%= qrDataUrl %>" alt="Authenticator QR code" style="width:190px;height:190px;display:block;" /></div>
+        <details><summary class="muted2" style="cursor:pointer;font-size:13px;">Can’t scan? Use manual entry</summary><div class="code-block"><%= otpauth %></div></details>
+        <form class="form" action="<%= withBase('/register/verify-otp') %>" method="POST" style="margin-top:18px;">
+          <label>Verification code<input class="input" name="otp" placeholder="123456" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required /></label>
+          <button class="btn primary" type="submit" style="width:100%;">Verify and continue</button>
         </form>
-      </div>
-    </main>
-  </div>
+      </section>
+    </div>
+  </main>
 </div>
-
 <%- include('partials/foot') %>
-
