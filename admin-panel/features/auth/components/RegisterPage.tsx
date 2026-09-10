@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Shield, Lock, User, Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react'
+import { Lock, User, Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react'
 
 const isValidUsername = (value: string) => /^[a-zA-Z0-9._-]{3,64}$/.test(value)
 
@@ -254,25 +254,16 @@ const RegisterPage = () => {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div
-        className="fixed inset-0 pointer-events-none opacity-5"
-        style={{
-          backgroundImage:
-            'linear-gradient(#0d9488 1px, transparent 1px), linear-gradient(90deg, #0d9488 1px, transparent 1px)',
-          backgroundSize: '40px 40px',
-        }}
-      />
-
       <div className="relative w-full max-w-sm">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-surface border border-primary/30 mb-4 pulse-teal">
-            <Shield className="w-8 h-8 text-primary" />
+        <div className="mb-7 text-center">
+          <div className="mx-auto mb-3 h-24 w-48 overflow-hidden">
+            <img src="/honeyshield-logo.png" alt="HoneyShield" className="h-full w-full object-contain" />
           </div>
-          <h1 className="text-xl font-bold text-foreground tracking-tight">InnoTech HoneyNet</h1>
-          <p className="text-muted-foreground text-sm mt-1">Create admin account</p>
+          <h1 className="text-lg font-semibold text-foreground">HoneyShield</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Analyst account enrollment</p>
         </div>
 
-        <div className="bg-surface border border-border rounded-xl p-6 shadow-2xl">
+        <div className="rounded-xl border border-border bg-surface p-6 shadow-sm">
           <AuthAlert error={error} success={success} />
 
           <form onSubmit={handleRegister} className="flex flex-col gap-4">

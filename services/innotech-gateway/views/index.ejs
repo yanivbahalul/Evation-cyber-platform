@@ -1,59 +1,49 @@
 <% const user = typeof locals !== 'undefined' ? (locals.user || null) : (typeof user !== 'undefined' ? user : null); %>
-<% const adminPanelUrl = typeof locals !== 'undefined' ? (locals.adminPanelUrl || '') : (typeof adminPanelUrl !== 'undefined' ? adminPanelUrl : ''); %>
-<% const title = 'InnoTech — Safe Zone' %>
+<% const title = 'InnoTech Careers' %>
 <%- include('partials/head', { title }) %>
 
 <div class="container">
   <%- include('partials/topbar', { user }) %>
-
-  <div class="layout">
-    <%- include('partials/sidebar', { user, active: 'home', adminPanelUrl }) %>
-
-    <main class="card">
-      <div class="hero">
-        <div class="kicker">Public Landing</div>
-        <h2 style="margin: 0 0 8px;">Welcome to InnoTech internal services</h2>
-        <div class="muted" style="max-width: 60ch;">
-          Access HR tools, company documents, and IT support in one place. This portal is designed to look and feel like a
-          real corporate system while keeping the experience fast for legitimate employees.
+  <main class="layout public-layout">
+    <section class="landing-hero">
+      <div class="landing-copy">
+        <div class="kicker">Careers at InnoTech</div>
+        <h1>Build what’s next with InnoTech.</h1>
+        <p>Explore meaningful work, create your candidate profile, and manage your application journey in one place.</p>
+        <div class="btn-row" style="margin-top:30px;">
+          <% if (user) { %>
+            <a class="btn primary" href="<%= withBase('/workspace') %>">Open candidate dashboard</a>
+            <a class="btn" href="<%= withBase('/profile') %>">View profile</a>
+          <% } else { %>
+            <a class="btn primary" href="<%= withBase('/register') %>">Create candidate profile</a>
+            <a class="btn" href="<%= withBase('/login') %>">Candidate sign in</a>
+          <% } %>
         </div>
       </div>
+    </section>
 
-      <div class="card-inner">
-        <div class="grid-3">
-          <div class="stat">
-            <div class="label">Security posture</div>
-            <div class="value">Operational</div>
-            <div class="muted2" style="margin-top: 6px;">All services green</div>
-          </div>
-          <div class="stat">
-            <div class="label">SSO status</div>
-            <div class="value">Enabled</div>
-            <div class="muted2" style="margin-top: 6px;">MFA required offsite</div>
-          </div>
-          <div class="stat">
-            <div class="label">Support</div>
-            <div class="value">24/7</div>
-            <div class="muted2" style="margin-top: 6px;">IT helpdesk online</div>
-          </div>
-        </div>
-
-        <div style="height: 14px;"></div>
-
-        <% if (user) { %>
-          <div class="btn-row">
-            <a class="btn primary" href="<%= withBase('/workspace') %>">Enter dashboard</a>
-            <a class="btn" href="<%= withBase('/documents') %>">Browse documents</a>
-            <a class="btn" href="<%= withBase('/profile') %>">My profile</a>
-          </div>
-        <% } else { %>
-          <div class="btn-row">
-            <a class="btn primary" href="<%= withBase('/contact') %>">Contact IT Support</a>
-          </div>
-        <% } %>
+    <section class="landing-section">
+      <div class="kicker">Find your place</div>
+      <h2>Work with great teams on meaningful products.</h2>
+      <p>Our teams bring together practical engineering, thoughtful product work, and dependable operations.</p>
+      <div class="feature-grid">
+        <article class="feature"><div class="feature-icon">E</div><h3>Engineering</h3><p>Build reliable products and the systems that support them.</p></article>
+        <article class="feature"><div class="feature-icon">P</div><h3>Product</h3><p>Turn real customer needs into focused product experiences.</p></article>
+        <article class="feature"><div class="feature-icon">D</div><h3>Data</h3><p>Help teams make clearer decisions with useful insight.</p></article>
+        <article class="feature"><div class="feature-icon">O</div><h3>Operations</h3><p>Keep our people, processes, and customer work moving.</p></article>
       </div>
-    </main>
-  </div>
+    </section>
+
+    <section class="landing-section alt">
+      <div class="kicker">Candidate experience</div>
+      <h2>A clear process from first step to next conversation.</h2>
+      <div class="process">
+        <div class="process-item"><h3>Create your profile</h3><p>Set up your account and keep your candidate details together.</p></div>
+        <div class="process-item"><h3>Complete your tasks</h3><p>Review requested information and available candidate resources.</p></div>
+        <div class="process-item"><h3>Stay updated</h3><p>Follow updates and contact our recruiting support team when needed.</p></div>
+      </div>
+    </section>
+  </main>
 </div>
 
 <%- include('partials/foot') %>

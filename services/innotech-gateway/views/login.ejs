@@ -1,41 +1,24 @@
-<% const title = 'InnoTech — Employee Login' %>
+<% const title = 'Candidate Sign In — InnoTech Careers' %>
 <%- include('partials/head', { title }) %>
 <% const error = typeof locals !== 'undefined' ? (locals.error || '') : (typeof error !== 'undefined' ? error : ''); %>
 <% const username = typeof locals !== 'undefined' ? (locals.username || '') : (typeof username !== 'undefined' ? username : ''); %>
-
 <div class="container">
   <%- include('partials/topbar', { user: null }) %>
-
-  <div class="layout">
-    <%- include('partials/sidebar', { user: null, active: 'login' }) %>
-
-    <main class="card">
-      <div class="hero">
-        <div class="kicker">Employee Access</div>
-        <h2 style="margin: 0 0 8px;">Sign in</h2>
-        <div class="muted">Password first, then OTP if enabled.</div>
-      </div>
-      <div class="card-inner">
-        <% if (error) { %>
-          <div style="border:1px solid rgba(249,115,22,0.35); background: rgba(249,115,22,0.10); padding: 10px 12px; border-radius: 12px; margin-bottom: 12px;">
-            <div style="font-weight:650;">Access denied</div>
-            <div class="muted2" style="margin-top: 4px;"><%= error %></div>
-          </div>
-        <% } %>
-
-        <form class="form" action="<%= withBase('/login') %>" method="POST">
-          <input class="input" type="text" name="username" placeholder="Username" autocomplete="username" required value="<%= username %>" />
-          <input class="input" type="password" name="password" placeholder="Password" autocomplete="current-password" required />
-          <button class="btn primary" type="submit" style="width: 100%;">Continue</button>
+  <main class="layout auth-layout">
+    <div class="auth-wrap">
+      <section class="auth-aside"><div class="kicker">InnoTech Careers</div><h1>Your next step starts here.</h1><p>Access your candidate profile, application tasks, updates, and documents.</p></section>
+      <section class="auth-panel">
+        <h2>Candidate Sign In</h2>
+        <p class="muted">Welcome back. Sign in to continue to your candidate account.</p>
+        <% if (error) { %><div class="alert" role="alert"><strong>Sign in failed.</strong> <%= error %></div><% } %>
+        <form class="form" action="<%= withBase('/login') %>" method="POST" style="margin-top:16px;">
+          <label>Username<input class="input" type="text" name="username" autocomplete="username" required value="<%= username %>" placeholder="Enter your username" /></label>
+          <label>Password<input class="input" type="password" name="password" autocomplete="current-password" required placeholder="Enter your password" /></label>
+          <button class="btn primary" type="submit" style="width:100%;">Continue</button>
         </form>
-
-        <div class="muted2" style="margin-top: 12px; font-size: 13px;">
-          No account? <a href="<%= withBase('/register') %>" style="color: var(--primary);">Register</a>
-          · <a href="<%= withBase('/') %>" style="color: var(--primary);">Home</a>
-        </div>
-      </div>
-    </main>
-  </div>
+        <p class="muted2" style="margin:18px 0 0;font-size:13px;">New to InnoTech? <a href="<%= withBase('/register') %>" style="color:var(--primary);font-weight:650;">Create your candidate profile</a></p>
+      </section>
+    </div>
+  </main>
 </div>
-
 <%- include('partials/foot') %>

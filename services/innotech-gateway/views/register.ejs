@@ -1,41 +1,24 @@
-<% const title = 'InnoTech — Register' %>
+<% const title = 'Create Candidate Account — InnoTech Careers' %>
 <%- include('partials/head', { title }) %>
 <% const error = typeof locals !== 'undefined' ? (locals.error || '') : (typeof error !== 'undefined' ? error : ''); %>
 <% const username = typeof locals !== 'undefined' ? (locals.username || '') : (typeof username !== 'undefined' ? username : ''); %>
-
 <div class="container">
   <%- include('partials/topbar', { user: null }) %>
-
-  <div class="layout">
-    <%- include('partials/sidebar', { user: null, active: 'register' }) %>
-
-    <main class="card">
-      <div class="hero">
-        <div class="kicker">Employee Onboarding</div>
-        <h2 style="margin: 0 0 8px;">Create account</h2>
-        <div class="muted">After registration you will scan a unique 2FA QR code.</div>
-      </div>
-      <div class="card-inner">
-        <% if (error) { %>
-          <div style="border:1px solid rgba(249,115,22,0.35); background: rgba(249,115,22,0.10); padding: 10px 12px; border-radius: 12px; margin-bottom: 12px;">
-            <div style="font-weight:650;">Registration failed</div>
-            <div class="muted2" style="margin-top: 4px;"><%= error %></div>
-          </div>
-        <% } %>
-
-        <form class="form" action="<%= withBase('/register') %>" method="POST">
-          <input class="input" type="text" name="username" placeholder="Username" autocomplete="username" required value="<%= username %>" />
-          <input class="input" type="password" name="password" placeholder="Password" autocomplete="new-password" required />
-          <button class="btn primary" type="submit" style="width: 100%;">Create account</button>
+  <main class="layout auth-layout">
+    <div class="auth-wrap">
+      <section class="auth-aside"><div class="kicker">Candidate profile</div><h1>Keep your application journey in one place.</h1><p>Create an account to manage requested tasks, profile information, documents, and updates.</p></section>
+      <section class="auth-panel">
+        <h2>Create your candidate account</h2>
+        <p class="muted">Choose your sign-in details. Account verification follows next.</p>
+        <% if (error) { %><div class="alert" role="alert"><strong>Account not created.</strong> <%= error %></div><% } %>
+        <form class="form" action="<%= withBase('/register') %>" method="POST" style="margin-top:16px;">
+          <label>Username<input class="input" type="text" name="username" autocomplete="username" required value="<%= username %>" placeholder="Choose a username" /></label>
+          <label>Password<input class="input" type="password" name="password" autocomplete="new-password" required placeholder="At least 8 characters" /></label>
+          <button class="btn primary" type="submit" style="width:100%;">Create account</button>
         </form>
-
-        <div class="muted2" style="margin-top: 12px; font-size: 13px;">
-          Already have an account? <a href="<%= withBase('/login') %>" style="color: var(--primary);">Login</a>
-          · <a href="<%= withBase('/') %>" style="color: var(--primary);">Home</a>
-        </div>
-      </div>
-    </main>
-  </div>
+        <p class="muted2" style="margin:18px 0 0;font-size:13px;">Already have an account? <a href="<%= withBase('/login') %>" style="color:var(--primary);font-weight:650;">Sign in</a></p>
+      </section>
+    </div>
+  </main>
 </div>
-
 <%- include('partials/foot') %>

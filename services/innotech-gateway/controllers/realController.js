@@ -64,7 +64,7 @@ function safeNext(next) {
     return next;
 }
 
-/** Issue gateway + Blue Team cookies and redirect to Next /api/admin/exchange → /ops */
+/** Issue gateway + Blue Team cookies and redirect to the attack monitor. */
 function finishBlueTeamOperatorLogin(req, res, { username, gatewaySub, gatewayRole = 'admin' }) {
     const jwtSecret = process.env.JWT_SECRET;
     if (!jwtSecret) return { error: 'Server misconfiguration. Please contact IT.' };
@@ -80,7 +80,7 @@ function finishBlueTeamOperatorLogin(req, res, { username, gatewaySub, gatewayRo
         role: gatewayRole,
     });
     res.cookie('auth', gatewayAuth, authCookieOptions('lax'));
-    const homePath = '/gateway/workspace/';
+    const homePath = '/gateway/dashboard/';
     return {
         // Use a relative redirect so we stay on the current origin (works behind nginx, LAN IPs, and ngrok).
         redirect: `/api/admin/exchange?token=${encodeURIComponent(exchange)}&next=${encodeURIComponent(homePath)}`,
@@ -174,7 +174,7 @@ exports.createUser = async (req, res) => {
 
         await newUser.save();
 
-        const issuer = process.env.TOTP_ISSUER_NAME || 'InnoTech Safe Zone';
+        const issuer = process.env.TOTP_ISSUER_NAME || 'InnoTech Careers';
         const otpauth = generateURI({ strategy: 'totp', label: cleanUsername, issuer, secret });
         const qrDataUrl = await QRCode.toDataURL(otpauth, { margin: 1, scale: 6 });
 
@@ -197,7 +197,7 @@ exports.verifyRegistrationOtp = async (req, res) => {
         if (!/^\d{6}$/.test(otp)) {
             const user = await RealEmployee.findById(userId).select('+totpSecret');
             if (!user || !user.totpSecret) return res.status(401).render('register', { user: null, error: 'Invalid registration session. Please register again.', username: '' });
-            const issuer = process.env.TOTP_ISSUER_NAME || 'InnoTech Safe Zone';
+            const issuer = process.env.TOTP_ISSUER_NAME || 'InnoTech Careers';
             const otpauth = generateURI({ strategy: 'totp', label: user.username, issuer, secret: user.totpSecret });
             const qrDataUrl = await QRCode.toDataURL(otpauth, { margin: 1, scale: 6 });
             return res.status(400).render('setup-2fa', { user: null, username: user.username, qrDataUrl, otpauth, error: 'OTP must be 6 digits' });
@@ -210,7 +210,7 @@ exports.verifyRegistrationOtp = async (req, res) => {
 
         const ok = await safeVerifyTotp(otp, user.totpSecret);
         if (!ok) {
-            const issuer = process.env.TOTP_ISSUER_NAME || 'InnoTech Safe Zone';
+            const issuer = process.env.TOTP_ISSUER_NAME || 'InnoTech Careers';
             const otpauth = generateURI({ strategy: 'totp', label: user.username, issuer, secret: user.totpSecret });
             const qrDataUrl = await QRCode.toDataURL(otpauth, { margin: 1, scale: 6 });
             return res.status(401).render('setup-2fa', { user: null, username: user.username, qrDataUrl, otpauth, error: 'Invalid OTP. Check your authenticator time sync and retry.' });
@@ -290,7 +290,7 @@ exports.loginUser = async (req, res) => {
             user.totpSecret = totp.generateSecret();
             await user.save();
         }
-        const issuer = process.env.TOTP_ISSUER_NAME || 'InnoTech Safe Zone';
+        const issuer = process.env.TOTP_ISSUER_NAME || 'InnoTech Careers';
         const otpauth = generateURI({ strategy: 'totp', label: user.username, issuer, secret: user.totpSecret });
         const qrDataUrl = await QRCode.toDataURL(otpauth, { margin: 1, scale: 6 });
         setPreAuthCookie(res, `reg:${user._id}`, 1000 * 60 * 10);

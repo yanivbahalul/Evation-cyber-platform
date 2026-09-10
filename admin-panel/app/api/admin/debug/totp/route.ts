@@ -30,17 +30,16 @@ export const GET = async (req: NextRequest) => {
     ivB64: adminUser.totpSecretIv,
     tagB64: adminUser.totpSecretTag,
   })
-  const code = await generate({ strategy: 'totp', secret, window: 1, crypto, base32 })
-  const check = await verify({ strategy: 'totp', token: code, secret, window: 1, crypto, base32 })
+  const code = await generate({ strategy: 'totp', secret, crypto, base32 })
+  const check = await verify({ strategy: 'totp', token: code, secret, epochTolerance: 30, crypto, base32 })
 
   return NextResponse.json({
     success: true,
     username,
     code,
-    valid: (check as any)?.valid === true,
+    valid: check.valid === true,
     // fingerprint the decrypted secret without leaking it
     secretPrefix: secret.slice(0, 4),
     secretLen: secret.length,
   })
 }
-

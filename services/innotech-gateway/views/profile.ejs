@@ -1,4 +1,4 @@
-<% const title = 'InnoTech — My Profile' %>
+<% const title = 'Candidate Profile — InnoTech Careers' %>
 <%- include('partials/head', { title }) %>
 
 <div class="container">
@@ -9,9 +9,9 @@
 
     <main class="card">
       <div class="hero">
-        <div class="kicker">Employee</div>
-        <h2 style="margin: 0 0 8px;">My Profile</h2>
-        <div class="muted">Read-only view. Changes require HR approval.</div>
+        <div class="kicker">Your details</div>
+        <h2>Candidate Profile</h2>
+        <div class="muted">Review the information associated with your candidate account.</div>
       </div>
 
       <div class="card-inner">
@@ -46,7 +46,7 @@
     if (!btn) return;
     var ticketUrl = '<%= withBase('/contact') %>?subject=' + encodeURIComponent('Profile update request') + '&source=profile_edit';
     btn.addEventListener('click', function () {
-      alert('Changes require HR approval. Please open an IT ticket.');
+      alert('Profile changes are reviewed by the recruiting team. Please send a support request.');
       window.location.href = ticketUrl;
     });
   })();

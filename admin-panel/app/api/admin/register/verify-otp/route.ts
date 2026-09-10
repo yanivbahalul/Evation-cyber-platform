@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
     strategy: 'totp',
     token: otp,
     secret,
-    window: totpWindow(),
+    epochTolerance: totpWindow() * 30,
     crypto,
     base32,
   })
@@ -91,4 +91,3 @@ export async function POST(req: NextRequest) {
   })
   return res
 }
-

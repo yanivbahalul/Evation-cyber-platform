@@ -1,7 +1,7 @@
 ![Honey Shield Logo](docs/logo.png)
-# Honny Shield - Cyber Security Platform
+# HoneyShield — Active Cyber Deception Platform
 
-Monorepo for the InnoTech HR honeypot: deceptive gateway traps, air-gapped telemetry, and the Blue Team admin dashboard.
+HoneyShield combines two intentionally separate experiences: a realistic public deception environment presented as the **InnoTech Careers** candidate portal, and an internal **HoneyShield analyst console** for live attack monitoring, attacker investigation, honey tokens, access management, and response. The existing gateway, traps, telemetry pipeline, Socket.IO updates, authentication, and data services remain the foundation of both experiences.
 
 **video demonstration of the system** : https://www.youtube.com/watch?v=Cex21CGAxOY
 
@@ -46,10 +46,10 @@ Nginx listens on **`0.0.0.0:3000`** (all interfaces). Use **`http://localhost:30
 
 | URL (same machine) | Role |
 |-----|------|
-| http://localhost:3000/gateway/ | HR portal + traps |
-| http://localhost:3000/gateway/login | Sign-in |
-| http://localhost:3000/gateway/workspace/ | Landing page after login |
-| http://localhost:3000/gateway/dashboard/ | Attack monitor (`role=admin`) |
+| http://localhost:3000/gateway/ | InnoTech Careers candidate portal + deception routes |
+| http://localhost:3000/gateway/login | Candidate sign-in |
+| http://localhost:3000/gateway/workspace/ | Candidate dashboard after login |
+| http://localhost:3000/gateway/dashboard/ | HoneyShield analyst console (`role=admin`) |
 
 **Verify:** Dashboard status **Live**. Logs: `docker compose logs -f gateway telemetry` (from `infra/`).
 
