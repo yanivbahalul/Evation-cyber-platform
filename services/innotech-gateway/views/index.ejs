@@ -1,6 +1,6 @@
 <% const user = typeof locals !== 'undefined' ? (locals.user || null) : (typeof user !== 'undefined' ? user : null); %>
 <% const adminPanelUrl = typeof locals !== 'undefined' ? (locals.adminPanelUrl || '') : (typeof adminPanelUrl !== 'undefined' ? adminPanelUrl : ''); %>
-<% const title = 'InnoTech — Safe Zone' %>
+<% const title = 'InnoTech People — Recruitment Safe Zone' %>
 <%- include('partials/head', { title }) %>
 
 <div class="container">
@@ -11,30 +11,30 @@
 
     <main class="card">
       <div class="hero">
-        <div class="kicker">Public Landing</div>
-        <h2 style="margin: 0 0 8px;">Welcome to InnoTech internal services</h2>
+        <div class="kicker">Recruitment & people operations</div>
+        <h2 style="margin: 0 0 8px;">A safe place to start and grow your career</h2>
         <div class="muted" style="max-width: 60ch;">
-          Access HR tools, company documents, and IT support in one place. This portal is designed to look and feel like a
-          real corporate system while keeping the experience fast for legitimate employees.
+          Apply, complete onboarding, and access employee services from one protected workspace. Your personal information
+          stays separate from the security operations that protect this environment.
         </div>
       </div>
 
       <div class="card-inner">
         <div class="grid-3">
           <div class="stat">
-            <div class="label">Security posture</div>
-            <div class="value">Operational</div>
-            <div class="muted2" style="margin-top: 6px;">All services green</div>
+            <div class="label">Candidate privacy</div>
+            <div class="value">Protected</div>
+            <div class="muted2" style="margin-top: 6px;">Secure account and MFA support</div>
           </div>
           <div class="stat">
-            <div class="label">SSO status</div>
-            <div class="value">Enabled</div>
-            <div class="muted2" style="margin-top: 6px;">MFA required offsite</div>
+            <div class="label">Application process</div>
+            <div class="value">One place</div>
+            <div class="muted2" style="margin-top: 6px;">Profile, tasks, and documents</div>
           </div>
           <div class="stat">
-            <div class="label">Support</div>
-            <div class="value">24/7</div>
-            <div class="muted2" style="margin-top: 6px;">IT helpdesk online</div>
+            <div class="label">People support</div>
+            <div class="value">Available</div>
+            <div class="muted2" style="margin-top: 6px;">Help throughout your journey</div>
           </div>
         </div>
 
@@ -42,13 +42,15 @@
 
         <% if (user) { %>
           <div class="btn-row">
-            <a class="btn primary" href="<%= withBase('/workspace') %>">Enter dashboard</a>
+            <a class="btn primary" href="<%= withBase('/workspace') %>">Open my workspace</a>
             <a class="btn" href="<%= withBase('/documents') %>">Browse documents</a>
             <a class="btn" href="<%= withBase('/profile') %>">My profile</a>
           </div>
         <% } else { %>
           <div class="btn-row">
-            <a class="btn primary" href="<%= withBase('/contact') %>">Contact IT Support</a>
+            <a class="btn primary" href="<%= withBase('/register') %>">Create candidate profile</a>
+            <a class="btn" href="<%= withBase('/login') %>">Sign in</a>
+            <a class="btn" href="<%= withBase('/contact') %>">Contact support</a>
           </div>
         <% } %>
       </div>

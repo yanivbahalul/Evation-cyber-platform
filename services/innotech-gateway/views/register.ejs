@@ -1,4 +1,4 @@
-<% const title = 'InnoTech — Register' %>
+<% const title = 'InnoTech People — Create candidate profile' %>
 <%- include('partials/head', { title }) %>
 <% const error = typeof locals !== 'undefined' ? (locals.error || '') : (typeof error !== 'undefined' ? error : ''); %>
 <% const username = typeof locals !== 'undefined' ? (locals.username || '') : (typeof username !== 'undefined' ? username : ''); %>
@@ -11,9 +11,9 @@
 
     <main class="card">
       <div class="hero">
-        <div class="kicker">Employee Onboarding</div>
-        <h2 style="margin: 0 0 8px;">Create account</h2>
-        <div class="muted">After registration you will scan a unique 2FA QR code.</div>
+        <div class="kicker">Secure recruitment</div>
+        <h2 style="margin: 0 0 8px;">Create your candidate profile</h2>
+        <div class="muted">Set up a protected account. You will verify it with a unique 2FA QR code.</div>
       </div>
       <div class="card-inner">
         <% if (error) { %>

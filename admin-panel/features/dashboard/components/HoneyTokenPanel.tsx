@@ -182,7 +182,7 @@ const HoneyTokenPanel = () => {
   return (
     <div className="flex flex-col gap-5 h-full overflow-y-auto">
       {/* Summary */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <SummaryCard label="Total Tokens"  value={honeyTokens.length}    color="text-primary"    icon={Key} />
         <SummaryCard label="Triggered"     value={triggered.length}      color="text-accent"     icon={ShieldAlert} />
         <SummaryCard label="Intact"        value={untriggered.length}    color="text-success"    icon={ShieldCheck} />

@@ -5,30 +5,30 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Dark-only theme — always treated as dark */
-  --background:        #070d10;
-  --surface:           #0d1820;
-  --surface-elevated:  #122030;
-  --border:            #1e3044;
-  --border-bright:     #2a4560;
+  /* EVATION operations: neutral, high-density surfaces with restrained status color. */
+  --background:        #0a0d12;
+  --surface:           #10151c;
+  --surface-elevated:  #171d25;
+  --border:            #27303a;
+  --border-bright:     #3a4653;
 
-  --foreground:        #e2f0f7;
-  --muted-foreground:  #7a9bb5;
+  --foreground:        #e8edf2;
+  --muted-foreground:  #929eaa;
 
   /* Bootstrap-compatible tokens (used by var(--bs-body-color)) */
   --bs-body-color:     #cbd5e1; /* slate-300 */
 
-  --primary:           #0d9488;   /* teal-600 */
-  --primary-hover:     #0f766e;
-  --primary-foreground:#ffffff;
+  --primary:           #38bdf8;
+  --primary-hover:     #0ea5e9;
+  --primary-foreground:#071016;
 
-  --accent:            #f97316;   /* orange-500 */
-  --accent-hover:      #ea6c0a;
-  --accent-foreground: #ffffff;
+  --accent:            #f59e0b;
+  --accent-hover:      #d97706;
+  --accent-foreground: #111827;
 
   --danger:            #ef4444;
   --danger-foreground: #ffffff;
-  --success:           #22c55e;
+  --success:           #34d399;
 
   /* shadcn compat tokens */
   --card:              var(--surface);
@@ -40,11 +40,11 @@
   --muted:             var(--surface-elevated);
   --input:             var(--border);
   --ring:              var(--primary);
-  --radius:            0.5rem;
+  --radius:            0.375rem;
 
-  --chart-1: #0d9488;
-  --chart-2: #f97316;
-  --chart-3: #22c55e;
+  --chart-1: #38bdf8;
+  --chart-2: #f59e0b;
+  --chart-3: #34d399;
   --chart-4: #f59e0b;
   --chart-5: #ef4444;
 }
@@ -97,12 +97,14 @@
   }
   body {
     @apply bg-background text-foreground font-sans;
+    background-image: linear-gradient(rgba(255, 255, 255, 0.012) 1px, transparent 1px);
+    background-size: 100% 32px;
   }
 }
 
 /* ── Leaflet dark-map overrides ─────────────────────────────── */
 .leaflet-container {
-  background: #070d10;
+  background: #0a0d12;
   font-family: var(--font-mono);
 }
 .leaflet-tile-pane {
@@ -114,24 +116,32 @@
   border-color: var(--border) !important;
 }
 .leaflet-control-attribution {
-  background: rgba(7,13,16,0.7) !important;
+  background: rgba(10,13,18,0.82) !important;
   color: var(--muted-foreground) !important;
   font-size: 10px;
 }
 
-/* ── Pulse animations ───────────────────────────────────────── */
-@keyframes pulse-teal {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(13,148,136,0.7); }
-  50%       { box-shadow: 0 0 0 8px rgba(13,148,136,0); }
-}
-@keyframes pulse-orange {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(249,115,22,0.7); }
-  50%       { box-shadow: 0 0 0 8px rgba(249,115,22,0); }
-}
-.pulse-teal   { animation: pulse-teal   1.5s ease-in-out infinite; }
-.pulse-orange { animation: pulse-orange 1.5s ease-in-out infinite; }
+/* Status changes should be legible without decorative glow. */
+@keyframes status-pulse { 50% { opacity: 0.55; } }
+.pulse-teal,
+.pulse-orange { animation: status-pulse 1.8s ease-in-out infinite; }
 
 /* ── Scrollbar ──────────────────────────────────────────────── */
 ::-webkit-scrollbar       { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--background); }
 ::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 3px; }
+
+@media (max-width: 1023px) {
+  .soc-sidebar { max-height: 10.5rem; }
+  .soc-nav-label,
+  .soc-connection,
+  .soc-sidebar-footer { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Sidebar, { type ActiveTab } from './Sidebar'
 import TopBar from './TopBar'
 import ThreatMap from './ThreatMap'
@@ -22,6 +22,7 @@ function tabFromQuery(raw: string | null): ActiveTab {
 }
 
 export default function Dashboard() {
+  const router = useRouter()
   const searchParams = useSearchParams()
   const [activeTab, setActiveTab] = useState<ActiveTab>(() => tabFromQuery(searchParams.get('tab')))
 
@@ -29,17 +30,22 @@ export default function Dashboard() {
     setActiveTab(tabFromQuery(searchParams.get('tab')))
   }, [searchParams])
 
-  const goInvestigate = () => setActiveTab('investigate')
+  const selectTab = (tab: ActiveTab) => {
+    setActiveTab(tab)
+    router.push(`/gateway/dashboard/?tab=${tab}`)
+  }
+
+  const goInvestigate = () => selectTab('investigate')
 
   return (
     <InvestigationProvider onNavigateWorkspace={goInvestigate}>
-      <div className="flex h-screen overflow-hidden bg-background">
-        <Sidebar active={activeTab} onSelect={setActiveTab} />
+      <div className="flex h-screen flex-col overflow-hidden bg-background lg:flex-row">
+        <Sidebar active={activeTab} onSelect={selectTab} />
 
         <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
           <TopBar active={activeTab} />
 
-          <div className="flex-1 overflow-auto p-5">
+          <div className="flex-1 overflow-auto p-3 sm:p-5">
             {activeTab === 'map' && <ThreatMap onNavigateInvestigate={goInvestigate} />}
             {activeTab === 'events' && <AttackEventsTable />}
             {activeTab === 'profiles' && (

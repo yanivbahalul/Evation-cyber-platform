@@ -1,4 +1,4 @@
-<% const title = 'InnoTech — Employee Login' %>
+<% const title = 'InnoTech People — Sign in' %>
 <%- include('partials/head', { title }) %>
 <% const error = typeof locals !== 'undefined' ? (locals.error || '') : (typeof error !== 'undefined' ? error : ''); %>
 <% const username = typeof locals !== 'undefined' ? (locals.username || '') : (typeof username !== 'undefined' ? username : ''); %>
@@ -11,9 +11,9 @@
 
     <main class="card">
       <div class="hero">
-        <div class="kicker">Employee Access</div>
-        <h2 style="margin: 0 0 8px;">Sign in</h2>
-        <div class="muted">Password first, then OTP if enabled.</div>
+        <div class="kicker">Candidate & employee access</div>
+        <h2 style="margin: 0 0 8px;">Sign in to your safe zone</h2>
+        <div class="muted">Use your account password, followed by verification when enabled.</div>
       </div>
       <div class="card-inner">
         <% if (error) { %>
@@ -30,7 +30,7 @@
         </form>
 
         <div class="muted2" style="margin-top: 12px; font-size: 13px;">
-          No account? <a href="<%= withBase('/register') %>" style="color: var(--primary);">Register</a>
+          New here? <a href="<%= withBase('/register') %>" style="color: var(--primary);">Create a candidate profile</a>
           · <a href="<%= withBase('/') %>" style="color: var(--primary);">Home</a>
         </div>
       </div>

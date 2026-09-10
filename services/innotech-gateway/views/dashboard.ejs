@@ -1,4 +1,4 @@
-<% const title = 'InnoTech — Employee Dashboard' %>
+<% const title = 'InnoTech People — My Workspace' %>
 <%- include('partials/head', { title }) %>
 
 <div class="container">
@@ -9,9 +9,9 @@
 
     <main class="card">
       <div class="hero">
-        <div class="kicker">Safe Zone</div>
-        <h2 style="margin: 0 0 8px;">Dashboard</h2>
-        <div class="muted">Quick access to internal tools, tasks, and announcements.</div>
+        <div class="kicker">Recruitment & employee safe zone</div>
+        <h2 style="margin: 0 0 8px;">My workspace</h2>
+        <div class="muted">Your tasks, company updates, and onboarding documents in one place.</div>
       </div>
 
       <div class="card-inner">
@@ -65,7 +65,7 @@
               <div class="muted2" style="font-size: 13px; margin-bottom: 8px;">Company-wide notices</div>
               <div style="display:grid; gap:10px;">
                 <% announcements.forEach(a => { %>
-                  <div style="border: 1px solid rgba(255,255,255,0.07); border-radius: 14px; padding: 12px; background: rgba(0,0,0,0.22);">
+                  <div class="notice">
                     <div style="font-weight: 650;"><%= a.title %></div>
                     <div class="muted2" style="margin-top: 4px; font-size: 13px;"><%= a.body %></div>
                   </div>
@@ -78,8 +78,8 @@
             <div class="card-inner">
               <h3 style="margin: 0 0 10px;">Quick Links</h3>
               <div class="btn-row">
-                <a class="btn primary" href="<%= withBase('/documents') %>">Company documents</a>
-                <a class="btn" href="<%= withBase('/contact') %>?source=dashboard">Open IT ticket</a>
+                <a class="btn primary" href="<%= withBase('/documents') %>">Onboarding documents</a>
+                <a class="btn" href="<%= withBase('/contact') %>?source=dashboard">Contact support</a>
               </div>
             </div>
           </section>
@@ -90,4 +90,3 @@
 </div>
 
 <%- include('partials/foot') %>
-

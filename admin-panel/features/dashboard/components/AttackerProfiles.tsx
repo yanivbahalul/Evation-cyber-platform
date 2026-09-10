@@ -74,7 +74,7 @@ export default function AttackerProfiles({ onNavigateInvestigate }: AttackerProf
 
   return (
     <div className="flex flex-col gap-4 h-full">
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <MiniStat label="Total Profiles" value={attackerProfiles.length} color="text-primary" />
         <MiniStat label="Bots Detected" value={attackerProfiles.filter(p => p.isBot).length} color="text-danger" />
         <MiniStat label="High Risk (≥80)" value={attackerProfiles.filter(p => p.riskScore >= 80).length} color="text-accent" />

@@ -54,21 +54,22 @@ export default function TopBar({ active }: TopBarProps) {
   }, [])
 
   return (
-    <header className="relative z-50 flex items-center justify-between px-6 py-3.5 bg-surface border-b border-border shrink-0">
+    <header className="relative z-50 flex min-h-16 shrink-0 items-center justify-between gap-3 border-b border-border bg-background px-4 py-3 sm:px-6">
       <div>
+        <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">Blue Team / {active}</p>
         <h2 className="text-base font-semibold text-foreground">{TAB_TITLES[active]}</h2>
-        <p className="text-xs font-mono text-muted-foreground mt-0.5" suppressHydrationWarning>
+        <p className="hidden text-[10px] font-mono text-muted-foreground sm:block" suppressHydrationWarning>
           {now ? `${now} UTC` : '—'}
         </p>
       </div>
 
-      <div className="flex items-center gap-3 relative">
+      <div className="relative flex items-center gap-2 sm:gap-3">
         {/* Live pulse */}
         <div
-          className={`flex items-center gap-1.5 text-xs font-mono px-2.5 py-1 rounded-md ${
+          className={`flex items-center gap-1.5 rounded border px-2 py-1 text-[10px] font-semibold tracking-wider ${
             demoMode
-              ? 'text-accent bg-accent/10 border border-accent/25'
-              : 'text-success bg-success/10 border border-success/25'
+              ? 'border-accent/30 bg-accent/10 text-accent'
+              : 'border-success/30 bg-success/10 text-success'
           }`}
         >
           <span
@@ -88,7 +89,7 @@ export default function TopBar({ active }: TopBarProps) {
         {/* Demo toggle */}
         <button
           onClick={() => setDemoMode(!demoMode)}
-          className="text-xs font-mono px-2.5 py-1 rounded-md bg-surface border border-border text-muted-foreground hover:text-foreground hover:border-border-bright transition-colors"
+          className="hidden rounded border border-border bg-surface px-2.5 py-1 text-[10px] font-mono text-muted-foreground transition-colors hover:border-border-bright hover:text-foreground sm:block"
           aria-label="Toggle demo mode"
           title="Toggle demo mode (mock data vs real DB)"
         >
@@ -112,7 +113,7 @@ export default function TopBar({ active }: TopBarProps) {
           </button>
 
           {portalReady && openNotifications && createPortal(
-            <div className="fixed right-6 top-16 w-80 bg-surface border border-border rounded-xl shadow-2xl overflow-hidden z-[2147483647]">
+            <div className="fixed right-4 top-16 z-[2147483647] w-[calc(100vw-2rem)] max-w-80 overflow-hidden rounded-lg border border-border bg-surface shadow-2xl sm:right-6">
               <div className="px-3 py-2 border-b border-border flex items-center justify-between">
                 <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
                   Notifications

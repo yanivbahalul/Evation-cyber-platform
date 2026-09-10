@@ -1,18 +1,14 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter } from 'next/font/google'
 import './globals.css'
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
-
 export const metadata: Metadata = {
-  title: 'InnoTech HoneyNet — Blue Team Dashboard',
+  title: 'EVATION — Blue Team Operations',
   description:
-    'Air-gapped admin dashboard for real-time monitoring of honeypot traps — Holon Institute of Technologies',
-  generator: 'v0.app',
+    'Blue Team operations workspace for real-time monitoring, investigation, and deception telemetry.',
 }
 
 export const viewport: Viewport = {
-  themeColor: '#070d10',
+  themeColor: '#0a0d12',
 }
 
 export default function RootLayout({
@@ -20,7 +16,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className="bg-background" style={{ colorScheme: 'dark' }}>
-      <body className={`${inter.variable} font-sans antialiased`}>
+      <body className="font-sans antialiased">
         {children}
       </body>
     </html>

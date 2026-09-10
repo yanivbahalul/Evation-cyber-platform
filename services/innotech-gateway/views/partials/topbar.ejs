@@ -2,8 +2,8 @@
   <div class="brand">
     <div class="brand-badge" aria-hidden="true"></div>
     <div>
-      <div><%= typeof brandTitle !== 'undefined' ? brandTitle : 'InnoTech Internal Services' %></div>
-      <span class="brand-sub"><%= typeof brandSub !== 'undefined' ? brandSub : 'Safe Zone Portal' %></span>
+      <div><%= typeof brandTitle !== 'undefined' ? brandTitle : 'InnoTech People' %></div>
+      <span class="brand-sub"><%= typeof brandSub !== 'undefined' ? brandSub : 'Recruitment & employee safe zone' %></span>
     </div>
   </div>
 
@@ -21,10 +21,9 @@
         </form>
       <% } %>
     <% } else { %>
-      <strong><%= typeof accessLabel !== 'undefined' ? accessLabel : 'Guest' %></strong>
+      <strong><%= typeof accessLabel !== 'undefined' ? accessLabel : 'Candidate access' %></strong>
       <span class="muted2">·</span>
-      <span class="muted"><%= typeof accessDetail !== 'undefined' ? accessDetail : 'public access' %></span>
+      <span class="muted"><%= typeof accessDetail !== 'undefined' ? accessDetail : 'secure portal' %></span>
     <% } %>
   </div>
 </div>
-

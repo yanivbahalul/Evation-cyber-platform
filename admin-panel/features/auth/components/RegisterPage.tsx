@@ -255,24 +255,24 @@ const RegisterPage = () => {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div
-        className="fixed inset-0 pointer-events-none opacity-5"
+        className="pointer-events-none fixed inset-0 opacity-[0.025]"
         style={{
           backgroundImage:
-            'linear-gradient(#0d9488 1px, transparent 1px), linear-gradient(90deg, #0d9488 1px, transparent 1px)',
-          backgroundSize: '40px 40px',
+            'linear-gradient(#94a3b8 1px, transparent 1px), linear-gradient(90deg, #94a3b8 1px, transparent 1px)',
+          backgroundSize: '32px 32px',
         }}
       />
 
       <div className="relative w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-surface border border-primary/30 mb-4 pulse-teal">
-            <Shield className="w-8 h-8 text-primary" />
+          <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-md border border-primary/30 bg-surface">
+            <Shield className="h-6 w-6 text-primary" />
           </div>
-          <h1 className="text-xl font-bold text-foreground tracking-tight">InnoTech HoneyNet</h1>
-          <p className="text-muted-foreground text-sm mt-1">Create admin account</p>
+          <h1 className="text-lg font-semibold tracking-[0.14em] text-foreground">EVATION</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Blue Team operator enrollment</p>
         </div>
 
-        <div className="bg-surface border border-border rounded-xl p-6 shadow-2xl">
+        <div className="rounded-lg border border-border bg-surface p-6 shadow-2xl">
           <AuthAlert error={error} success={success} />
 
           <form onSubmit={handleRegister} className="flex flex-col gap-4">

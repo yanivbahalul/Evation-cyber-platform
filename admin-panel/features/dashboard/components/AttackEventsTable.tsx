@@ -49,7 +49,7 @@ export default function AttackEventsTable() {
 
   return (
     <div className="flex flex-col gap-4 h-full">
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <StatCard label="Total Events" value={allEvents.length} icon={Activity} color="text-primary" />
         <StatCard
           label="Unique IPs"
