@@ -82,14 +82,13 @@ If `pnpm` is not installed, use `docker compose -f infra/docker-compose.yml logs
 
 [Infisical](https://infisical.com/docs/documentation/getting-started/introduction) keeps database passwords, JWT keys, 2FA encryption keys, and socket tokens outside Git. The downloaded `infra/.env` is ignored by Git and written with owner-only permissions.
 
-### One-time setup for the project owner
+### Current Infisical project
 
-1. Create an Infisical project named `EVATION`.
-2. Open **EVATION → Secrets → dev → root path `/`**. Add the keys listed below there, or use Infisical's **Import** action to upload the existing `infra/.env` from the project owner's machine.
-3. In the repository root, run `infisical init` and select the EVATION project. This creates `.infisical.json`, which contains the project ID but no secrets and may be committed.
-4. Invite developers with read access to the `dev` environment. Never send the `.env` file or Infisical password in chat.
+This repository is linked to **Example Project** through the committed `.infisical.json`. That file contains only the Infisical project ID—not secret values—so a fresh clone does not need `infisical init`.
 
-Add these required keys to **EVATION → dev → `/`**:
+The project owner should open **Example Project → Secrets → dev → root path `/`**, add the keys listed below, and invite developers with read access to the `dev` environment. Never send the `.env` file, Infisical password, or login token in chat.
+
+Add these required keys to **Example Project → dev → `/`**:
 
 - `SAFEZONE_DB_URI` — MongoDB URI for accounts, profiles, and administrator roles
 - `MALICIOUS_DB_URI` — separate MongoDB URI for attack telemetry
@@ -117,17 +116,18 @@ winget install infisical
 npm install -g @infisical/cli
 ```
 
-Authenticate in the browser and link the checkout if `.infisical.json` has not yet been committed:
+Authenticate in the browser:
 
 ```bash
 infisical login
-infisical init
 ```
+
+Only run `infisical init` when intentionally switching this repository to another Infisical project; commit the newly generated `.infisical.json` afterward.
 
 ### Pull fresh secrets and run
 
 ```bash
-pnpm env:pull     # downloads EVATION/dev/ into infra/.env
+pnpm env:pull     # downloads Example Project/dev/ into infra/.env
 pnpm local:up     # downloads it again, then builds and starts Docker
 ```
 
@@ -750,7 +750,7 @@ Watch logs: `docker compose logs -f gateway telemetry` (from `infra/`).
 | Admin Offline | Restart the stack; verify `ADMIN_SOCKET_TOKEN` and `NEXT_PUBLIC_ADMIN_SOCKET_TOKEN` match in Infisical, then run `pnpm env:pull` |
 | 502 on `/gateway/` | `docker compose logs gateway` — need `server_listening`; if healthy, **`docker compose restart nginx`** (stale upstream IP after rebuild) |
 | No live alert from gateway | `docker compose ps` — telemetry + gateway Up; `docker compose logs telemetry` |
-| Trap works but wrong DB | Check `SAFEZONE_DB_URI` and `MALICIOUS_DB_URI` under EVATION → dev → `/`, then run `pnpm env:pull` |
+| Trap works but wrong DB | Check `SAFEZONE_DB_URI` and `MALICIOUS_DB_URI` under Example Project → dev → `/`, then run `pnpm env:pull` |
 
 ---
 

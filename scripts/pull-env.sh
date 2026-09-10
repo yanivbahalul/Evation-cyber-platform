@@ -13,7 +13,7 @@ fi
 
 if [[ ! -f "${repo_root}/.infisical.json" && -z "${INFISICAL_PROJECT_ID:-}" ]]; then
   echo "This checkout is not linked to Infisical. Run 'infisical init' in the repository root,"
-  echo "or set INFISICAL_PROJECT_ID to the EVATION project ID."
+  echo "or set INFISICAL_PROJECT_ID to the intended Infisical project ID."
   exit 1
 fi
 
