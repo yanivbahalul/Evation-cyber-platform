@@ -1,9 +1,7 @@
 <% const isLegacy = typeof brandTitle !== 'undefined'; %>
 <header class="topbar">
   <a class="brand" href="<%= withBase('/') %>" aria-label="InnoTech Careers home">
-    <span class="brand-badge" aria-hidden="true">
-      <img src="<%= withBase('/images/brand/innotech-mark.svg') %>" alt="" />
-    </span>
+    <span class="brand-badge" aria-hidden="true"></span>
     <span>
       <span><%= typeof brandTitle !== 'undefined' ? brandTitle : 'InnoTech' %></span>
       <span class="brand-sub"><%= typeof brandSub !== 'undefined' ? brandSub : 'Careers' %></span>
