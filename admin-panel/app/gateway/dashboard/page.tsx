@@ -36,7 +36,7 @@ export default function GatewayDashboardPage() {
   useEffect(() => {
     let cancelled = false
 
-    const dashboardWarm = fetch('/api/admin/dashboard/?limit=200', {
+    const dashboardWarm = fetch('/api/admin/dashboard/?limit=75', {
       method: 'GET',
       credentials: 'include',
     })
