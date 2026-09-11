@@ -22,6 +22,7 @@ interface TopBarProps {
   active: ActiveTab
 }
 
+/** Renders dashboard controls, status, and live-alert notifications. */
 export default function TopBar({ active }: TopBarProps) {
   const {
     displayAlerts,
@@ -40,6 +41,7 @@ export default function TopBar({ active }: TopBarProps) {
 
   useEffect(() => {
     setPortalReady(true)
+    /** Formats the UTC clock displayed in the header. */
     const format = () =>
       new Date().toLocaleString('en-GB', {
         day: '2-digit',
@@ -64,8 +66,10 @@ export default function TopBar({ active }: TopBarProps) {
     setDarkMode(useDark)
   }, [])
 
+  /** Persists and animates the selected dashboard color theme. */
   const toggleTheme = () => {
     const nextDark = !darkMode
+    /** Applies the already selected theme state. */
     const applyTheme = () => {
       document.documentElement.classList.toggle('dark', nextDark)
       document.documentElement.style.colorScheme = nextDark ? 'dark' : 'light'

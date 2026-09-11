@@ -57,6 +57,7 @@ const NAV_GROUPS: Array<{
   { label: 'System', items: [{ id: 'maintenance', label: 'Data Maintenance', icon: Database }] },
 ]
 
+/** Renders dashboard navigation and connection status. */
 export default function Sidebar({ active, onSelect }: SidebarProps) {
   const { connected, displayAlerts } = useSocket()
   const { logout } = useAuth()
