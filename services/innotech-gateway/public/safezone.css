@@ -76,6 +76,7 @@ button, input, textarea, select { font: inherit; }
 .hero h1 { font-size: clamp(38px, 5vw, 68px); max-width: 780px; }
 .hero h2 { font-size: clamp(26px, 3vw, 38px); }
 .hero .muted { margin-top: 12px; max-width: 66ch; font-size: 16px; line-height: 1.7; }
+.support-hero { background: linear-gradient(90deg, rgba(239,246,255,.98) 0%, rgba(239,246,255,.9) 46%, rgba(239,246,255,.16) 100%), url('/gateway/images/support/candidate-support.jpg') center / cover; }
 .kicker { margin-bottom: 10px; color: var(--primary); font-size: 12px; font-weight: 750; letter-spacing: .12em; text-transform: uppercase; }
 .muted { color: var(--muted); }
 .muted2 { color: var(--muted2); }
