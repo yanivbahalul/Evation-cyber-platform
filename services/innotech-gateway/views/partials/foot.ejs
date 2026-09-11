@@ -3,6 +3,24 @@
       <span>Candidate experience · Equal opportunity employer</span>
     </footer>
     <script>
+      (function () {
+        var button = document.getElementById('theme-toggle');
+        if (!button) return;
+        var label = button.querySelector('.theme-toggle-label');
+        var sync = function () {
+          var dark = document.documentElement.classList.contains('dark');
+          button.setAttribute('aria-label', dark ? 'Switch to light theme' : 'Switch to dark theme');
+          if (label) label.textContent = dark ? 'THEME · DARK' : 'THEME · LIGHT';
+        };
+        sync();
+        button.addEventListener('click', function () {
+          var dark = !document.documentElement.classList.contains('dark');
+          document.documentElement.classList.toggle('dark', dark);
+          try { localStorage.setItem('innotech-theme', dark ? 'dark' : 'light'); } catch (e) {}
+          sync();
+        });
+      })();
+
       // Fingerprint beacon — posts viewport dimensions for the malicious DB.
       // No-op on the admin panel (loaded over a different origin).
       (function () {
