@@ -13,6 +13,7 @@ type PortalSession =
   | { authenticated: true; role: 'admin' | 'user'; sub?: string; redirectTo?: string }
   | { authenticated: false }
 
+/** Converts the persisted browser snapshot into dashboard bootstrap data. */
 function snapshotFromCache(): DashboardBootstrap | null {
   const cached = readDashboardCache()
   if (!cached) return null
@@ -24,6 +25,8 @@ function snapshotFromCache(): DashboardBootstrap | null {
 }
 
 /**
+ * Renders the attack monitor after verifying the current portal role.
+ *
  * Single dashboard URL for everyone — UI by DB role:
  * - admin → attack history (this React shell)
  * - user  → HR workspace (proxied gateway EJS)

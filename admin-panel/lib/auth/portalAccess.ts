@@ -23,8 +23,8 @@ export async function dbRoleForUsername(username: string): Promise<PortalRole> {
   }
 
   const { User } = await getSafezoneModels()
-  const u = await User.findOne({ username, isActive: true }).select('role').lean()
-  if (u && (u as { role?: string }).role === 'admin') {
+  const safezoneUser = await User.findOne({ username, isActive: true }).select('role').lean()
+  if (safezoneUser && (safezoneUser as { role?: string }).role === 'admin') {
     roleCache.set(username, { role: 'admin', at: Date.now() })
     return 'admin'
   }
@@ -43,6 +43,7 @@ export function portalAttackMonitorPath(): string {
   return '/gateway/dashboard/'
 }
 
+/** Resolves the authenticated portal username from either supported session cookie. */
 export async function resolvePortalUsername(req: NextRequest): Promise<string | null> {
   const adminToken = req.cookies.get('admin_auth')?.value
   if (adminToken) {
