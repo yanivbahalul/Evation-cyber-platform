@@ -221,8 +221,14 @@ textarea.input { resize: vertical; }
 html.dark { color-scheme: dark; }
 html.dark .topbar { background: rgba(14,22,36,.94); }
 html.dark .brand-badge { filter: drop-shadow(0 0 8px rgba(49,194,207,.22)); }
+html.dark .nav a.active { background: rgba(118,163,255,.14); color: #9abaff; }
 html.dark .card, html.dark .sidebar, html.dark .panel, html.dark .stat, html.dark .auth-wrap { background: var(--surface); }
 html.dark .hero:not(.hero-dashboard):not(.hero-profile):not(.hero-documents):not(.hero-support-requests):not(.support-hero) { background: linear-gradient(135deg, #111d30 0%, #0e1624 65%); }
+html.dark .hero-dashboard { background-image: linear-gradient(90deg, rgba(8,13,22,.98) 0%, rgba(8,13,22,.88) 52%, rgba(8,13,22,.38) 100%), url('/gateway/images/portal/dashboard.jpg'); }
+html.dark .hero-profile { background-image: linear-gradient(90deg, rgba(8,13,22,.98) 0%, rgba(8,13,22,.88) 52%, rgba(8,13,22,.38) 100%), url('/gateway/images/portal/profile.jpg'); }
+html.dark .hero-documents { background-image: linear-gradient(90deg, rgba(8,13,22,.98) 0%, rgba(8,13,22,.88) 52%, rgba(8,13,22,.38) 100%), url('/gateway/images/portal/documents.jpg'); }
+html.dark .hero-support-requests { background-image: linear-gradient(90deg, rgba(8,13,22,.98) 0%, rgba(8,13,22,.88) 52%, rgba(8,13,22,.38) 100%), url('/gateway/images/portal/support-requests.jpg'); }
+html.dark .support-hero { background: linear-gradient(90deg, rgba(8,13,22,.98) 0%, rgba(8,13,22,.88) 52%, rgba(8,13,22,.38) 100%), url('/gateway/images/support/candidate-support.jpg') center / cover; }
 html.dark .auth-aside { background: linear-gradient(90deg, rgba(8,13,22,.97) 0%, rgba(8,13,22,.86) 48%, rgba(8,13,22,.36) 100%), url('/gateway/images/login/candidate-office.jpg') center / cover; }
 html.dark .landing-hero { background: linear-gradient(115deg, #0d1829 0%, #0b1220 58%, #101b2c 100%); }
 html.dark .landing-section, html.dark .candidate-process { background: var(--surface); }
