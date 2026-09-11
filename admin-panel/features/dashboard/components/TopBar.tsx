@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Bell } from 'lucide-react'
+import { Bell, Moon, Sun } from 'lucide-react'
 import { useSocket } from '@/features/dashboard/context/SocketContext'
 import type { ActiveTab } from './Sidebar'
 
@@ -32,6 +32,7 @@ export default function TopBar({ active }: TopBarProps) {
   } = useSocket()
   const [openNotifications, setOpenNotifications] = useState(false)
   const [portalReady, setPortalReady] = useState(false)
+  const [darkMode, setDarkMode] = useState(false)
 
   const latest = useMemo(() => displayAlerts.slice(0, 8), [displayAlerts])
   const notificationCount = displayAlerts.length
@@ -55,6 +56,27 @@ export default function TopBar({ active }: TopBarProps) {
     return () => clearInterval(id)
   }, [])
 
+  useEffect(() => {
+    const savedTheme = window.localStorage.getItem('honeyshield-theme')
+    const useDark = savedTheme ? savedTheme === 'dark' : true
+    document.documentElement.classList.toggle('dark', useDark)
+    document.documentElement.style.colorScheme = useDark ? 'dark' : 'light'
+    setDarkMode(useDark)
+  }, [])
+
+  const toggleTheme = () => {
+    const nextDark = !darkMode
+    const applyTheme = () => {
+      document.documentElement.classList.toggle('dark', nextDark)
+      document.documentElement.style.colorScheme = nextDark ? 'dark' : 'light'
+      window.localStorage.setItem('honeyshield-theme', nextDark ? 'dark' : 'light')
+      setDarkMode(nextDark)
+    }
+    const transitionDocument = document as Document & { startViewTransition?: (callback: () => void) => void }
+    if (transitionDocument.startViewTransition) transitionDocument.startViewTransition(applyTheme)
+    else applyTheme()
+  }
+
   return (
     <header className="relative z-50 flex min-h-[72px] shrink-0 items-center justify-between gap-3 border-b border-border bg-surface px-4 py-3 sm:px-6">
       <div>
@@ -65,6 +87,16 @@ export default function TopBar({ active }: TopBarProps) {
       </div>
 
       <div className="relative flex items-center gap-2 sm:gap-3">
+        <button
+          onClick={toggleTheme}
+          className="flex h-8 items-center gap-1.5 rounded-lg border border-border bg-surface-elevated px-2.5 text-[10px] font-mono font-semibold text-muted-foreground shadow-sm transition-colors hover:border-border-bright hover:text-foreground"
+          aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+          title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+        >
+          {darkMode ? <Sun className="h-3.5 w-3.5 text-warning" /> : <Moon className="h-3.5 w-3.5 text-primary" />}
+          <span className="hidden sm:inline">{darkMode ? 'LIGHT' : 'DARK'}</span>
+        </button>
+
         {/* Live pulse */}
         <div
           className={`flex items-center gap-1.5 rounded border px-2 py-1 text-[10px] font-semibold tracking-wider ${
