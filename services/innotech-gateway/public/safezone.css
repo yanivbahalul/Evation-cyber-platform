@@ -46,12 +46,9 @@ button, input, textarea, select { font: inherit; }
 .brand-badge {
   width: 36px;
   height: 36px;
-  border-radius: 10px;
-  background: var(--primary);
-  display: grid;
-  place-items: center;
+  flex: 0 0 36px;
 }
-.brand-badge svg { width: 30px; height: 30px; }
+.brand-badge img { display: block; width: 100%; height: 100%; }
 .brand-sub { display: block; margin-top: 1px; color: var(--muted2); font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
 .top-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .top-link { padding: 8px 12px; border-radius: 8px; color: var(--muted); font-size: 14px; font-weight: 600; }

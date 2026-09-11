@@ -2,11 +2,7 @@
 <header class="topbar">
   <a class="brand" href="<%= withBase('/') %>" aria-label="InnoTech Careers home">
     <span class="brand-badge" aria-hidden="true">
-      <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M9 10H15V30H9V10Z" fill="white"/>
-        <path d="M17 9H32V14H27.5V30H21.5V14H17V9Z" fill="white"/>
-        <path d="M29 8L33 12L29 16" stroke="#A9C5FF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
+      <img src="<%= withBase('/images/brand/innotech-mark.svg') %>" alt="" />
     </span>
     <span>
       <span><%= typeof brandTitle !== 'undefined' ? brandTitle : 'InnoTech' %></span>
