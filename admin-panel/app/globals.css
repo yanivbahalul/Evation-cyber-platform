@@ -153,6 +153,14 @@
 ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
 .dark ::-webkit-scrollbar-track { background: #0b1220; }
 .dark ::-webkit-scrollbar-thumb { background: #2b405b; }
+.dark ::selection { background: rgba(118,163,255,.36); color: #f8fbff; }
+.dark :is(input, select, textarea) { background-color: var(--surface-elevated); color: var(--foreground); }
+.dark .leaflet-popup-content-wrapper,
+.dark .leaflet-popup-tip,
+.dark .leaflet-bar a { background: #101a2c !important; color: var(--foreground) !important; border-color: var(--border) !important; }
+.dark .leaflet-bar a:hover { background: #17263d !important; }
+.dark .leaflet-control-attribution { background: rgba(8,13,22,.86) !important; color: var(--muted-foreground) !important; }
+.dark .recharts-tooltip-wrapper .recharts-default-tooltip { background: #101a2c !important; border-color: var(--border) !important; color: var(--foreground) !important; }
 
 ::view-transition-old(root) { animation: theme-fade-out .55s ease-in-out both; }
 ::view-transition-new(root) { animation: theme-reveal .9s cubic-bezier(.22,.75,.2,1) both; }
