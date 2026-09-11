@@ -237,6 +237,17 @@ html.dark .feature, html.dark .site-footer { background: var(--surface); }
 html.dark .btn, html.dark .input, html.dark .qr-card { background: var(--surface-elevated); color: var(--text); }
 html.dark .btn:hover { border-color: #4b70a5; background: #182943; }
 html.dark .table th { background: var(--surface-soft); }
+html.dark .table {
+  --bs-table-color: var(--text);
+  --bs-table-bg: var(--surface);
+  --bs-table-border-color: var(--border);
+  --bs-table-striped-bg: var(--surface-soft);
+  --bs-table-hover-bg: #142239;
+  --bs-table-accent-bg: var(--surface);
+  color: var(--text);
+}
+html.dark .table > :not(caption) > * > * { background-color: var(--surface); color: var(--text); box-shadow: inset 0 0 0 9999px var(--surface); }
+html.dark .table thead > tr > * { background-color: var(--surface-soft); color: var(--muted2); box-shadow: inset 0 0 0 9999px var(--surface-soft); }
 html.dark .table tbody tr:hover { background: #142239; }
 html.dark .alert { border-color: rgba(251,113,133,.35); background: rgba(251,113,133,.1); color: #fda4af; }
 html.dark .alert.success { border-color: rgba(74,222,128,.35); background: rgba(74,222,128,.1); color: #86efac; }
