@@ -9,7 +9,6 @@ import {
   LayoutDashboard,
   LogOut,
   ScanSearch,
-  Shield,
   ShieldBan,
   UserRoundSearch,
   UsersRound,
@@ -65,9 +64,7 @@ export default function Sidebar({ active, onSelect }: SidebarProps) {
   return (
     <aside className="soc-sidebar flex min-h-0 w-full shrink-0 flex-col border-b border-border bg-surface lg:min-h-screen lg:w-64 lg:border-b-0 lg:border-r">
       <div className="flex h-[72px] items-center gap-3 border-b border-border px-4 lg:px-5">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-white shadow-sm">
-          <Shield className="h-5 w-5" />
-        </div>
+        <img src="/honeyshield-shield.png" alt="" className="h-10 w-10 shrink-0 object-contain" />
         <div className="min-w-0">
           <p className="text-sm font-semibold text-foreground">HoneyShield</p>
           <p className="mt-0.5 text-[10px] text-muted-foreground">Cyber Deception Platform</p>
