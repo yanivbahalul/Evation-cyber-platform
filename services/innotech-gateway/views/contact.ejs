@@ -5,7 +5,7 @@
   <div class="layout">
     <%- include('partials/sidebar', { user, active: 'contact', adminPanelUrl }) %>
     <main class="card">
-      <div class="hero"><div class="kicker">Candidate Support</div><h2>How can we help?</h2><div class="muted">Send a message to our recruiting support team.</div></div>
+      <div class="hero support-hero"><div class="kicker">Candidate Support</div><h2>How can we help?</h2><div class="muted">Send a message to our recruiting support team.</div></div>
       <div class="card-inner" style="max-width:760px;">
         <% if (success) { %><div class="alert success" role="status">Request #<%= ticketId %> has been received. Keep this number for reference.</div><% } %>
         <% if (formError) { %><div class="alert" role="alert"><%= formError %></div><% } %>

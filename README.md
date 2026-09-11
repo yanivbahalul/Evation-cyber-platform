@@ -28,30 +28,128 @@ Every folder has a **README.md** with what it contains and which student owns it
 | `docs/` | Specs and architecture |
 | `scripts/` | QA and migrations |
 
-## Start the server (Docker)
+## Local installation
 
-**Requirements:** [Docker Desktop](https://www.docker.com/products/docker-desktop/) running (`docker ps` works).
+The supported local setup uses Docker Compose. It runs Nginx, the InnoTech gateway, HoneyShield, telemetry, and the optional heuristic threat-intelligence service as one stack.
 
-### First-time setup
+### Requirements
+
+- Git
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) with Docker Compose v2
+- 4 GB of free memory for Docker (8 GB recommended)
+- `pnpm` is needed only for repository scripts and local checks; Docker builds the application dependencies itself
+
+Confirm Docker is ready before continuing:
 
 ```bash
-# From repo root — create infra/.env with Mongo URIs, JWT secrets, socket tokens
-cp infra/.env.example infra/.env   # then edit infra/.env
-
-cd infra
-docker compose up --build
+docker version
+docker compose version
 ```
 
+### 1. Clone and configure
+
+```bash
+git clone https://github.com/yanivbahalul/Evation-cyber-platform.git
+cd Evation-cyber-platform
+```
+
+EVATION intentionally has no committed `.env.example`. The only runtime file is `infra/.env`, downloaded from Infisical and ignored by Git. Follow [Shared secrets with Infisical](#shared-secrets-with-infisical) before starting the stack.
+
+### 2. Start and verify
+
+```bash
+docker compose -f infra/docker-compose.yml up -d --build
+docker compose -f infra/docker-compose.yml ps
+```
+
+All application containers should become `healthy`. Then open:
+
+- InnoTech Careers: http://localhost:3000/gateway/
+- Candidate sign-in: http://localhost:3000/gateway/login/
+- Candidate workspace: http://localhost:3000/gateway/workspace/
+- HoneyShield analyst console (`role=admin`): http://localhost:3000/gateway/dashboard/
+
+Useful lifecycle commands:
+
+```bash
+pnpm local:logs     # follow application logs
+pnpm local:down     # stop the stack
+```
+
+If `pnpm` is not installed, use `docker compose -f infra/docker-compose.yml logs -f` and `docker compose -f infra/docker-compose.yml down` directly.
+
+## Shared secrets with Infisical
+
+[Infisical](https://infisical.com/docs/documentation/getting-started/introduction) keeps database passwords, JWT keys, 2FA encryption keys, and socket tokens outside Git. The downloaded `infra/.env` is ignored by Git and written with owner-only permissions.
+
+### Current Infisical project
+
+This repository is linked to **Example Project** through the committed `.infisical.json`. That file contains only the Infisical project ID—not secret values—so a fresh clone does not need `infisical init`.
+
+The project owner should open **Example Project → Secrets → dev → root path `/`**, add the keys listed below, and invite developers with read access to the `dev` environment. Never send the `.env` file, Infisical password, or login token in chat.
+
+Add these required keys to **Example Project → dev → `/`**:
+
+- `SAFEZONE_DB_URI` — MongoDB URI for accounts, profiles, and administrator roles
+- `MALICIOUS_DB_URI` — separate MongoDB URI for attack telemetry
+- `JWT_SECRET` — generate with `openssl rand -hex 32`
+- `GATEWAY_JWT_SECRET` — generate separately with `openssl rand -hex 32`
+- `ADMIN_TOTP_ENC_KEY_BASE64` — generate once with `openssl rand -base64 32`; never rotate it without re-encrypting administrator 2FA records
+- `ADMIN_SOCKET_TOKEN` — generate with `openssl rand -hex 24`
+- `NEXT_PUBLIC_ADMIN_SOCKET_TOKEN` — use the same value as `ADMIN_SOCKET_TOKEN`
+- `AUTH_COOKIE_MAX_AGE_SECONDS` — use `session` for local development
+
+Optional keys such as `NGROK_AUTHTOKEN`, `PUBLIC_HOST`, `NEXT_PUBLIC_TELEMETRY_SOCKET_URL`, `ADMIN_DASHBOARD_ORIGINS`, `ML_ENRICHMENT_ENABLED`, and `ML_ENABLE_MODELS` can be added to the same path when those features are needed.
+
+### One-time setup for each developer
+
+Install the official CLI:
+
+```bash
+# macOS
+brew install infisical/get-cli/infisical
+
+# Windows
+winget install infisical
+
+# Any platform with Node.js
+npm install -g @infisical/cli
+```
+
+Authenticate in the browser:
+
+```bash
+infisical login
+```
+
+Only run `infisical init` when intentionally switching this repository to another Infisical project; commit the newly generated `.infisical.json` afterward.
+
+### Pull fresh secrets and run
+
+```bash
+pnpm env:pull     # downloads Example Project/dev/ into infra/.env
+pnpm local:up     # downloads it again, then builds and starts Docker
+```
+
+Use another remote environment or folder when needed:
+
+```bash
+INFISICAL_ENV=staging INFISICAL_PATH=/local pnpm env:pull
+```
+
+The helper validates all required variables before replacing the current file, so a failed login, network error, or incomplete remote configuration does not destroy a working `infra/.env`. It never prints secret values.
+
+For CI, use an Infisical Machine Identity with Universal Auth and store its client ID and client secret in the CI provider's protected secret store. Do not put machine credentials in this repository or in `infra/.env`.
+
+### 3. Troubleshooting
+
+- `Cannot connect to the Docker daemon`: start Docker Desktop and retry.
+- `infra/.env: no such file`: authenticate with Infisical and run `pnpm env:pull`.
+- `Downloaded configuration is missing required secret`: add the named key to Infisical and pull again.
+- A container remains unhealthy: run `pnpm local:logs` and verify both MongoDB URIs and shared socket-token values.
+- Port `3000` is already used: stop the other service or the previous EVATION stack before starting.
+
 Nginx listens on **`0.0.0.0:3000`** (all interfaces). Use **`http://localhost:3000`** on the host machine, or your LAN IP from other devices (see below).
-
-| URL (same machine) | Role |
-|-----|------|
-| http://localhost:3000/gateway/ | InnoTech Careers candidate portal + deception routes |
-| http://localhost:3000/gateway/login | Candidate sign-in |
-| http://localhost:3000/gateway/workspace/ | Candidate dashboard after login |
-| http://localhost:3000/gateway/dashboard/ | HoneyShield analyst console (`role=admin`) |
-
-**Verify:** Dashboard status **Live**. Logs: `docker compose logs -f gateway telemetry` (from `infra/`).
 
 Trap scripts: [scripts/yaniv-test/README.md](scripts/yaniv-test/README.md) · `pnpm trap:demo` / `pnpm trap:chain` (server must be running).
 
@@ -134,7 +232,7 @@ Or recreate everything together: `docker compose down && docker compose up --bui
 
 # Attack demo guide
 
-Use this checklist when presenting. In the browser use **`http://<host>:3000`** — same machine: `localhost`; other devices on LAN: your host IP (e.g. `192.168.0.89`); remote: your ngrok URL. HR portal lives under `/gateway/*`. After login → `/gateway/workspace/`; telemetry at `/gateway/dashboard/` (sidebar when `role` is `admin`).
+Use this checklist when presenting. In the browser use **`http://<host>:3000`** — same machine: `localhost`; other devices on LAN: your host IP (e.g. `192.168.0.89`); remote: your ngrok URL. HR portal lives under `/gateway/*`. Candidate login opens `/gateway/workspace/`; an authorized administrator is sent to `/gateway/dashboard/` and sees the HoneyShield link beside Sign out.
 
 ## Quick reference
 
@@ -603,7 +701,7 @@ Expect five success lines and exit code `0`.
 
 ## Presentation flow (suggested order)
 
-1. Log in as `admin` → lands on workspace; open **Attack monitor** from the sidebar → http://localhost:3000/gateway/dashboard/ — Live + map.  
+1. Log in as an account with `role=admin` → HoneyShield opens at http://localhost:3000/gateway/dashboard/ — Live + map.
 2. **SQLi** — try `admin' OR 1=1--` on login → bypass → database console → **Execute query** twice (dump vs error).  
 3. **XSS** via contact form → sandbox page + alert.  
 4. **Data bomb** via `documents?download=backup.zip` (not on Safe Zone home).  
@@ -647,12 +745,12 @@ Watch logs: `docker compose logs -f gateway telemetry` (from `infra/`).
 | Issue | Fix |
 |-------|-----|
 | 404 on `/login` | Sign in at **`http://localhost:3000/gateway/login`** (canonical) |
-| Two different login pages | Old EJS login redirects here; attack dashboard is only at **`/`** for `admin` role |
+| Blue Team link returns to Careers | Sign out and log in with an active account whose database role is `admin`; HoneyShield is at **`/gateway/dashboard/`** |
 | Only “loading”, no tarpit text | Wait up to 2 minutes; or use `curl -N` |
-| Admin Offline | `docker compose restart`; socket token match in `admin-panel/.env` |
+| Admin Offline | Restart the stack; verify `ADMIN_SOCKET_TOKEN` and `NEXT_PUBLIC_ADMIN_SOCKET_TOKEN` match in Infisical, then run `pnpm env:pull` |
 | 502 on `/gateway/` | `docker compose logs gateway` — need `server_listening`; if healthy, **`docker compose restart nginx`** (stale upstream IP after rebuild) |
 | No live alert from gateway | `docker compose ps` — telemetry + gateway Up; `docker compose logs telemetry` |
-| Trap works but wrong DB | Check `SAFEZONE_DB_URI` / `MALICIOUS_DB_URI` in `.env` |
+| Trap works but wrong DB | Check `SAFEZONE_DB_URI` and `MALICIOUS_DB_URI` under Example Project → dev → `/`, then run `pnpm env:pull` |
 
 ---
 

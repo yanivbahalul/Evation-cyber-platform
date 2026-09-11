@@ -6,8 +6,8 @@ Everything needed to run the stack locally or deploy it to AWS.
 
 | Path | Purpose |
 |------|---------|
-| `docker-compose.yml` | Local stack: nginx, gateway, telemetry, admin panel, Mongo, ngrok |
-| `.env.example` | Template for DB URIs, JWT secrets, socket tokens, `PUBLIC_HOST` |
+| `docker-compose.yml` | Local stack: nginx, gateway, telemetry, admin panel, ML enrichment, ngrok |
+| `.env` | Local runtime secrets downloaded from Infisical; ignored by Git |
 | [`docker/`](docker/) | Dockerfiles and start scripts per service |
 | [`nginx/`](nginx/) | Edge routing, TLS termination, header injection |
 | [`terraform/`](terraform/) | AWS VPC, ALB, ECS, ECR for production |
@@ -19,6 +19,8 @@ backends, and preserves the attacker's real IP via `X-Forwarded-For` / `X-Real-I
 [`getAttackerIp.js`](../packages/shared-utils) can read it downstream.
 
 ```bash
-cd infra
-docker compose up --build   # serves the whole stack on http://localhost:3000
+# From the repository root, after downloading infra/.env with `pnpm env:pull`:
+docker compose -f infra/docker-compose.yml up -d --build
 ```
+
+For the recommended Infisical-based secrets workflow and complete installation instructions, see the [root README](../README.md#shared-secrets-with-infisical).

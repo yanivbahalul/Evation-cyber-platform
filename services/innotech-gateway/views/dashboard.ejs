@@ -5,7 +5,7 @@
   <div class="layout">
     <%- include('partials/sidebar', { user, active: 'dashboard', adminPanelUrl }) %>
     <main class="card">
-      <div class="hero"><div class="kicker">Candidate Dashboard</div><h2>Welcome back, <%= user.username %></h2><div class="muted">Review your application tasks, updates, and candidate resources.</div></div>
+      <div class="hero hero-dashboard"><div class="kicker">Candidate Dashboard</div><h2>Welcome back, <%= user.username %></h2><div class="muted">Review your application tasks, updates, and candidate resources.</div></div>
       <div class="card-inner">
         <div class="grid-3">
           <div class="stat"><div class="label">Application tasks</div><div class="value"><%= tasks.length %></div><div class="muted2" style="margin-top:6px;">Available tasks</div></div>

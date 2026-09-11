@@ -20,6 +20,21 @@
           <% } %>
         </div>
       </div>
+      <figure class="landing-hero-media">
+        <img src="<%= withBase('/images/careers/office-workspace.webp') %>" alt="A team working in a bright, modern technology office" width="1400" height="1050" fetchpriority="high" />
+        <figcaption>
+          <span class="media-eyebrow">Inside InnoTech</span>
+          <strong>Space to focus. People to build with.</strong>
+        </figcaption>
+      </figure>
+      <div class="hero-orbit orbit-one" aria-hidden="true"></div>
+      <div class="hero-orbit orbit-two" aria-hidden="true"></div>
+    </section>
+
+    <section class="company-strip" aria-label="How we work">
+      <div><strong>Product-led</strong><span>Small teams with real ownership</span></div>
+      <div><strong>Hybrid by design</strong><span>Focused work and time together</span></div>
+      <div><strong>Built to learn</strong><span>Curiosity is part of the job</span></div>
     </section>
 
     <section class="landing-section">
@@ -27,20 +42,52 @@
       <h2>Work with great teams on meaningful products.</h2>
       <p>Our teams bring together practical engineering, thoughtful product work, and dependable operations.</p>
       <div class="feature-grid">
-        <article class="feature"><div class="feature-icon">E</div><h3>Engineering</h3><p>Build reliable products and the systems that support them.</p></article>
-        <article class="feature"><div class="feature-icon">P</div><h3>Product</h3><p>Turn real customer needs into focused product experiences.</p></article>
-        <article class="feature"><div class="feature-icon">D</div><h3>Data</h3><p>Help teams make clearer decisions with useful insight.</p></article>
-        <article class="feature"><div class="feature-icon">O</div><h3>Operations</h3><p>Keep our people, processes, and customer work moving.</p></article>
+        <article class="feature"><div class="feature-visual"><img class="feature-media" src="<%= withBase('/images/teams/engineering.jpg') %>" alt="Developer working on source code" loading="lazy" decoding="async" /><h3>Engineering</h3></div><div class="feature-content"><p>Build reliable products and the systems that support them.</p></div></article>
+        <article class="feature"><div class="feature-visual"><img class="feature-media" src="<%= withBase('/images/teams/product.jpg') %>" alt="Product planning with notes on a board" loading="lazy" decoding="async" /><h3>Product</h3></div><div class="feature-content"><p>Turn real customer needs into focused product experiences.</p></div></article>
+        <article class="feature"><div class="feature-visual"><img class="feature-media" src="<%= withBase('/images/teams/data.jpg') %>" alt="Data dashboard with analytical charts" loading="lazy" decoding="async" /><h3>Data</h3></div><div class="feature-content"><p>Help teams make clearer decisions with useful insight.</p></div></article>
+        <article class="feature"><div class="feature-visual"><img class="feature-media" src="<%= withBase('/images/teams/operations.jpg') %>" alt="Operations colleagues working in a modern office" loading="lazy" decoding="async" /><h3>Operations</h3></div><div class="feature-content"><p>Keep our people, processes, and customer work moving.</p></div></article>
       </div>
     </section>
 
-    <section class="landing-section alt">
+    <section class="landing-section alt office-story">
+      <div class="section-heading-row">
+        <div>
+          <div class="kicker">Life at InnoTech</div>
+          <h2>A workplace made for good work.</h2>
+        </div>
+        <p>We bring people together to solve useful problems, share what they know, and turn promising ideas into dependable products.</p>
+      </div>
+      <div class="office-gallery">
+        <figure class="gallery-card gallery-card-wide">
+          <img src="<%= withBase('/images/careers/office-hero.webp') %>" alt="Technology colleagues collaborating around laptops" width="1800" height="1355" loading="lazy" decoding="async" />
+          <figcaption><strong>Build together</strong><span>Direct conversations and shared ownership.</span></figcaption>
+        </figure>
+        <figure class="gallery-card">
+          <img src="<%= withBase('/images/careers/team-collaboration.webp') %>" alt="A diverse team working together in a contemporary office" width="1400" height="933" loading="lazy" decoding="async" />
+          <figcaption><strong>Make room for ideas</strong><span>Different perspectives make the work stronger.</span></figcaption>
+        </figure>
+        <figure class="gallery-card">
+          <img src="<%= withBase('/images/careers/team-workshop.webp') %>" alt="Colleagues taking part in a team workshop" width="1400" height="933" loading="lazy" decoding="async" />
+          <figcaption><strong>Keep learning</strong><span>Workshops, feedback, and practical growth.</span></figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="landing-section candidate-process">
       <div class="kicker">Candidate experience</div>
       <h2>A clear process from first step to next conversation.</h2>
       <div class="process">
         <div class="process-item"><h3>Create your profile</h3><p>Set up your account and keep your candidate details together.</p></div>
         <div class="process-item"><h3>Complete your tasks</h3><p>Review requested information and available candidate resources.</p></div>
         <div class="process-item"><h3>Stay updated</h3><p>Follow updates and contact our recruiting support team when needed.</p></div>
+      </div>
+      <div class="landing-cta">
+        <div><span class="media-eyebrow">Your next chapter</span><h2>Come build it with us.</h2></div>
+        <% if (user) { %>
+          <a class="btn primary" href="<%= withBase('/workspace') %>">Open candidate dashboard</a>
+        <% } else { %>
+          <a class="btn primary" href="<%= withBase('/register') %>">Create candidate profile</a>
+        <% } %>
       </div>
     </section>
   </main>

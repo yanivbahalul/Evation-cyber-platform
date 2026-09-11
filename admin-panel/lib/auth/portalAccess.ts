@@ -6,18 +6,30 @@ import { getSafezoneModels } from '@/lib/server/safezoneDb'
 
 export type PortalRole = 'admin' | 'user'
 
+const roleCache = new Map<string, { role: PortalRole; at: number }>()
+const ROLE_CACHE_MS = 20_000
+
 /** Authoritative role from DB — never trust JWT `role` alone. */
 export async function dbRoleForUsername(username: string): Promise<PortalRole> {
+  const cached = roleCache.get(username)
+  if (cached && Date.now() - cached.at < ROLE_CACHE_MS) return cached.role
+
   const { AdminUser } = await getAdminModels()
   const au = await AdminUser.findOne({ username, isActive: true }).select('role').lean()
   if (au) {
-    return (au as { role?: string }).role === 'admin' ? 'admin' : 'user'
+    const role: PortalRole = (au as { role?: string }).role === 'admin' ? 'admin' : 'user'
+    roleCache.set(username, { role, at: Date.now() })
+    return role
   }
 
   const { User } = await getSafezoneModels()
   const u = await User.findOne({ username, isActive: true }).select('role').lean()
-  if (u && (u as { role?: string }).role === 'admin') return 'admin'
+  if (u && (u as { role?: string }).role === 'admin') {
+    roleCache.set(username, { role: 'admin', at: Date.now() })
+    return 'admin'
+  }
 
+  roleCache.set(username, { role: 'user', at: Date.now() })
   return 'user'
 }
 
