@@ -14,6 +14,7 @@ type PortalSession =
   | { authenticated: false }
 
 /** Converts the persisted browser snapshot into dashboard bootstrap data. */
+// skipcq: JS-0067 -- module-local helper in an ES module.
 function snapshotFromCache(): DashboardBootstrap | null {
   const cached = readDashboardCache()
   if (!cached) return null
@@ -31,6 +32,7 @@ function snapshotFromCache(): DashboardBootstrap | null {
  * - admin → attack history (this React shell)
  * - user  → HR workspace (proxied gateway EJS)
  */
+// skipcq: JS-0067, JS-R1005 -- React page component; auth flow stays together for a single redirect path.
 export default function GatewayDashboardPage() {
   // SSR and first client paint must match — cache is read only after mount.
   const [phase, setPhase] = useState<'loading' | 'admin' | 'redirect'>('loading')

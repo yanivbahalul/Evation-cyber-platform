@@ -58,6 +58,7 @@ const NAV_GROUPS: Array<{
 ]
 
 /** Renders dashboard navigation and connection status. */
+// skipcq: JS-0067 -- React component export in an ES module.
 export default function Sidebar({ active, onSelect }: SidebarProps) {
   const { connected, displayAlerts } = useSocket()
   const { logout } = useAuth()

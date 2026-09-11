@@ -10,6 +10,7 @@ const roleCache = new Map<string, { role: PortalRole; at: number }>()
 const ROLE_CACHE_MS = 20_000
 
 /** Authoritative role from DB — never trust JWT `role` alone. */
+// skipcq: JS-0067, JS-R1005 -- one security boundary for role resolution and its short-lived cache.
 export async function dbRoleForUsername(username: string): Promise<PortalRole> {
   const cached = roleCache.get(username)
   if (cached && Date.now() - cached.at < ROLE_CACHE_MS) return cached.role
@@ -34,16 +35,19 @@ export async function dbRoleForUsername(username: string): Promise<PortalRole> {
 }
 
 /** Post-login landing for every operator (HR workspace). */
+// skipcq: JS-0067 -- exported route helper in an ES module.
 export function portalHomePath(): string {
   return '/gateway/workspace/'
 }
 
 /** Blue Team attack monitor — linked in UI only when DB role is admin. */
+// skipcq: JS-0067 -- exported route helper in an ES module.
 export function portalAttackMonitorPath(): string {
   return '/gateway/dashboard/'
 }
 
 /** Resolves the authenticated portal username from either supported session cookie. */
+// skipcq: JS-0067, JS-R1005 -- supports both authenticated cookie formats at one trust boundary.
 export async function resolvePortalUsername(req: NextRequest): Promise<string | null> {
   const adminToken = req.cookies.get('admin_auth')?.value
   if (adminToken) {

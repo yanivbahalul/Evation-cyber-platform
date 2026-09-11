@@ -23,6 +23,7 @@ interface TopBarProps {
 }
 
 /** Renders dashboard controls, status, and live-alert notifications. */
+// skipcq: JS-0067, JS-R1005 -- cohesive React header component.
 export default function TopBar({ active }: TopBarProps) {
   const {
     displayAlerts,
@@ -169,6 +170,7 @@ export default function TopBar({ active }: TopBarProps) {
                 </div>
               ) : (
                 <div className="max-h-72 overflow-auto">
+                  {/* skipcq: JS-R1005 -- alert markup remains inline for readable rendering. */}
                   {latest.map(a => (
                     <div key={a.eventID} className="px-3 py-2 border-b border-border/50 last:border-b-0">
                       <div className="flex items-center gap-2">
