@@ -89,12 +89,11 @@ export default function TopBar({ active }: TopBarProps) {
       <div className="relative flex items-center gap-2 sm:gap-3">
         <button
           onClick={toggleTheme}
-          className="flex h-9 items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-3 text-[10px] font-mono font-bold tracking-wider text-primary shadow-sm transition-colors hover:border-primary/60 hover:bg-primary/15"
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-primary/30 bg-primary/10 text-primary shadow-sm transition-colors hover:border-primary/60 hover:bg-primary/15"
           aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
           title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
         >
           {darkMode ? <Sun className="h-3.5 w-3.5 text-warning" /> : <Moon className="h-3.5 w-3.5 text-primary" />}
-          <span>THEME · {darkMode ? 'DARK' : 'LIGHT'}</span>
         </button>
 
         {/* Live pulse */}

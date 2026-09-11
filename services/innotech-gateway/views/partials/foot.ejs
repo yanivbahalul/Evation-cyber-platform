@@ -6,18 +6,22 @@
       (function () {
         var button = document.getElementById('theme-toggle');
         if (!button) return;
-        var label = button.querySelector('.theme-toggle-label');
+        var icon = button.querySelector('.theme-toggle-icon');
         var sync = function () {
           var dark = document.documentElement.classList.contains('dark');
           button.setAttribute('aria-label', dark ? 'Switch to light theme' : 'Switch to dark theme');
-          if (label) label.textContent = dark ? 'THEME · DARK' : 'THEME · LIGHT';
+          if (icon) icon.textContent = dark ? '☀' : '☾';
         };
         sync();
         button.addEventListener('click', function () {
           var dark = !document.documentElement.classList.contains('dark');
-          document.documentElement.classList.toggle('dark', dark);
-          try { localStorage.setItem('innotech-theme', dark ? 'dark' : 'light'); } catch (e) {}
-          sync();
+          var apply = function () {
+            document.documentElement.classList.toggle('dark', dark);
+            try { localStorage.setItem('innotech-theme', dark ? 'dark' : 'light'); } catch (e) {}
+            sync();
+          };
+          if (document.startViewTransition) document.startViewTransition(apply);
+          else apply();
         });
       })();
 

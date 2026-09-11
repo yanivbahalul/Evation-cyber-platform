@@ -10,7 +10,7 @@
 
   <nav class="top-actions" aria-label="Primary navigation">
     <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch color theme">
-      <span aria-hidden="true">☀</span><span class="theme-toggle-label">THEME · DARK</span>
+      <span class="theme-toggle-icon" aria-hidden="true">☀</span>
     </button>
     <% if (isLegacy) { %>
       <span class="account-label"><strong><%= typeof accessLabel !== 'undefined' ? accessLabel : (user ? user.username : 'Restricted') %></strong><% if (typeof accessDetail !== 'undefined') { %> · <%= accessDetail %><% } %></span>

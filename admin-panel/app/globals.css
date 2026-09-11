@@ -154,10 +154,10 @@
 .dark ::-webkit-scrollbar-track { background: #0b1220; }
 .dark ::-webkit-scrollbar-thumb { background: #2b405b; }
 
-::view-transition-old(root) { animation: theme-fade-out .26s ease both; }
-::view-transition-new(root) { animation: theme-reveal .48s cubic-bezier(.2,.8,.2,1) both; }
-@keyframes theme-fade-out { to { opacity: .35; } }
-@keyframes theme-reveal { from { clip-path: circle(0 at calc(100% - 64px) 38px); } to { clip-path: circle(150% at calc(100% - 64px) 38px); } }
+::view-transition-old(root) { animation: theme-fade-out .55s ease-in-out both; }
+::view-transition-new(root) { animation: theme-reveal .9s cubic-bezier(.22,.75,.2,1) both; }
+@keyframes theme-fade-out { to { opacity: .42; filter: saturate(.78); } }
+@keyframes theme-reveal { from { clip-path: circle(0 at calc(100% - 64px) 38px); filter: saturate(.82) brightness(.96); } to { clip-path: circle(150% at calc(100% - 64px) 38px); filter: saturate(1) brightness(1); } }
 
 @media (max-width: 1023px) {
   .soc-sidebar { max-height: 10.5rem; }

@@ -72,7 +72,8 @@ button, input, textarea, select { font: inherit; }
 .top-link:hover { background: var(--surface-soft); color: var(--primary); }
 .top-link.primary { background: var(--primary); color: #fff; }
 .top-link.primary:hover { background: var(--primary-dark); color: #fff; }
-.theme-toggle { display: inline-flex; align-items: center; gap: 7px; min-height: 36px; padding: 8px 11px; border: 1px solid rgba(37,99,235,.28); border-radius: 8px; background: rgba(37,99,235,.09); color: var(--primary); font-size: 10px; font-weight: 800; letter-spacing: .06em; cursor: pointer; transition: background-color .2s ease, border-color .2s ease, color .2s ease; }
+.theme-toggle { display: inline-grid; width: 36px; min-width: 36px; height: 36px; place-items: center; padding: 0; border: 1px solid rgba(37,99,235,.28); border-radius: 8px; background: rgba(37,99,235,.09); color: var(--primary); font-size: 16px; cursor: pointer; transition: background-color .35s ease, border-color .35s ease, color .35s ease, transform .35s cubic-bezier(.2,.8,.2,1); }
+.theme-toggle:hover { transform: rotate(12deg) scale(1.05); }
 .theme-toggle:hover { border-color: rgba(37,99,235,.56); background: rgba(37,99,235,.15); }
 .account-label { color: var(--muted); font-size: 13px; }
 
@@ -236,6 +237,10 @@ html.dark .alert.success { border-color: rgba(74,222,128,.35); background: rgba(
 html.dark .badge.ok { border-color: rgba(74,222,128,.35); background: rgba(74,222,128,.1); }
 html.dark .badge.warn { border-color: rgba(251,191,36,.35); background: rgba(251,191,36,.1); }
 html.dark .landing-cta { box-shadow: 0 24px 60px rgba(0,0,0,.32); }
+::view-transition-old(root) { animation: innotech-theme-fade .55s ease-in-out both; }
+::view-transition-new(root) { animation: innotech-theme-reveal .9s cubic-bezier(.22,.75,.2,1) both; }
+@keyframes innotech-theme-fade { to { opacity: .42; filter: saturate(.78); } }
+@keyframes innotech-theme-reveal { from { clip-path: circle(0 at calc(100% - 44px) 38px); filter: saturate(.82) brightness(.96); } to { clip-path: circle(150% at calc(100% - 44px) 38px); filter: saturate(1) brightness(1); } }
 
 @media (max-width: 980px) {
   .layout { grid-template-columns: 1fr; }
@@ -252,7 +257,7 @@ html.dark .landing-cta { box-shadow: 0 24px 60px rgba(0,0,0,.32); }
 }
 @media (max-width: 700px) {
   .topbar { padding: 12px 18px; }
-  .brand-sub, .account-label, .theme-toggle-label { display: none; }
+  .brand-sub, .account-label { display: none; }
   .layout, .layout.auth-layout { width: min(100% - 24px, 1400px); margin-top: 16px; }
   .grid-3, .grid-4, .feature-grid, .content-grid, .process { grid-template-columns: 1fr; }
   .hero, .card-inner { padding: 22px; }
